@@ -1,5 +1,7 @@
 # keet-worker-compute
 
+(WIP)
+
 Worker for handling heavy tasks outside Keet's main process
 
 ```
