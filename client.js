@@ -1,5 +1,5 @@
 import RPC from 'bare-rpc'
-import { spawnWorker } from './pear-worker'
+import { spawn } from './cross-spawn'
 import { COMMAND } from './worker/command-code'
 
 export class WorkerClient {
@@ -7,15 +7,15 @@ export class WorkerClient {
 
   async #sendRequest (cmd, data) {
     if (this.rpc === null) {
-      await this.spawn()
+      await this.run()
     }
     const request = this.rpc.request(cmd)
     request.send(data)
     return request.reply()
   }
 
-  async spawn () {
-    const pipe = await spawnWorker('./node_modules/@holepunchto/keet-worker-compute/worker/index.js') // TODO
+  async run () {
+    const pipe = await spawn('./node_modules/@holepunchto/keet-worker-compute/worker/index.js') // TODO
 
     pipe.on('end', () => pipe.end())
     pipe.on('close', () => {
