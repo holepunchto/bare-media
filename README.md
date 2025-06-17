@@ -10,11 +10,19 @@ npm i keet-worker-compute
 
 ## Usage
 
-```js
-import { WorkerClient } from '@holepunchto/keet-worker-compute'
+Singleton:
 
-const client = new WorkerClient()
-const buffer = await client.heicToJpg(path)
+```js
+import worker from '@holepunchto/keet-worker-compute'
+
+const buffer = await worker.heicToJpg(path)
 ```
 
+or instantiate one or multiple workers:
 
+```js
+import { WorkerClient } from '@holepunchto/keet-worker-compute/client'
+
+const worker = new WorkerClient()
+const buffer = await worker.heicToJpg(path)
+```
