@@ -1,6 +1,8 @@
 import RPC from 'bare-rpc'
+
+import { isCodecSupported } from '../shared/codecs'
+import { COMMAND } from '../shared/constants'
 import { spawn } from './cross-spawn'
-import { COMMAND } from './worker/command-code'
 
 export class WorkerClient {
   rpc = null
@@ -27,7 +29,11 @@ export class WorkerClient {
     this.rpc = new RPC(pipe, onreq)
   }
 
-  heicToJpg (filePath) {
-    return this.#sendRequest(COMMAND.HEIC_TO_JPG, filePath)
+  isCodecSupported (mimetype) {
+    return isCodecSupported(mimetype)
+  }
+
+  createMediaPreview (filePath) {
+    return this.#sendRequest(COMMAND.CREATE_MEDIA_PREVIEW, filePath)
   }
 }

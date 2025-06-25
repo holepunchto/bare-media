@@ -1,7 +1,7 @@
 import worker from 'cross-worker'
 import RPC from 'bare-rpc'
 import uncaughts from 'uncaughts'
-import { HANDLER_MAP } from './command-handler'
+import { TASK_MAP } from './tasks'
 import { log } from './log'
 
 log('Worker started 🚀')
@@ -10,8 +10,8 @@ const stream = worker.stream()
 
 async function onRequest (req) {
   const { command } = req
-  const handler = HANDLER_MAP[command]
-  const result = await handler(req)
+  const task = TASK_MAP[command]
+  const result = await task(req)
   req.reply(result)
 }
 

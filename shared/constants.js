@@ -1,3 +1,3 @@
 export const COMMAND = {
-  HEIC_TO_JPG: 1
+  CREATE_MEDIA_PREVIEW: 1
 }

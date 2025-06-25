@@ -4,6 +4,8 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "lint": "standard",
+    "lint:fix": "standard --fix",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -11,12 +13,16 @@
   "license": "UNLICENSED",
   "description": "",
   "dependencies": {
+    "b4a": "^1.6.7",
     "bare-fs": "^4.1.5",
     "bare-heif": "^1.0.5",
+    "bare-image-resample": "^1.0.1",
     "bare-jpeg": "^1.0.1",
     "bare-path": "^3.0.0",
     "bare-rpc": "^0.2.5",
+    "bare-webp": "^1.0.3",
     "cross-worker": "^1.0.0",
+    "get-mime-type": "^1.0.2",
     "uncaughts": "^1.1.1"
   },
   "devDependencies": {
