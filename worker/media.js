@@ -3,23 +3,12 @@ import fs from 'bare-fs'
 import getMimeType from 'get-mime-type'
 
 import { importCodec } from '../shared/codecs'
-import { COMMAND } from '../shared/constants'
 
-export const TASK_MAP = {
-  [COMMAND.CREATE_MEDIA_PREVIEW]: createMediaPreview
-}
-
-async function createMediaPreview (req) {
-  const path = req.data.toString('utf-8')
-  const mimetypeOriginal = getMimeType(path)
-
-  const decoder = await importCodec(mimetypeOriginal)
+export async function createPreview ({ path, maxSize, mimetype = 'image/webp' }) {
+  const decoder = await importCodec(getMimeType(path))
   const buffer = fs.readFileSync(path)
   const decoded = decoder.decode(buffer)
   const { width, height } = decoded
-
-  // TODO: pass max size by arg
-  const maxSize = { small: 32, medium: 512, large: 2560 }
 
   const dimensions = {
     small: calcResizedDimensions(width, height, maxSize.small),
@@ -32,7 +21,6 @@ async function createMediaPreview (req) {
   const medium = resize(decoded, dimensions.medium.width, dimensions.medium.height)
   const large = resize(decoded, dimensions.large.width, dimensions.large.height)
 
-  const mimetype = 'image/webp'
   const encoder = await importCodec(mimetype)
   const encoded = {
     small: encoder.encode(small),
@@ -40,29 +28,25 @@ async function createMediaPreview (req) {
     large: encoder.encode(large)
   }
 
-  // TODO: compact
-  return b4a.from(JSON.stringify({
+  return {
     metadata: {
       dimensions: { width, height }
     },
     preview: {
       small: {
-        base64: b4a.toString(encoded.small, 'base64'),
-        mimetype,
-        dimensions: dimensions.small
+        inlined: b4a.toString(encoded.small, 'base64'),
+        metadata: { mimetype, dimensions: dimensions.small }
       },
       medium: {
-        base64: b4a.toString(encoded.medium, 'base64'),
-        mimetype,
-        dimensions: dimensions.medium
+        inlined: b4a.toString(encoded.medium, 'base64'),
+        metadata: { mimetype, dimensions: dimensions.medium }
       },
       large: {
-        base64: b4a.toString(encoded.large, 'base64'),
-        mimetype,
-        dimensions: dimensions.large
+        buffer: encoded.large,
+        metadata: { mimetype, dimensions: dimensions.large }
       }
     }
-  }))
+  }
 }
 
 function calcResizedDimensions (width, height, max) {

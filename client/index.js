@@ -1,22 +1,13 @@
-import RPC from 'bare-rpc'
-
+import HRPC from '../shared/spec/hrpc'
 import { isCodecSupported } from '../shared/codecs'
-import { COMMAND } from '../shared/constants'
 import { spawn } from './cross-spawn'
 
 export class WorkerClient {
   rpc = null
 
-  async #sendRequest (cmd, data) {
-    if (this.rpc === null) {
-      await this.run()
-    }
-    const request = this.rpc.request(cmd)
-    request.send(data)
-    return request.reply()
-  }
-
   async run () {
+    if (this.rpc !== null) return
+
     const pipe = await spawn('./node_modules/@holepunchto/keet-worker-compute/worker/index.js') // TODO
 
     pipe.on('end', () => pipe.end())
@@ -24,16 +15,15 @@ export class WorkerClient {
       this.rpc = null
     })
 
-    function onreq () {}
-
-    this.rpc = new RPC(pipe, onreq)
+    this.rpc = new HRPC(pipe)
   }
 
   isCodecSupported (mimetype) {
     return isCodecSupported(mimetype)
   }
 
-  createMediaPreview (filePath) {
-    return this.#sendRequest(COMMAND.CREATE_MEDIA_PREVIEW, filePath)
+  async mediaCreatePreview (arg) {
+    await this.run()
+    return this.rpc.mediaCreatePreview(arg)
   }
 }

@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "schema": [
+    {
+      "name": "dimensions",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "width",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "height",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "metadata",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "mimetype",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "dimensions",
+          "type": "@media/dimensions",
+          "version": 1
+        },
+        {
+          "name": "duration",
+          "type": "uint",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "file",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "metadata",
+          "type": "@media/metadata",
+          "version": 1
+        },
+        {
+          "name": "inlined",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "buffer",
+          "type": "buffer",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "preview",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "small",
+          "type": "@media/file",
+          "version": 1
+        },
+        {
+          "name": "medium",
+          "type": "@media/file",
+          "version": 1
+        },
+        {
+          "name": "large",
+          "type": "@media/file",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "maxSizePreview",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "small",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "medium",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "large",
+          "required": true,
+          "type": "uint",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "create-preview-request",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 2,
+      "fields": [
+        {
+          "name": "path",
+          "required": true,
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "maxSize",
+          "required": true,
+          "type": "@media/maxSizePreview",
+          "version": 1
+        },
+        {
+          "name": "mimetype",
+          "type": "string",
+          "version": 1
+        }
+      ]
+    },
+    {
+      "name": "create-preview-response",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": -1,
+      "fields": [
+        {
+          "name": "metadata",
+          "required": true,
+          "type": "@media/metadata",
+          "version": 1
+        },
+        {
+          "name": "preview",
+          "required": true,
+          "type": "@media/preview",
+          "version": 1
+        }
+      ]
+    }
+  ]
+}
