@@ -7,7 +7,7 @@
     "build-spec": "cd shared && bare ./build-spec.js",
     "lint": "standard",
     "lint:fix": "standard --fix",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run lint && brittle-bare test/index.js"
   },
   "keywords": [],
   "author": "Holepunch",
@@ -28,6 +28,7 @@
     "uncaughts": "^1.1.1"
   },
   "devDependencies": {
+    "brittle": "^3.16.3",
     "standard": "^17.1.2"
   },
   "standard": {

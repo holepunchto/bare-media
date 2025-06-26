@@ -25,6 +25,7 @@ class HRPC {
       const requestEncoding = this._requestEncodings.get(command)
       if (this._requestIsSend(command)) {
         const request = c.decode(requestEncoding, req.data)
+        // eslint-disable-next-line
         const response = await this._handlers[command](request)
         return
       }

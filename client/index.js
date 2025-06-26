@@ -1,6 +1,6 @@
-import HRPC from '../shared/spec/hrpc'
-import { isCodecSupported } from '../shared/codecs'
-import { spawn } from './cross-spawn'
+import HRPC from '../shared/spec/hrpc/index.js'
+import { isCodecSupported } from '../shared/codecs.js'
+import { spawn } from './cross-spawn/index.js'
 
 export class WorkerClient {
   rpc = null

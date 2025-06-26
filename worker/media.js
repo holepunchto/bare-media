@@ -2,7 +2,7 @@ import b4a from 'b4a'
 import fs from 'bare-fs'
 import getMimeType from 'get-mime-type'
 
-import { importCodec } from '../shared/codecs'
+import { importCodec } from '../shared/codecs.js'
 
 export async function createPreview ({ path, maxSize, mimetype = 'image/webp' }) {
   const decoder = await importCodec(getMimeType(path))
