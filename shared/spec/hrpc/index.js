@@ -24,18 +24,17 @@ class HRPC {
       const responseEncoding = this._responseEncodings.get(command)
       const requestEncoding = this._requestEncodings.get(command)
       if (this._requestIsSend(command)) {
-        const request = c.decode(requestEncoding, req.data)
-        // eslint-disable-next-line
-        const response = await this._handlers[command](request)
+        const request = req.data ? c.decode(requestEncoding, req.data) : null
+        await this._handlers[command](request)
         return
       }
       if (!this._requestIsStream(command) && !this._responseIsStream(command)) {
-        const request = c.decode(requestEncoding, req.data)
+        const request = req.data ? c.decode(requestEncoding, req.data) : null
         const response = await this._handlers[command](request)
         req.reply(c.encode(responseEncoding, response))
       }
       if (!this._requestIsStream(command) && this._responseIsStream(command)) {
-        const request = c.decode(requestEncoding, req.data)
+        const request = req.data ? c.decode(requestEncoding, req.data) : null
         const responseStream = new RPCStream(null, null, req.createResponseStream(), responseEncoding)
         responseStream.data = request
         await this._handlers[command](responseStream)
@@ -82,11 +81,11 @@ class HRPC {
     }
   }
 
-  async mediaCreatePreview (args) {
+  async createPreview (args) {
     return this._call('@media/create-preview', args)
   }
 
-  onMediaCreatePreview (responseFn) {
+  onCreatePreview (responseFn) {
     this._handlers['@media/create-preview'] = responseFn
   }
 

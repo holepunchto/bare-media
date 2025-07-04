@@ -13,7 +13,7 @@ npm i keet-worker-compute
 ```js
 import worker from '@holepunchto/keet-worker-compute'
 
-const data = await worker.mediaCreatePreview({ path, maxSize })
+const data = await worker.createPreview({ path, maxSize })
 ```
 
 or manually instantiate one or multiple workers:
@@ -22,7 +22,7 @@ or manually instantiate one or multiple workers:
 import { WorkerClient } from '@holepunchto/keet-worker-compute/client'
 
 const worker = new WorkerClient()
-const data = await worker.mediaCreatePreview({ path, maxSize })
+const data = await worker.createPreview({ path, maxSize })
 ```
 
 > A worker spawns when an operation is requested and it stays running until the parent process is killed. If you need to spawn it earlier it's also possible by calling `worker.run()`. 

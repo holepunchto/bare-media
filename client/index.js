@@ -22,8 +22,8 @@ export class WorkerClient {
     return isCodecSupported(mimetype)
   }
 
-  async mediaCreatePreview (arg) {
+  async createPreview (arg) {
     await this.run()
-    return this.rpc.mediaCreatePreview(arg)
+    return this.rpc.createPreview(arg)
   }
 }

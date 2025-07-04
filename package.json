@@ -23,7 +23,7 @@
     "bare-webp": "^1.0.3",
     "cross-worker": "^1.0.0",
     "get-mime-type": "^1.0.2",
-    "hrpc": "^3.0.0",
+    "hrpc": "^4.0.0",
     "hyperschema": "^1.12.3",
     "uncaughts": "^1.1.1"
   },

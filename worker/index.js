@@ -16,7 +16,7 @@ stream.on('close', () => Bare.exit(0))
 
 const rpc = new HRPC(stream)
 
-rpc.onMediaCreatePreview(media.createPreview)
+rpc.onCreatePreview(media.createPreview)
 
 uncaughts.on((err) => {
   log('Uncaught error:', err)
