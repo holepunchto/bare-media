@@ -4,7 +4,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build-spec": "cd shared && bare ./build-spec.js",
+    "build-spec": "cd shared/spec && bare ./build.js",
     "lint": "standard",
     "lint:fix": "standard --fix",
     "test": "npm run lint && brittle-bare test/index.js"

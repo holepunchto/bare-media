@@ -1,10 +1,8 @@
 import Hyperschema from 'hyperschema'
-import HRPCBuilder from 'hrpc'
 
-const SCHEMA_DIR = './spec/schema'
-const HRPC_DIR = './spec/hrpc'
+import { SCHEMA_DIR } from './constants'
 
-const schema = Hyperschema.from(SCHEMA_DIR)
+export const schema = Hyperschema.from(SCHEMA_DIR)
 const media = schema.namespace('media')
 
 media.register({
@@ -119,18 +117,3 @@ media.register({
     required: true
   }]
 })
-
-Hyperschema.toDisk(schema)
-
-// HRPC
-
-const builder = HRPCBuilder.from(SCHEMA_DIR, HRPC_DIR)
-const ns = builder.namespace('media')
-
-ns.register({
-  name: 'create-preview',
-  request: { name: '@media/create-preview-request', stream: false },
-  response: { name: '@media/create-preview-response', stream: false }
-})
-
-HRPCBuilder.toDisk(builder)
