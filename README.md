@@ -4,6 +4,8 @@
 
 Worker for handling heavy tasks outside Keet's main process
 
+## Install
+
 ```
 npm i keet-worker-compute
 ```
@@ -25,4 +27,10 @@ const worker = new WorkerClient()
 const data = await worker.createPreview({ path, maxSize })
 ```
 
-> A worker spawns when an operation is requested and it stays running until the parent process is killed. If you need to spawn it earlier it's also possible by calling `worker.run()`. 
+> NOTE: A worker spawns when an operation is requested and it stays running until the parent process is killed. If you need to spawn it earlier it's also possible by calling `worker.run()`. 
+
+## API
+
+| Function         | Parameters                    | Return Value            | Description
+|------------------|-------------------------------|-------------------------|-----------------------------------
+| `createPreview`  | `{ path, maxSize, mimetype }` | `{ metadata, preview }` | Create previews from a media file
