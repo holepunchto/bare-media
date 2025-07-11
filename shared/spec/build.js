@@ -17,4 +17,10 @@ ns.register({
   response: { name: '@media/create-preview-response', stream: false }
 })
 
+ns.register({
+  name: 'create-preview-all',
+  request: { name: '@media/create-preview-all-request', stream: false },
+  response: { name: '@media/create-preview-all-response', stream: false }
+})
+
 HRPCBuilder.toDisk(builder)

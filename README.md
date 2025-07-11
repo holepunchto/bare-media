@@ -31,8 +31,9 @@ const data = await worker.createPreview({ path, maxSize })
 
 ## API
 
-| Method           | Parameters                    | Return Value            | Description
-|------------------|-------------------------------|-------------------------|-----------------------------------
-| `createPreview`  | `{ path, maxSize, mimetype }` | `{ metadata, preview }` | Create previews from a media file
+| Method              | Parameters                              | Return Value            | Description
+|---------------------|-----------------------------------------|-------------------------|---------------------------------------
+| `createPreview`     | `{ path, maxSize, mimetype, encoding }` | `{ metadata, preview }` | Create a preview from a media file
+| `createPreviewAll`  | `{ path, maxSize, mimetype }`           | `{ metadata, preview }` | Create all 3 previews from a media file
 
 > See [schema.js](shared/spec/schema.js) for the complete reference of parameters

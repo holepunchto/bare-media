@@ -4,48 +4,54 @@ import getMimeType from 'get-mime-type'
 
 import { importCodec } from '../shared/codecs.js'
 
-export async function createPreview ({ path, maxSize, mimetype = 'image/webp' }) {
-  const decoder = await importCodec(getMimeType(path))
+export async function createPreview ({ path, maxSize, mimetype = 'image/webp', encoding = '' }) {
+  const codec = await importCodec(getMimeType(path))
   const buffer = fs.readFileSync(path)
-  const decoded = decoder.decode(buffer)
-  const { width, height } = decoded
-
-  const dimensions = {
-    small: calcResizedDimensions(width, height, maxSize.small),
-    medium: calcResizedDimensions(width, height, maxSize.medium),
-    large: calcResizedDimensions(width, height, maxSize.large)
-  }
-
-  const { resize } = await import('bare-image-resample')
-  const small = resize(decoded, dimensions.small.width, dimensions.small.height)
-  const medium = resize(decoded, dimensions.medium.width, dimensions.medium.height)
-  const large = resize(decoded, dimensions.large.width, dimensions.large.height)
-
-  const encoder = await importCodec(mimetype)
-  const encoded = {
-    small: encoder.encode(small),
-    medium: encoder.encode(medium),
-    large: encoder.encode(large)
-  }
+  const rgba = codec.decode(buffer)
+  const { width, height } = rgba
 
   return {
     metadata: {
       dimensions: { width, height }
     },
-    preview: {
-      small: {
-        inlined: b4a.toString(encoded.small, 'base64'),
-        metadata: { mimetype, dimensions: dimensions.small }
-      },
-      medium: {
-        inlined: b4a.toString(encoded.medium, 'base64'),
-        metadata: { mimetype, dimensions: dimensions.medium }
-      },
-      large: {
-        buffer: encoded.large,
-        metadata: { mimetype, dimensions: dimensions.large }
-      }
-    }
+    preview: await createPreviewFromRGBA(rgba, maxSize, mimetype, encoding)
+  }
+}
+
+export async function createPreviewAll ({ path, maxSize, mimetype = 'image/webp' }) {
+  const codec = await importCodec(getMimeType(path))
+  const buffer = fs.readFileSync(path)
+  const rgba = codec.decode(buffer)
+  const { width, height } = rgba
+
+  const [small, medium, large] = await Promise.all([
+    createPreviewFromRGBA(rgba, maxSize.small, mimetype, 'base64'),
+    createPreviewFromRGBA(rgba, maxSize.medium, mimetype, 'base64'),
+    createPreviewFromRGBA(rgba, maxSize.large, mimetype)
+  ])
+
+  return {
+    metadata: {
+      dimensions: { width, height }
+    },
+    preview: { small, medium, large }
+  }
+}
+
+async function createPreviewFromRGBA (rgba, maxSize, mimetype = 'image/webp', encoding = '') {
+  const { resize } = await import('bare-image-resample')
+  const dimensions = calcResizedDimensions(rgba.width, rgba.height, maxSize)
+  const resized = resize(rgba, dimensions.width, dimensions.height)
+  const codec = await importCodec(mimetype)
+  const encoded = codec.encode(resized)
+
+  const result = encoding === 'base64'
+    ? { inlined: b4a.toString(encoded, 'base64') }
+    : { buffer: encoded }
+
+  return {
+    ...result,
+    metadata: { mimetype, dimensions }
   }
 }
 

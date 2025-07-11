@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "schema": [
     {
       "id": 0,
@@ -13,6 +13,19 @@
         "stream": false
       },
       "version": 1
+    },
+    {
+      "id": 1,
+      "name": "@media/create-preview-all",
+      "request": {
+        "name": "@media/create-preview-all-request",
+        "stream": false
+      },
+      "response": {
+        "name": "@media/create-preview-all-response",
+        "stream": false
+      },
+      "version": 2
     }
   ]
 }

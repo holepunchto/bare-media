@@ -52,7 +52,7 @@ media.register({
 })
 
 media.register({
-  name: 'preview',
+  name: 'preview-by-size',
   fields: [{
     name: 'small',
     type: '@media/file'
@@ -95,11 +95,15 @@ media.register({
   },
   {
     name: 'maxSize',
-    type: '@media/maxSizePreview',
+    type: 'uint',
     required: true
   },
   {
     name: 'mimetype',
+    type: 'string'
+  },
+  {
+    name: 'encoding',
     type: 'string'
   }]
 })
@@ -113,7 +117,39 @@ media.register({
   },
   {
     name: 'preview',
-    type: '@media/preview',
+    type: '@media/file',
+    required: true
+  }]
+})
+
+media.register({
+  name: 'create-preview-all-request',
+  fields: [{
+    name: 'path',
+    type: 'string',
+    required: true
+  },
+  {
+    name: 'maxSize',
+    type: '@media/maxSizePreview',
+    required: true
+  },
+  {
+    name: 'mimetype',
+    type: 'string'
+  }]
+})
+
+media.register({
+  name: 'create-preview-all-response',
+  fields: [{
+    name: 'metadata',
+    type: '@media/metadata',
+    required: true
+  },
+  {
+    name: 'preview',
+    type: '@media/preview-by-size',
     required: true
   }]
 })

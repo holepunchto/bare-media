@@ -3,9 +3,22 @@ import * as media from '../worker/media.js'
 
 test('media.createPreview()', async t => {
   const path = './test/fixtures/sample.heic'
-  const maxSize = { small: 16, medium: 32, large: 64 }
+  const maxSize = 32
 
   const { metadata, preview } = await media.createPreview({ path, maxSize })
+
+  t.alike(metadata, { dimensions: { width: 200, height: 200 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 32 } })
+
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreviewAll()', async t => {
+  const path = './test/fixtures/sample.heic'
+  const maxSize = { small: 16, medium: 32, large: 64 }
+
+  const { metadata, preview } = await media.createPreviewAll({ path, maxSize })
 
   t.alike(metadata, { dimensions: { width: 200, height: 200 } })
   t.alike(preview.small.metadata, { mimetype: 'image/webp', dimensions: { width: 16, height: 16 } })

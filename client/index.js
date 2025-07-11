@@ -26,4 +26,9 @@ export class WorkerClient {
     await this.run()
     return this.rpc.createPreview(arg)
   }
+
+  async createPreviewAll (arg) {
+    await this.run()
+    return this.rpc.createPreviewAll(arg)
+  }
 }
