@@ -4,7 +4,11 @@ import getMimeType from 'get-mime-type'
 
 import { importCodec } from '../shared/codecs.js'
 
-export async function createPreview ({ path, size, mimetype = 'image/webp', encoding = '' }) {
+const DEFAULT_PREVIEW_MIMETYPE = 'image/webp'
+
+export async function createPreview ({ path, size, mimetype, encoding }) {
+  mimetype = mimetype || DEFAULT_PREVIEW_MIMETYPE
+
   const codec = await importCodec(getMimeType(path))
   const buffer = fs.readFileSync(path)
   const rgba = codec.decode(buffer)
@@ -18,7 +22,9 @@ export async function createPreview ({ path, size, mimetype = 'image/webp', enco
   }
 }
 
-export async function createPreviewAll ({ path, size, mimetype = 'image/webp' }) {
+export async function createPreviewAll ({ path, size, mimetype }) {
+  mimetype = mimetype || DEFAULT_PREVIEW_MIMETYPE
+
   const codec = await importCodec(getMimeType(path))
   const buffer = fs.readFileSync(path)
   const rgba = codec.decode(buffer)
@@ -38,7 +44,9 @@ export async function createPreviewAll ({ path, size, mimetype = 'image/webp' })
   }
 }
 
-async function createPreviewFromRGBA (rgba, size, mimetype = 'image/webp', encoding = '') {
+async function createPreviewFromRGBA (rgba, size, mimetype, encoding) {
+  mimetype = mimetype || DEFAULT_PREVIEW_MIMETYPE
+
   const { resize } = await import('bare-image-resample')
   const dimensions = calcResizedDimensions(rgba.width, rgba.height, size)
   const resized = resize(rgba, dimensions.width, dimensions.height)
