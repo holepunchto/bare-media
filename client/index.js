@@ -9,10 +9,27 @@ export class WorkerClient {
 
   constructor (opts) {
     this.initialize(opts)
+    this.#createMethods()
   }
 
   initialize (opts) {
     this.opts = opts
+  }
+
+  #createMethods () {
+    const methods = ['createPreview', 'createPreviewAll']
+
+    for (const method of methods) {
+      this[method] = async (...args) => {
+        await this.ensureWorker()
+        return this.rpc[method](...args)
+      }
+    }
+  }
+
+  async ensureWorker () {
+    if (this.worker !== null) return
+    await this.run()
   }
 
   async run () {
@@ -31,15 +48,5 @@ export class WorkerClient {
 
   isCodecSupported (mimetype) {
     return isCodecSupported(mimetype)
-  }
-
-  async createPreview (arg) {
-    await this.run()
-    return this.rpc.createPreview(arg)
-  }
-
-  async createPreviewAll (arg) {
-    await this.run()
-    return this.rpc.createPreviewAll(arg)
   }
 }
