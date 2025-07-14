@@ -1,7 +1,14 @@
 import path from 'path'
+import pkg from '../../package.json' with { type: 'json' }
 
-export function spawn (sourcePath) {
-  const normalized = path.normalize(sourcePath)
-  const link = Pear.key ? `${Pear.config.applink}/${normalized}` : path.join(Pear.config.dir, ...normalized.split('/'))
-  return Pear.worker.run(link)
+export async function spawn () {
+  const workerPath = `node_modules/${pkg.name}/worker/index.js`
+
+  const link = Pear.key
+    ? `${Pear.config.applink}/${workerPath}`
+    : path.join(Pear.config.dir, ...workerPath.split('/'))
+
+  return {
+    IPC: Pear.worker.run(link)
+  }
 }

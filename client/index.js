@@ -3,12 +3,23 @@ import { isCodecSupported } from '../shared/codecs.js'
 import { spawn } from './cross-spawn/index.js'
 
 export class WorkerClient {
+  worker = null
   rpc = null
+  opts = null
+
+  constructor (opts) {
+    this.initialize(opts)
+  }
+
+  initialize (opts) {
+    this.opts = opts
+  }
 
   async run () {
-    if (this.rpc !== null) return
+    if (this.worker !== null) return
 
-    const pipe = await spawn('./node_modules/@holepunchto/keet-worker-compute/worker/index.js') // TODO
+    this.worker = await spawn(this.opts)
+    const pipe = this.worker.IPC
 
     pipe.on('end', () => pipe.end())
     pipe.on('close', () => {

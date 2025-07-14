@@ -1,14 +1,9 @@
-import { spawn as pearSpawn } from './pear.js'
-import { spawn as bareKitSpawn } from './bare-kit.js'
+const isPear = typeof Pear !== 'undefined'
 
-// TODO
-const isPear = true
-const isBareKit = false
+export async function spawn (opts) {
+  const lib = isPear
+    ? await import('./pear')
+    : await import('./bare-kit')
 
-export function spawn (sourcePath) {
-  if (isPear) {
-    return pearSpawn(sourcePath)
-  } else if (isBareKit) {
-    return bareKitSpawn(sourcePath)
-  }
+  return lib.spawn(opts)
 }

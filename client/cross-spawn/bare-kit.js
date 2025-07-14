@@ -1,5 +1,16 @@
-export async function spawn (sourcePath) {
-  const { Worklet } = await import('react-native-bare-kit')
-  // TODO
-  console.log(Worklet)
+const { Worklet } = require('react-native-bare-kit')
+
+export const spawn = async ({ requireSource, storagePath, buildVariant, deviceId, devMode }) => {
+  const source = requireSource()
+
+  const worklet = new Worklet()
+
+  await worklet.start('keet:/main.bundle', source, [
+    storagePath,
+    buildVariant,
+    deviceId,
+    devMode
+  ])
+
+  return worklet
 }
