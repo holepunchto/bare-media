@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 1,
   "schema": [
     {
       "name": "dimensions",
@@ -91,7 +91,7 @@
       ]
     },
     {
-      "name": "maxSizePreview",
+      "name": "sizePreview",
       "namespace": "media",
       "compact": false,
       "flagsPosition": -1,
@@ -129,7 +129,7 @@
           "version": 1
         },
         {
-          "name": "maxSize",
+          "name": "size",
           "required": true,
           "type": "uint",
           "version": 1
@@ -142,7 +142,7 @@
         {
           "name": "encoding",
           "type": "string",
-          "version": 2
+          "version": 1
         }
       ]
     },
@@ -179,9 +179,9 @@
           "version": 1
         },
         {
-          "name": "maxSize",
+          "name": "size",
           "required": true,
-          "type": "@media/maxSizePreview",
+          "type": "@media/sizePreview",
           "version": 1
         },
         {

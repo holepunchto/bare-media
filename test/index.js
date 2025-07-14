@@ -3,9 +3,9 @@ import * as media from '../worker/media.js'
 
 test('media.createPreview()', async t => {
   const path = './test/fixtures/sample.heic'
-  const maxSize = 32
+  const size = 32
 
-  const { metadata, preview } = await media.createPreview({ path, maxSize })
+  const { metadata, preview } = await media.createPreview({ path, size })
 
   t.alike(metadata, { dimensions: { width: 200, height: 200 } })
   t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 32 } })
@@ -16,9 +16,9 @@ test('media.createPreview()', async t => {
 
 test('media.createPreviewAll()', async t => {
   const path = './test/fixtures/sample.heic'
-  const maxSize = { small: 16, medium: 32, large: 64 }
+  const size = { small: 16, medium: 32, large: 64 }
 
-  const { metadata, preview } = await media.createPreviewAll({ path, maxSize })
+  const { metadata, preview } = await media.createPreviewAll({ path, size })
 
   t.alike(metadata, { dimensions: { width: 200, height: 200 } })
   t.alike(preview.small.metadata, { mimetype: 'image/webp', dimensions: { width: 16, height: 16 } })

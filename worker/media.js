@@ -4,7 +4,7 @@ import getMimeType from 'get-mime-type'
 
 import { importCodec } from '../shared/codecs.js'
 
-export async function createPreview ({ path, maxSize, mimetype = 'image/webp', encoding = '' }) {
+export async function createPreview ({ path, size, mimetype = 'image/webp', encoding = '' }) {
   const codec = await importCodec(getMimeType(path))
   const buffer = fs.readFileSync(path)
   const rgba = codec.decode(buffer)
@@ -14,20 +14,20 @@ export async function createPreview ({ path, maxSize, mimetype = 'image/webp', e
     metadata: {
       dimensions: { width, height }
     },
-    preview: await createPreviewFromRGBA(rgba, maxSize, mimetype, encoding)
+    preview: await createPreviewFromRGBA(rgba, size, mimetype, encoding)
   }
 }
 
-export async function createPreviewAll ({ path, maxSize, mimetype = 'image/webp' }) {
+export async function createPreviewAll ({ path, size, mimetype = 'image/webp' }) {
   const codec = await importCodec(getMimeType(path))
   const buffer = fs.readFileSync(path)
   const rgba = codec.decode(buffer)
   const { width, height } = rgba
 
   const [small, medium, large] = await Promise.all([
-    createPreviewFromRGBA(rgba, maxSize.small, mimetype, 'base64'),
-    createPreviewFromRGBA(rgba, maxSize.medium, mimetype, 'base64'),
-    createPreviewFromRGBA(rgba, maxSize.large, mimetype)
+    createPreviewFromRGBA(rgba, size.small, mimetype, 'base64'),
+    createPreviewFromRGBA(rgba, size.medium, mimetype, 'base64'),
+    createPreviewFromRGBA(rgba, size.large, mimetype)
   ])
 
   return {
@@ -38,9 +38,9 @@ export async function createPreviewAll ({ path, maxSize, mimetype = 'image/webp'
   }
 }
 
-async function createPreviewFromRGBA (rgba, maxSize, mimetype = 'image/webp', encoding = '') {
+async function createPreviewFromRGBA (rgba, size, mimetype = 'image/webp', encoding = '') {
   const { resize } = await import('bare-image-resample')
-  const dimensions = calcResizedDimensions(rgba.width, rgba.height, maxSize)
+  const dimensions = calcResizedDimensions(rgba.width, rgba.height, size)
   const resized = resize(rgba, dimensions.width, dimensions.height)
   const codec = await importCodec(mimetype)
   const encoded = codec.encode(resized)

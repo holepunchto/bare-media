@@ -68,7 +68,7 @@ media.register({
 })
 
 media.register({
-  name: 'maxSizePreview',
+  name: 'sizePreview',
   fields: [{
     name: 'small',
     type: 'uint',
@@ -94,7 +94,7 @@ media.register({
     required: true
   },
   {
-    name: 'maxSize',
+    name: 'size',
     type: 'uint',
     required: true
   },
@@ -130,8 +130,8 @@ media.register({
     required: true
   },
   {
-    name: 'maxSize',
-    type: '@media/maxSizePreview',
+    name: 'size',
+    type: '@media/sizePreview',
     required: true
   },
   {
