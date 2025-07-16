@@ -1,5 +1,5 @@
 {
-  "name": "@holepunchto/keet-worker-compute",
+  "name": "@holepunchto/keet-compute",
   "version": "0.1.2",
   "main": "index.js",
   "type": "module",

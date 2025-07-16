@@ -1,4 +1,4 @@
-# keet-worker-compute
+# keet-compute
 
 (WIP)
 
@@ -7,13 +7,13 @@ Worker for handling heavy tasks outside Keet's main process
 ## Install
 
 ```
-npm i keet-worker-compute
+npm i keet-compute
 ```
 
 ## Usage
 
 ```js
-import worker from '@holepunchto/keet-worker-compute'
+import worker from '@holepunchto/keet-compute'
 
 const data = await worker.createPreview({ path, mimetype, size })
 ```
@@ -21,7 +21,7 @@ const data = await worker.createPreview({ path, mimetype, size })
 or manually instantiate one or multiple workers:
 
 ```js
-import { WorkerClient } from '@holepunchto/keet-worker-compute/client'
+import { WorkerClient } from '@holepunchto/keet-compute/client'
 
 const worker = new WorkerClient()
 const data = await worker.createPreview({ path, mimetype, size })
