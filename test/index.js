@@ -14,6 +14,18 @@ test('media.createPreview()', async t => {
   t.absent(preview.inlined)
 })
 
+test('media.createPreview() without resizing', async t => {
+  const path = './test/fixtures/sample.heic'
+
+  const { metadata, preview } = await media.createPreview({ path })
+
+  t.alike(metadata, { dimensions: { width: 200, height: 200 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 200, height: 200 } })
+
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
 test('media.createPreviewAll()', async t => {
   const path = './test/fixtures/sample.heic'
   const size = { small: 16, medium: 32, large: 64 }

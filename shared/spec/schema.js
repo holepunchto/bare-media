@@ -95,8 +95,7 @@ media.register({
   },
   {
     name: 'size',
-    type: 'uint',
-    required: true
+    type: 'uint'
   },
   {
     name: 'mimetype',

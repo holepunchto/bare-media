@@ -120,7 +120,7 @@
       "name": "create-preview-request",
       "namespace": "media",
       "compact": false,
-      "flagsPosition": 2,
+      "flagsPosition": 1,
       "fields": [
         {
           "name": "path",
@@ -130,7 +130,6 @@
         },
         {
           "name": "size",
-          "required": true,
           "type": "uint",
           "version": 1
         },

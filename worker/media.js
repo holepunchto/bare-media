@@ -46,12 +46,22 @@ export async function createPreviewAll ({ path, size, mimetype }) {
 
 async function createPreviewFromRGBA (rgba, size, mimetype, encoding) {
   mimetype = mimetype || DEFAULT_PREVIEW_MIMETYPE
+  size = size || null
 
-  const { resize } = await import('bare-image-resample')
-  const dimensions = calcResizedDimensions(rgba.width, rgba.height, size)
-  const resized = resize(rgba, dimensions.width, dimensions.height)
+  const { width, height } = rgba
+  let maybeResized, dimensions
+
+  if (size !== null) {
+    const { resize } = await import('bare-image-resample')
+    dimensions = calcResizedDimensions(width, height, size)
+    maybeResized = resize(rgba, dimensions.width, dimensions.height)
+  } else {
+    dimensions = { width, height }
+    maybeResized = rgba
+  }
+
   const codec = await importCodec(mimetype)
-  const encoded = codec.encode(resized)
+  const encoded = codec.encode(maybeResized)
 
   const result = encoding === 'base64'
     ? { inlined: b4a.toString(encoded, 'base64') }

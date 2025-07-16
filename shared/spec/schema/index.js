@@ -169,34 +169,34 @@ const encoding4 = {
 const encoding5 = {
   preencode (state, m) {
     c.string.preencode(state, m.path)
-    c.uint.preencode(state, m.size)
-    state.end++ // max flag is 2 so always one byte
+    state.end++ // max flag is 4 so always one byte
 
+    if (m.size) c.uint.preencode(state, m.size)
     if (m.mimetype) c.string.preencode(state, m.mimetype)
     if (m.encoding) c.string.preencode(state, m.encoding)
   },
   encode (state, m) {
     const flags =
-      (m.mimetype ? 1 : 0) |
-      (m.encoding ? 2 : 0)
+      (m.size ? 1 : 0) |
+      (m.mimetype ? 2 : 0) |
+      (m.encoding ? 4 : 0)
 
     c.string.encode(state, m.path)
-    c.uint.encode(state, m.size)
     c.uint.encode(state, flags)
 
+    if (m.size) c.uint.encode(state, m.size)
     if (m.mimetype) c.string.encode(state, m.mimetype)
     if (m.encoding) c.string.encode(state, m.encoding)
   },
   decode (state) {
     const r0 = c.string.decode(state)
-    const r1 = c.uint.decode(state)
     const flags = c.uint.decode(state)
 
     return {
       path: r0,
-      size: r1,
-      mimetype: (flags & 1) !== 0 ? c.string.decode(state) : null,
-      encoding: (flags & 2) !== 0 ? c.string.decode(state) : null
+      size: (flags & 1) !== 0 ? c.uint.decode(state) : 0,
+      mimetype: (flags & 2) !== 0 ? c.string.decode(state) : null,
+      encoding: (flags & 4) !== 0 ? c.string.decode(state) : null
     }
   }
 }
