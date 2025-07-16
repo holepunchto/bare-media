@@ -21,19 +21,16 @@ export class WorkerClient {
 
     for (const method of methods) {
       this[method] = async (...args) => {
-        await this.ensureWorker()
+        await this.run()
         return this.rpc[method](...args)
       }
     }
   }
 
-  async ensureWorker () {
-    if (this.worker !== null) return
-    await this.run()
-  }
-
   async run () {
-    if (this.worker !== null) return
+    if (this.worker !== null && this.rpc !== null) {
+      return
+    }
 
     this.worker = await spawn(this.opts)
     const pipe = this.worker.IPC
