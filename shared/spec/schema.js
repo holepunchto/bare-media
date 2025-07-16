@@ -94,11 +94,15 @@ media.register({
     required: true
   },
   {
+    name: 'mimetype',
+    type: 'string'
+  },
+  {
     name: 'size',
     type: 'uint'
   },
   {
-    name: 'mimetype',
+    name: 'format',
     type: 'string'
   },
   {
@@ -129,12 +133,16 @@ media.register({
     required: true
   },
   {
+    name: 'mimetype',
+    type: 'string'
+  },
+  {
     name: 'size',
     type: '@media/sizePreview',
     required: true
   },
   {
-    name: 'mimetype',
+    name: 'format',
     type: 'string'
   }]
 })

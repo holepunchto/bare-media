@@ -1,15 +1,14 @@
 import b4a from 'b4a'
 import fs from 'bare-fs'
-import getMimeType from 'get-mime-type'
 
 import { importCodec } from '../shared/codecs.js'
 
-const DEFAULT_PREVIEW_MIMETYPE = 'image/webp'
+const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 
-export async function createPreview ({ path, size, mimetype, encoding }) {
-  mimetype = mimetype || DEFAULT_PREVIEW_MIMETYPE
+export async function createPreview ({ path, mimetype, size, format, encoding }) {
+  format = format || DEFAULT_PREVIEW_FORMAT
 
-  const codec = await importCodec(getMimeType(path))
+  const codec = await importCodec(mimetype)
   const buffer = fs.readFileSync(path)
   const rgba = codec.decode(buffer)
   const { width, height } = rgba
@@ -18,22 +17,22 @@ export async function createPreview ({ path, size, mimetype, encoding }) {
     metadata: {
       dimensions: { width, height }
     },
-    preview: await createPreviewFromRGBA(rgba, size, mimetype, encoding)
+    preview: await createPreviewFromRGBA(rgba, size, format, encoding)
   }
 }
 
-export async function createPreviewAll ({ path, size, mimetype }) {
-  mimetype = mimetype || DEFAULT_PREVIEW_MIMETYPE
+export async function createPreviewAll ({ path, mimetype, size, format }) {
+  format = format || DEFAULT_PREVIEW_FORMAT
 
-  const codec = await importCodec(getMimeType(path))
+  const codec = await importCodec(mimetype)
   const buffer = fs.readFileSync(path)
   const rgba = codec.decode(buffer)
   const { width, height } = rgba
 
   const [small, medium, large] = await Promise.all([
-    createPreviewFromRGBA(rgba, size.small, mimetype, 'base64'),
-    createPreviewFromRGBA(rgba, size.medium, mimetype, 'base64'),
-    createPreviewFromRGBA(rgba, size.large, mimetype)
+    createPreviewFromRGBA(rgba, size.small, format, 'base64'),
+    createPreviewFromRGBA(rgba, size.medium, format, 'base64'),
+    createPreviewFromRGBA(rgba, size.large, format)
   ])
 
   return {
@@ -44,8 +43,8 @@ export async function createPreviewAll ({ path, size, mimetype }) {
   }
 }
 
-async function createPreviewFromRGBA (rgba, size, mimetype, encoding) {
-  mimetype = mimetype || DEFAULT_PREVIEW_MIMETYPE
+async function createPreviewFromRGBA (rgba, size, format, encoding) {
+  format = format || DEFAULT_PREVIEW_FORMAT
   size = size || null
 
   const { width, height } = rgba
@@ -60,7 +59,7 @@ async function createPreviewFromRGBA (rgba, size, mimetype, encoding) {
     maybeResized = rgba
   }
 
-  const codec = await importCodec(mimetype)
+  const codec = await importCodec(format)
   const encoded = codec.encode(maybeResized)
 
   const result = encoding === 'base64'
@@ -69,7 +68,7 @@ async function createPreviewFromRGBA (rgba, size, mimetype, encoding) {
 
   return {
     ...result,
-    metadata: { mimetype, dimensions }
+    metadata: { mimetype: format, dimensions }
   }
 }
 

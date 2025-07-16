@@ -129,12 +129,17 @@
           "version": 1
         },
         {
+          "name": "mimetype",
+          "type": "string",
+          "version": 1
+        },
+        {
           "name": "size",
           "type": "uint",
           "version": 1
         },
         {
-          "name": "mimetype",
+          "name": "format",
           "type": "string",
           "version": 1
         },
@@ -169,11 +174,16 @@
       "name": "create-preview-all-request",
       "namespace": "media",
       "compact": false,
-      "flagsPosition": 2,
+      "flagsPosition": 1,
       "fields": [
         {
           "name": "path",
           "required": true,
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "mimetype",
           "type": "string",
           "version": 1
         },
@@ -184,7 +194,7 @@
           "version": 1
         },
         {
-          "name": "mimetype",
+          "name": "format",
           "type": "string",
           "version": 1
         }
