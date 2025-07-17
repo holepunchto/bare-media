@@ -4,6 +4,8 @@ import Hyperschema from 'hyperschema'
 import { schema } from './schema'
 import { SCHEMA_DIR, HRPC_DIR } from './constants'
 
+// Schema
+
 Hyperschema.toDisk(schema)
 
 // HRPC

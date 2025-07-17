@@ -30,6 +30,12 @@
     "brittle": "^3.16.3",
     "standard": "^17.1.2"
   },
+  "files": [
+    "client",
+    "shared",
+    "worker",
+    "index.js"
+  ],
   "standard": {
     "globals": [
       "Bare",

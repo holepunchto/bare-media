@@ -9,15 +9,19 @@ export class WorkerClient {
 
   constructor (opts) {
     this.initialize(opts)
-    this.#createMethods()
+    this.#attachMethods()
   }
 
   initialize (opts) {
-    this.opts = opts
+    const sourcePath = 'node_modules/@holepunchto/keet-compute/worker/index.js'
+    this.opts = { sourcePath, ...opts }
   }
 
-  #createMethods () {
-    const methods = ['createPreview', 'createPreviewAll']
+  #attachMethods () {
+    const methods = [
+      'createPreview',
+      'createPreviewAll'
+    ]
 
     for (const method of methods) {
       this[method] = async (...args) => {
@@ -28,19 +32,17 @@ export class WorkerClient {
   }
 
   async run () {
-    if (this.worker !== null && this.rpc !== null) {
+    if (this.worker !== null) {
       return
     }
 
     this.worker = await spawn(this.opts)
-    const pipe = this.worker.IPC
+    const ipc = this.worker.IPC
 
-    pipe.on('end', () => pipe.end())
-    pipe.on('close', () => {
-      this.rpc = null
-    })
+    ipc.on('end', () => ipc.end())
+    ipc.on('close', () => this.onClose?.())
 
-    this.rpc = new HRPC(pipe)
+    this.rpc = new HRPC(ipc)
   }
 
   isCodecSupported (mimetype) {
