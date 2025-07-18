@@ -98,7 +98,11 @@ media.register({
     type: 'string'
   },
   {
-    name: 'size',
+    name: 'maxWidth',
+    type: 'uint'
+  },
+  {
+    name: 'maxHeight',
     type: 'uint'
   },
   {
@@ -137,7 +141,12 @@ media.register({
     type: 'string'
   },
   {
-    name: 'size',
+    name: 'maxWidth',
+    type: '@media/sizePreview',
+    required: true
+  },
+  {
+    name: 'maxHeight',
     type: '@media/sizePreview',
     required: true
   },

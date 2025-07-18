@@ -5,7 +5,7 @@ import { importCodec } from '../shared/codecs.js'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 
-export async function createPreview ({ path, mimetype, size, format, encoding }) {
+export async function createPreview ({ path, mimetype, maxWidth, maxHeight, format, encoding }) {
   format = format || DEFAULT_PREVIEW_FORMAT
 
   const codec = await importCodec(mimetype)
@@ -17,11 +17,11 @@ export async function createPreview ({ path, mimetype, size, format, encoding })
     metadata: {
       dimensions: { width, height }
     },
-    preview: await createPreviewFromRGBA(rgba, size, format, encoding)
+    preview: await createPreviewFromRGBA(rgba, maxWidth, maxHeight, format, encoding)
   }
 }
 
-export async function createPreviewAll ({ path, mimetype, size, format }) {
+export async function createPreviewAll ({ path, mimetype, maxWidth, maxHeight, format }) {
   format = format || DEFAULT_PREVIEW_FORMAT
 
   const codec = await importCodec(mimetype)
@@ -30,9 +30,9 @@ export async function createPreviewAll ({ path, mimetype, size, format }) {
   const { width, height } = rgba
 
   const [small, medium, large] = await Promise.all([
-    createPreviewFromRGBA(rgba, size.small, format, 'base64'),
-    createPreviewFromRGBA(rgba, size.medium, format, 'base64'),
-    createPreviewFromRGBA(rgba, size.large, format)
+    createPreviewFromRGBA(rgba, maxWidth.small, maxHeight.small, format, 'base64'),
+    createPreviewFromRGBA(rgba, maxWidth.medium, maxHeight.medium, format, 'base64'),
+    createPreviewFromRGBA(rgba, maxWidth.large, maxHeight.large, format)
   ])
 
   return {
@@ -43,16 +43,15 @@ export async function createPreviewAll ({ path, mimetype, size, format }) {
   }
 }
 
-async function createPreviewFromRGBA (rgba, size, format, encoding) {
+async function createPreviewFromRGBA (rgba, maxWidth, maxHeight, format, encoding) {
   format = format || DEFAULT_PREVIEW_FORMAT
-  size = size || null
 
   const { width, height } = rgba
   let maybeResized, dimensions
 
-  if (size !== null) {
+  if (maxWidth && maxHeight && width > maxWidth && height > maxHeight) {
     const { resize } = await import('bare-image-resample')
-    dimensions = calcResizedDimensions(width, height, size)
+    dimensions = calcDimensions(width, height, maxWidth, maxHeight)
     maybeResized = resize(rgba, dimensions.width, dimensions.height)
   } else {
     dimensions = { width, height }
@@ -72,21 +71,17 @@ async function createPreviewFromRGBA (rgba, size, format, encoding) {
   }
 }
 
-function calcResizedDimensions (width, height, max) {
-  const dimensions = {}
-
-  if (width > max || height > max) {
-    if (width > height) {
-      dimensions.width = max
-      dimensions.height = Math.ceil((max / width) * height)
-    } else {
-      dimensions.width = Math.ceil((max / height) * width)
-      dimensions.height = max
-    }
-  } else {
-    dimensions.width = width
-    dimensions.height = height
+function calcDimensions (width, height, maxWidth, maxHeight) {
+  if (width <= maxWidth && height <= maxHeight) {
+    return { width, height }
   }
 
-  return dimensions
+  const widthRatio = maxWidth / width
+  const heightRatio = maxHeight / height
+  const ratio = Math.min(widthRatio, heightRatio)
+
+  return {
+    width: Math.round(width * ratio),
+    height: Math.round(height * ratio)
+  }
 }

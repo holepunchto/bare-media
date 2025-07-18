@@ -134,7 +134,12 @@
           "version": 1
         },
         {
-          "name": "size",
+          "name": "maxWidth",
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "maxHeight",
           "type": "uint",
           "version": 1
         },
@@ -188,7 +193,13 @@
           "version": 1
         },
         {
-          "name": "size",
+          "name": "maxWidth",
+          "required": true,
+          "type": "@media/sizePreview",
+          "version": 1
+        },
+        {
+          "name": "maxHeight",
           "required": true,
           "type": "@media/sizePreview",
           "version": 1

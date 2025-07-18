@@ -169,25 +169,28 @@ const encoding4 = {
 const encoding5 = {
   preencode (state, m) {
     c.string.preencode(state, m.path)
-    state.end++ // max flag is 8 so always one byte
+    state.end++ // max flag is 16 so always one byte
 
     if (m.mimetype) c.string.preencode(state, m.mimetype)
-    if (m.size) c.uint.preencode(state, m.size)
+    if (m.maxWidth) c.uint.preencode(state, m.maxWidth)
+    if (m.maxHeight) c.uint.preencode(state, m.maxHeight)
     if (m.format) c.string.preencode(state, m.format)
     if (m.encoding) c.string.preencode(state, m.encoding)
   },
   encode (state, m) {
     const flags =
       (m.mimetype ? 1 : 0) |
-      (m.size ? 2 : 0) |
-      (m.format ? 4 : 0) |
-      (m.encoding ? 8 : 0)
+      (m.maxWidth ? 2 : 0) |
+      (m.maxHeight ? 4 : 0) |
+      (m.format ? 8 : 0) |
+      (m.encoding ? 16 : 0)
 
     c.string.encode(state, m.path)
     c.uint.encode(state, flags)
 
     if (m.mimetype) c.string.encode(state, m.mimetype)
-    if (m.size) c.uint.encode(state, m.size)
+    if (m.maxWidth) c.uint.encode(state, m.maxWidth)
+    if (m.maxHeight) c.uint.encode(state, m.maxHeight)
     if (m.format) c.string.encode(state, m.format)
     if (m.encoding) c.string.encode(state, m.encoding)
   },
@@ -198,9 +201,10 @@ const encoding5 = {
     return {
       path: r0,
       mimetype: (flags & 1) !== 0 ? c.string.decode(state) : null,
-      size: (flags & 2) !== 0 ? c.uint.decode(state) : 0,
-      format: (flags & 4) !== 0 ? c.string.decode(state) : null,
-      encoding: (flags & 8) !== 0 ? c.string.decode(state) : null
+      maxWidth: (flags & 2) !== 0 ? c.uint.decode(state) : 0,
+      maxHeight: (flags & 4) !== 0 ? c.uint.decode(state) : 0,
+      format: (flags & 8) !== 0 ? c.string.decode(state) : null,
+      encoding: (flags & 16) !== 0 ? c.string.decode(state) : null
     }
   }
 }
@@ -231,8 +235,10 @@ const encoding6 = {
   }
 }
 
-// @media/create-preview-all-request.size
+// @media/create-preview-all-request.maxWidth
 const encoding7_2 = c.frame(encoding4)
+// @media/create-preview-all-request.maxHeight
+const encoding7_3 = encoding7_2
 
 // @media/create-preview-all-request
 const encoding7 = {
@@ -241,7 +247,8 @@ const encoding7 = {
     state.end++ // max flag is 2 so always one byte
 
     if (m.mimetype) c.string.preencode(state, m.mimetype)
-    encoding7_2.preencode(state, m.size)
+    encoding7_2.preencode(state, m.maxWidth)
+    encoding7_3.preencode(state, m.maxHeight)
     if (m.format) c.string.preencode(state, m.format)
   },
   encode (state, m) {
@@ -253,7 +260,8 @@ const encoding7 = {
     c.uint.encode(state, flags)
 
     if (m.mimetype) c.string.encode(state, m.mimetype)
-    encoding7_2.encode(state, m.size)
+    encoding7_2.encode(state, m.maxWidth)
+    encoding7_3.encode(state, m.maxHeight)
     if (m.format) c.string.encode(state, m.format)
   },
   decode (state) {
@@ -263,7 +271,8 @@ const encoding7 = {
     return {
       path: r0,
       mimetype: (flags & 1) !== 0 ? c.string.decode(state) : null,
-      size: encoding7_2.decode(state),
+      maxWidth: encoding7_2.decode(state),
+      maxHeight: encoding7_3.decode(state),
       format: (flags & 2) !== 0 ? c.string.decode(state) : null
     }
   }
