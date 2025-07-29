@@ -20,7 +20,8 @@ export class WorkerClient {
   #attachMethods () {
     const methods = [
       'createPreview',
-      'createPreviewAll'
+      'createPreviewAll',
+      'decodeImage'
     ]
 
     for (const method of methods) {

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "schema": [
     {
       "name": "dimensions",
@@ -228,6 +228,43 @@
           "required": true,
           "type": "@media/preview-by-size",
           "version": 1
+        }
+      ]
+    },
+    {
+      "name": "decode-image-request",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 1,
+      "fields": [
+        {
+          "name": "httpLink",
+          "required": true,
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "mimetype",
+          "type": "string",
+          "version": 2
+        }
+      ]
+    },
+    {
+      "name": "decode-image-response",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "metadata",
+          "type": "@media/metadata",
+          "version": 2
+        },
+        {
+          "name": "data",
+          "type": "buffer",
+          "version": 2
         }
       ]
     }

@@ -169,3 +169,28 @@ media.register({
     required: true
   }]
 })
+
+media.register({
+  name: 'decode-image-request',
+  fields: [{
+    name: 'httpLink',
+    type: 'string',
+    required: true
+  },
+  {
+    name: 'mimetype',
+    type: 'string'
+  }]
+})
+
+media.register({
+  name: 'decode-image-response',
+  fields: [{
+    name: 'metadata',
+    type: '@media/metadata'
+  },
+  {
+    name: 'data',
+    type: 'buffer'
+  }]
+})
