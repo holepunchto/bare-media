@@ -25,4 +25,10 @@ ns.register({
   response: { name: '@media/create-preview-all-response', stream: false }
 })
 
+ns.register({
+  name: 'decode-image',
+  request: { name: '@media/decode-image-request', stream: false },
+  response: { name: '@media/decode-image-response', stream: false }
+})
+
 HRPCBuilder.toDisk(builder)

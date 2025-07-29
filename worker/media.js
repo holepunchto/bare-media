@@ -1,5 +1,6 @@
 import b4a from 'b4a'
 import fs from 'bare-fs'
+import fetch from 'bare-fetch'
 
 import { importCodec } from '../shared/codecs.js'
 import { calculateFitDimensions } from './util'
@@ -41,6 +42,22 @@ export async function createPreviewAll ({ path, mimetype, maxWidth, maxHeight, f
       dimensions: { width, height }
     },
     preview: { small, medium, large }
+  }
+}
+
+export async function decodeImage ({ httpLink, mimetype }) {
+  const response = await fetch(httpLink)
+  const buffer = await response.buffer()
+
+  const codec = await importCodec(mimetype)
+  const rgba = codec.decode(buffer)
+  const { width, height, data } = rgba
+
+  return {
+    metadata: {
+      dimensions: { width, height }
+    },
+    data
   }
 }
 

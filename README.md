@@ -44,5 +44,6 @@ worker.onClose = () => {
 |---------------------|---------------------------------------------------------|---------------------|----------------------------------------
 | `createPreview`     | `path, mimetype, maxWidth, maxHeight, format, encoding` | `metadata, preview` | Create a preview from a media file
 | `createPreviewAll`  | `path, mimetype, maxWidth, maxHeight, format`           | `metadata, preview` | Create all 3 previews from a media file
+| `decodeImage`       | `httpLink, mimetype`                                    | `buffer`            | Decode an image to RGBA
 
 > See [schema.js](shared/spec/schema.js) for the complete reference of parameters
