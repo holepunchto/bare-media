@@ -50,7 +50,7 @@ async function createPreviewFromRGBA (rgba, maxWidth, maxHeight, format, encodin
   const { width, height } = rgba
   let maybeResized, dimensions
 
-  if (maxWidth && maxHeight && width > maxWidth && height > maxHeight) {
+  if (maxWidth && maxHeight && (width > maxWidth || height > maxHeight)) {
     const { resize } = await import('bare-image-resample')
     dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
     maybeResized = resize(rgba, dimensions.width, dimensions.height)
