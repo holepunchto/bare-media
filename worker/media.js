@@ -2,6 +2,7 @@ import b4a from 'b4a'
 import fs from 'bare-fs'
 
 import { importCodec } from '../shared/codecs.js'
+import { calculateFitDimensions } from './util'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 
@@ -51,7 +52,7 @@ async function createPreviewFromRGBA (rgba, maxWidth, maxHeight, format, encodin
 
   if (maxWidth && maxHeight && width > maxWidth && height > maxHeight) {
     const { resize } = await import('bare-image-resample')
-    dimensions = calcDimensions(width, height, maxWidth, maxHeight)
+    dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
     maybeResized = resize(rgba, dimensions.width, dimensions.height)
   } else {
     dimensions = { width, height }
@@ -68,20 +69,5 @@ async function createPreviewFromRGBA (rgba, maxWidth, maxHeight, format, encodin
   return {
     ...result,
     metadata: { mimetype: format, dimensions }
-  }
-}
-
-function calcDimensions (width, height, maxWidth, maxHeight) {
-  if (width <= maxWidth && height <= maxHeight) {
-    return { width, height }
-  }
-
-  const widthRatio = maxWidth / width
-  const heightRatio = maxHeight / height
-  const ratio = Math.min(widthRatio, heightRatio)
-
-  return {
-    width: Math.round(width * ratio),
-    height: Math.round(height * ratio)
   }
 }

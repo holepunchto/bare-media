@@ -4,7 +4,7 @@ import uncaughts from 'uncaughts'
 import HRPC from '../shared/spec/hrpc'
 
 import * as media from './media'
-import { log } from './log'
+import { log } from './util'
 
 log('Worker started 🚀')
 
