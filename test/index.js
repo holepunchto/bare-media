@@ -57,9 +57,9 @@ test('media.createPreview() of an animated webp', async t => {
   const maxHeight = 32
 
   const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
+
   t.alike(metadata, { dimensions: { width: 476, height: 280 } })
   t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 19 } })
-
   t.ok(Buffer.isBuffer(preview.buffer))
   t.absent(preview.inlined)
 })
