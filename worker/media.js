@@ -7,12 +7,13 @@ import { calculateFitDimensions } from './util'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 
+const animatableMimetypes = ['image/webp']
+
 export async function createPreview ({ path, mimetype, maxWidth, maxHeight, format, encoding }) {
   format = format || DEFAULT_PREVIEW_FORMAT
 
-  const codec = await importCodec(mimetype)
   const buffer = fs.readFileSync(path)
-  const rgba = codec.decode(buffer)
+  const rgba = await decodeImageToRGBA(buffer, mimetype)
   const { width, height } = rgba
 
   return {
@@ -26,9 +27,8 @@ export async function createPreview ({ path, mimetype, maxWidth, maxHeight, form
 export async function createPreviewAll ({ path, mimetype, maxWidth, maxHeight, format }) {
   format = format || DEFAULT_PREVIEW_FORMAT
 
-  const codec = await importCodec(mimetype)
   const buffer = fs.readFileSync(path)
-  const rgba = codec.decode(buffer)
+  const rgba = await decodeImageToRGBA(buffer, mimetype)
   const { width, height } = rgba
 
   const [small, medium, large] = await Promise.all([
@@ -45,12 +45,11 @@ export async function createPreviewAll ({ path, mimetype, maxWidth, maxHeight, f
   }
 }
 
-export async function decodeImage ({ httpLink, mimetype }) {
+export async function decodeImage ({ path, httpLink, mimetype }) {
   const response = await fetch(httpLink)
   const buffer = await response.buffer()
 
-  const codec = await importCodec(mimetype)
-  const rgba = codec.decode(buffer)
+  const rgba = await decodeImageToRGBA(buffer, mimetype)
   const { width, height, data } = rgba
 
   return {
@@ -59,6 +58,22 @@ export async function decodeImage ({ httpLink, mimetype }) {
     },
     data
   }
+}
+
+async function decodeImageToRGBA (buffer, mimetype) {
+  let rgba
+
+  const codec = await importCodec(mimetype)
+
+  if (animatableMimetypes.includes(mimetype)) {
+    const { frames, width, height } = codec.decodeAnimated(buffer)
+    const { data } = frames.next().value
+    rgba = { width, height, data }
+  } else {
+    rgba = codec.decode(buffer)
+  }
+
+  return rgba
 }
 
 async function createPreviewFromRGBA (rgba, maxWidth, maxHeight, format, encoding) {
