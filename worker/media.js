@@ -45,7 +45,7 @@ export async function createPreviewAll ({ path, mimetype, maxWidth, maxHeight, f
   }
 }
 
-export async function decodeImage ({ path, httpLink, mimetype }) {
+export async function decodeImage ({ httpLink, mimetype }) {
   const response = await fetch(httpLink)
   const buffer = await response.buffer()
 
