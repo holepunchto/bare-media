@@ -18,8 +18,8 @@ test('media.createPreview()', async t => {
 
   const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
 
-  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 25 } })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.absent(preview.inlined)
 })
@@ -32,8 +32,8 @@ test('media.createPreview() does not upscale images', async t => {
 
   const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
 
-  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 150, height: 120 } })
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 152, height: 120 } })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.absent(preview.inlined)
 })
@@ -44,8 +44,8 @@ test('media.createPreview() without resizing', async t => {
 
   const { metadata, preview } = await media.createPreview({ path, mimetype })
 
-  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 150, height: 120 } })
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 152, height: 120 } })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.absent(preview.inlined)
 })
@@ -72,9 +72,9 @@ test('media.createPreviewAll()', async t => {
 
   const { metadata, preview } = await media.createPreviewAll({ path, mimetype, maxWidth, maxHeight })
 
-  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
   t.alike(preview.small.metadata, { mimetype: 'image/webp', dimensions: { width: 16, height: 13 } })
-  t.alike(preview.medium.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
+  t.alike(preview.medium.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 25 } })
   t.alike(preview.large.metadata, { mimetype: 'image/webp', dimensions: { width: 64, height: 51 } })
 
   t.ok(preview.small.inlined)
@@ -117,7 +117,7 @@ test('media.decodeImage()', async t => {
   // decode
   const { metadata, data } = await media.decodeImage({ httpLink, mimetype })
 
-  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
   t.alike(data.slice(0, 4), b4a.from([0xcb, 0xdb, 0xc1, 0xff]))
   t.is(data.length, 72960)
 })
