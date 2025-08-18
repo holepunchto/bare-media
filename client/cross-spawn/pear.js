@@ -1,9 +1,9 @@
-import path from 'path'
-
 export async function spawn ({ sourcePath }) {
+  sourcePath = sourcePath.replace(/^[\\|/]/, '')
+
   const link = Pear.key
     ? `${Pear.config.applink}/${sourcePath}`
-    : path.join(Pear.config.dir, ...sourcePath.split('/'))
+    : `${Pear.config.dir}/${sourcePath}`
 
   return {
     IPC: Pear.worker.run(link)

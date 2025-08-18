@@ -9,12 +9,6 @@
     "lint:fix": "standard --fix",
     "test": "npm run lint && brittle-bare test/index.js"
   },
-  "imports": {
-    "path": {
-      "bare": "bare-path",
-      "default": "path"
-    }
-  },
   "keywords": [],
   "author": "Holepunch",
   "license": "UNLICENSED",
@@ -26,7 +20,6 @@
     "bare-heif": "^1.0.5",
     "bare-image-resample": "^1.0.1",
     "bare-jpeg": "^1.0.1",
-    "bare-path": "^3.0.0",
     "bare-webp": "^1.0.3",
     "cross-worker": "^1.0.0",
     "hrpc": "^4.0.0",
