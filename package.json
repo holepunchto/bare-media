@@ -9,6 +9,12 @@
     "lint:fix": "standard --fix",
     "test": "npm run lint && brittle-bare test/index.js"
   },
+  "imports": {
+    "path": {
+      "bare": "bare-path",
+      "default": "path"
+    }
+  },
   "keywords": [],
   "author": "Holepunch",
   "license": "UNLICENSED",
