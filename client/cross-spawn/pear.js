@@ -3,7 +3,7 @@ export async function spawn ({ sourcePath }) {
 
   const link = Pear.key
     ? `${Pear.config.applink}/${sourcePath}`
-    : `${Pear.config.dir}/${sourcePath}`
+    : `${Pear.config.dir}${sourcePath}`
 
   return {
     IPC: Pear.worker.run(link)
