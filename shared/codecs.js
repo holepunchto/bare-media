@@ -3,7 +3,10 @@ export const codecs = {
   'image/jpg': () => import('bare-jpeg'),
   'image/heic': () => import('bare-heif'),
   'image/heif': () => import('bare-heif'),
-  'image/webp': () => import('bare-webp')
+  'image/webp': () => import('bare-webp'),
+  'image/png': () => import('bare-png'),
+  'image/tif': () => import('bare-tiff'),
+  'image/tiff': () => import('bare-tiff')
 }
 
 export function isCodecSupported (mimetype) {

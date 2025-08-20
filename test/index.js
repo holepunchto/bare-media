@@ -10,7 +10,35 @@ import b4a from 'b4a'
 import * as media from '../worker/media.js'
 import { calculateFitDimensions } from '../worker/util.js'
 
-test('media.createPreview()', async t => {
+test('media.createPreview() of .jpg', async t => {
+  const path = './test/fixtures/sample.jpg'
+  const mimetype = 'image/jpg'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .png', async t => {
+  const path = './test/fixtures/sample.png'
+  const mimetype = 'image/png'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .heic', async t => {
   const path = './test/fixtures/sample.heic'
   const mimetype = 'image/heic'
   const maxWidth = 32
@@ -20,6 +48,34 @@ test('media.createPreview()', async t => {
 
   t.alike(metadata, { dimensions: { width: 152, height: 120 } })
   t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 25 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .tiff', async t => {
+  const path = './test/fixtures/sample.tiff'
+  const mimetype = 'image/tiff'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 75, height: 50 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 21 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .webp', async t => {
+  const path = './test/fixtures/sample.webp'
+  const mimetype = 'image/webp'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.absent(preview.inlined)
 })
