@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 1,
   "schema": [
     {
       "name": "dimensions",
@@ -235,18 +235,22 @@
       "name": "decode-image-request",
       "namespace": "media",
       "compact": false,
-      "flagsPosition": 1,
+      "flagsPosition": 0,
       "fields": [
         {
-          "name": "httpLink",
-          "required": true,
+          "name": "path",
           "type": "string",
-          "version": 2
+          "version": 1
+        },
+        {
+          "name": "httpLink",
+          "type": "string",
+          "version": 1
         },
         {
           "name": "mimetype",
           "type": "string",
-          "version": 2
+          "version": 1
         }
       ]
     },
@@ -259,12 +263,12 @@
         {
           "name": "metadata",
           "type": "@media/metadata",
-          "version": 2
+          "version": 1
         },
         {
           "name": "data",
           "type": "buffer",
-          "version": 2
+          "version": 1
         }
       ]
     }

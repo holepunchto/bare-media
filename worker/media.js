@@ -45,9 +45,15 @@ export async function createPreviewAll ({ path, mimetype, maxWidth, maxHeight, f
   }
 }
 
-export async function decodeImage ({ httpLink, mimetype }) {
-  const response = await fetch(httpLink)
-  const buffer = await response.buffer()
+export async function decodeImage ({ path, httpLink, mimetype }) {
+  let buffer
+
+  if (path) {
+    buffer = fs.readFileSync(path)
+  } else if (httpLink) {
+    const response = await fetch(httpLink)
+    buffer = await response.buffer()
+  }
 
   const rgba = await decodeImageToRGBA(buffer, mimetype)
   const { width, height, data } = rgba

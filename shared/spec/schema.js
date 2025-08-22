@@ -173,9 +173,12 @@ media.register({
 media.register({
   name: 'decode-image-request',
   fields: [{
+    name: 'path',
+    type: 'string'
+  },
+  {
     name: 'httpLink',
-    type: 'string',
-    required: true
+    type: 'string'
   },
   {
     name: 'mimetype',
