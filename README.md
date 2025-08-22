@@ -1,28 +1,30 @@
-# keet-compute
+# bare-media
 
-Worker for handling heavy tasks outside Keet's main process
+All the media things
 
 ## Install
 
 ```
-npm i keet-compute
+npm i bare-media
 ```
 
 ## Usage
 
-```js
-import worker from '@holepunchto/keet-compute'
+From a single worker:
 
-const data = await worker.createPreview({ path, mimetype, maxWidth, maxHeight })
+```js
+import worker from 'bare-media'
+
+const data = await worker.createPreview({ path, maxWidth, maxHeight })
 ```
 
-or manually instantiate one or multiple workers:
+Manually instantiate one or multiple workers:
 
 ```js
-import { WorkerClient } from '@holepunchto/keet-compute/client'
+import { WorkerClient } from 'bare-media/client'
 
 const worker = new WorkerClient()
-const data = await worker.createPreview({ path, mimetype, maxWidth, maxHeight })
+const data = await worker.createPreview({ path, maxWidth, maxHeight })
 ```
 
 > NOTE: A worker spawns when an operation is requested and it stays running until the parent process is killed. If you need to spawn it earlier it's also possible by calling `worker.run()`. 
@@ -30,13 +32,21 @@ const data = await worker.createPreview({ path, mimetype, maxWidth, maxHeight })
 Handle close event:
 
 ```js
-import worker from '@holepunchto/keet-compute'
+import worker from 'bare-media'
 
 worker.onClose = () => {
   // worker closed unexpectedly
 }
 
-````
+```
+
+You can also call the utilities directly without using a worker:
+
+```js
+import { createPreview } from 'bare-media/worker/media.js'
+
+const data = await worker.createPreview({ path, maxWidth, maxHeight })
+```
 
 ## API
 

@@ -1,6 +1,6 @@
 {
-  "name": "@holepunchto/keet-compute",
-  "version": "0.5.0",
+  "name": "bare-media",
+  "version": "1.0.0",
   "main": "index.js",
   "type": "module",
   "scripts": {

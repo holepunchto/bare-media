@@ -13,7 +13,7 @@ export class WorkerClient {
   }
 
   initialize (opts) {
-    const sourcePath = 'node_modules/@holepunchto/keet-compute/worker/index.js'
+    const sourcePath = 'node_modules/bare-media/worker/index.js'
     this.opts = { sourcePath, ...opts }
   }
 
