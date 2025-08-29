@@ -1,17 +1,17 @@
 {
-  "name": "@holepunchto/keet-compute",
-  "version": "0.5.0",
+  "name": "bare-media",
+  "version": "1.0.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build-spec": "cd shared/spec && bare ./build.js",
+    "build:rpc": "cd shared/spec && bare ./build.js",
     "lint": "standard",
     "lint:fix": "standard --fix",
     "test": "npm run lint && brittle-bare test/index.js"
   },
   "keywords": [],
-  "author": "Holepunch",
-  "license": "UNLICENSED",
+  "author": "Holepunch Inc",
+  "license": "Apache-2.0",
   "description": "",
   "dependencies": {
     "b4a": "^1.6.7",
