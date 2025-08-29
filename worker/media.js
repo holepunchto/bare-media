@@ -1,6 +1,7 @@
 import b4a from 'b4a'
 import fs from 'bare-fs'
 import fetch from 'bare-fetch'
+import getMimeType from 'get-mime-type'
 
 import { importCodec } from '../shared/codecs.js'
 import { calculateFitDimensions } from './util'
@@ -10,6 +11,7 @@ const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 const animatableMimetypes = ['image/webp']
 
 export async function createPreview ({ path, mimetype, maxWidth, maxHeight, format, encoding }) {
+  mimetype = mimetype || getMimeType(path)
   format = format || DEFAULT_PREVIEW_FORMAT
 
   const buffer = fs.readFileSync(path)
@@ -31,9 +33,15 @@ export async function createPreview ({ path, mimetype, maxWidth, maxHeight, form
   }
 }
 
-export async function decodeImage ({ httpLink, mimetype }) {
-  const response = await fetch(httpLink)
-  const buffer = await response.buffer()
+export async function decodeImage ({ path, httpLink, mimetype }) {
+  let buffer
+
+  if (path) {
+    buffer = fs.readFileSync(path)
+  } else if (httpLink) {
+    const response = await fetch(httpLink)
+    buffer = await response.buffer()
+  }
 
   const rgba = await decodeImageToRGBA(buffer, mimetype)
   const { width, height, data } = rgba

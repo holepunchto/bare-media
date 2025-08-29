@@ -12,6 +12,108 @@ import { calculateFitDimensions } from '../worker/util.js'
 
 test('media.createPreview() of .jpg', async t => {
   const path = './test/fixtures/sample.jpg'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .png', async t => {
+  const path = './test/fixtures/sample.png'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .heic', async t => {
+  const path = './test/fixtures/sample.heic'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 25 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .tiff', async t => {
+  const path = './test/fixtures/sample.tiff'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 75, height: 50 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 21 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .webp', async t => {
+  const path = './test/fixtures/sample.webp'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() does not upscale images', async t => {
+  const path = './test/fixtures/sample.heic'
+  const maxWidth = 256
+  const maxHeight = 256
+
+  const { metadata, preview } = await media.createPreview({ path, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 152, height: 120 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() without resizing', async t => {
+  const path = './test/fixtures/sample.heic'
+
+  const { metadata, preview } = await media.createPreview({ path })
+
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 152, height: 120 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of an animated webp', async t => {
+  const path = './test/fixtures/animated.webp'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 476, height: 280 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 19 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() passing mimetype', async t => {
+  const path = './test/fixtures/jpg-sample'
   const mimetype = 'image/jpg'
   const maxWidth = 32
   const maxHeight = 32
@@ -24,103 +126,19 @@ test('media.createPreview() of .jpg', async t => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .png', async t => {
-  const path = './test/fixtures/sample.png'
-  const mimetype = 'image/png'
-  const maxWidth = 32
-  const maxHeight = 32
-
-  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
-
-  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
-  t.ok(Buffer.isBuffer(preview.buffer))
-  t.absent(preview.inlined)
-})
-
-test('media.createPreview() of .heic', async t => {
-  const path = './test/fixtures/sample.heic'
-  const mimetype = 'image/heic'
-  const maxWidth = 32
-  const maxHeight = 32
-
-  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
-
-  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 25 } })
-  t.ok(Buffer.isBuffer(preview.buffer))
-  t.absent(preview.inlined)
-})
-
-test('media.createPreview() of .tiff', async t => {
-  const path = './test/fixtures/sample.tiff'
-  const mimetype = 'image/tiff'
-  const maxWidth = 32
-  const maxHeight = 32
-
-  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
-
-  t.alike(metadata, { dimensions: { width: 75, height: 50 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 21 } })
-  t.ok(Buffer.isBuffer(preview.buffer))
-  t.absent(preview.inlined)
-})
-
-test('media.createPreview() of .webp', async t => {
-  const path = './test/fixtures/sample.webp'
-  const mimetype = 'image/webp'
-  const maxWidth = 32
-  const maxHeight = 32
-
-  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
-
-  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 26 } })
-  t.ok(Buffer.isBuffer(preview.buffer))
-  t.absent(preview.inlined)
-})
-
-test('media.createPreview() does not upscale images', async t => {
-  const path = './test/fixtures/sample.heic'
-  const mimetype = 'image/heic'
-  const maxWidth = 256
-  const maxHeight = 256
-
-  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
-
-  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 152, height: 120 } })
-  t.ok(Buffer.isBuffer(preview.buffer))
-  t.absent(preview.inlined)
-})
-
-test('media.createPreview() without resizing', async t => {
+test('media.decodeImage() by path', async t => {
   const path = './test/fixtures/sample.heic'
   const mimetype = 'image/heic'
 
-  const { metadata, preview } = await media.createPreview({ path, mimetype })
+  // decode
+  const { metadata, data } = await media.decodeImage({ path, mimetype })
 
   t.alike(metadata, { dimensions: { width: 152, height: 120 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 152, height: 120 } })
-  t.ok(Buffer.isBuffer(preview.buffer))
-  t.absent(preview.inlined)
+  t.alike(data.slice(0, 4), b4a.from([0xcb, 0xdb, 0xc1, 0xff]))
+  t.is(data.length, 72960)
 })
 
-test('media.createPreview() of an animated webp', async t => {
-  const path = './test/fixtures/animated.webp'
-  const mimetype = 'image/webp'
-  const maxWidth = 32
-  const maxHeight = 32
-
-  const { metadata, preview } = await media.createPreview({ path, mimetype, maxWidth, maxHeight })
-
-  t.alike(metadata, { dimensions: { width: 476, height: 280 } })
-  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 19 } })
-  t.ok(Buffer.isBuffer(preview.buffer))
-  t.absent(preview.inlined)
-})
-
-test('media.decodeImage()', async t => {
+test('media.decodeImage() by httpLink', async t => {
   const store = new Corestore(await tmp())
 
   const core = store.get({ name: 'test' })
