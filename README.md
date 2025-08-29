@@ -53,7 +53,6 @@ const data = await worker.createPreview({ path, maxWidth, maxHeight })
 | Method              | Parameters                                              | Return Value        | Description
 |---------------------|---------------------------------------------------------|---------------------|----------------------------------------
 | `createPreview`     | `path, mimetype, maxWidth, maxHeight, format, encoding` | `metadata, preview` | Create a preview from a media file
-| `createPreviewAll`  | `path, mimetype, maxWidth, maxHeight, format`           | `metadata, preview` | Create all 3 previews from a media file
 | `decodeImage`       | `path`, `httpLink, mimetype`                            | `metadata, data`    | Decode an image to RGBA
 
 > See [schema.js](shared/spec/schema.js) for the complete reference of parameters

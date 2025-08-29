@@ -7,10 +7,8 @@ import { getEncoding } from './messages.js'
 const methods = new Map([
   ['@media/create-preview', 0],
   [0, '@media/create-preview'],
-  ['@media/create-preview-all', 1],
-  [1, '@media/create-preview-all'],
-  ['@media/decode-image', 2],
-  [2, '@media/decode-image']
+  ['@media/decode-image', 1],
+  [1, '@media/decode-image']
 ])
 
 class HRPC {
@@ -19,12 +17,10 @@ class HRPC {
     this._handlers = []
     this._requestEncodings = new Map([
       ['@media/create-preview', getEncoding('@media/create-preview-request')],
-      ['@media/create-preview-all', getEncoding('@media/create-preview-all-request')],
       ['@media/decode-image', getEncoding('@media/decode-image-request')]
     ])
     this._responseEncodings = new Map([
       ['@media/create-preview', getEncoding('@media/create-preview-response')],
-      ['@media/create-preview-all', getEncoding('@media/create-preview-all-response')],
       ['@media/decode-image', getEncoding('@media/decode-image-response')]
     ])
     this._rpc = new RPC(stream, async (req) => {
@@ -93,20 +89,12 @@ class HRPC {
     return this._call('@media/create-preview', args)
   }
 
-  async createPreviewAll (args) {
-    return this._call('@media/create-preview-all', args)
-  }
-
   async decodeImage (args) {
     return this._call('@media/decode-image', args)
   }
 
   onCreatePreview (responseFn) {
     this._handlers['@media/create-preview'] = responseFn
-  }
-
-  onCreatePreviewAll (responseFn) {
-    this._handlers['@media/create-preview-all'] = responseFn
   }
 
   onDecodeImage (responseFn) {

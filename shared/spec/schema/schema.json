@@ -68,55 +68,6 @@
       ]
     },
     {
-      "name": "preview-by-size",
-      "namespace": "media",
-      "compact": false,
-      "flagsPosition": 0,
-      "fields": [
-        {
-          "name": "small",
-          "type": "@media/file",
-          "version": 1
-        },
-        {
-          "name": "medium",
-          "type": "@media/file",
-          "version": 1
-        },
-        {
-          "name": "large",
-          "type": "@media/file",
-          "version": 1
-        }
-      ]
-    },
-    {
-      "name": "sizePreview",
-      "namespace": "media",
-      "compact": false,
-      "flagsPosition": -1,
-      "fields": [
-        {
-          "name": "small",
-          "required": true,
-          "type": "uint",
-          "version": 1
-        },
-        {
-          "name": "medium",
-          "required": true,
-          "type": "uint",
-          "version": 1
-        },
-        {
-          "name": "large",
-          "required": true,
-          "type": "uint",
-          "version": 1
-        }
-      ]
-    },
-    {
       "name": "create-preview-request",
       "namespace": "media",
       "compact": false,
@@ -171,62 +122,6 @@
           "name": "preview",
           "required": true,
           "type": "@media/file",
-          "version": 1
-        }
-      ]
-    },
-    {
-      "name": "create-preview-all-request",
-      "namespace": "media",
-      "compact": false,
-      "flagsPosition": 1,
-      "fields": [
-        {
-          "name": "path",
-          "required": true,
-          "type": "string",
-          "version": 1
-        },
-        {
-          "name": "mimetype",
-          "type": "string",
-          "version": 1
-        },
-        {
-          "name": "maxWidth",
-          "required": true,
-          "type": "@media/sizePreview",
-          "version": 1
-        },
-        {
-          "name": "maxHeight",
-          "required": true,
-          "type": "@media/sizePreview",
-          "version": 1
-        },
-        {
-          "name": "format",
-          "type": "string",
-          "version": 1
-        }
-      ]
-    },
-    {
-      "name": "create-preview-all-response",
-      "namespace": "media",
-      "compact": false,
-      "flagsPosition": -1,
-      "fields": [
-        {
-          "name": "metadata",
-          "required": true,
-          "type": "@media/metadata",
-          "version": 1
-        },
-        {
-          "name": "preview",
-          "required": true,
-          "type": "@media/preview-by-size",
           "version": 1
         }
       ]

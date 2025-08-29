@@ -101,72 +101,8 @@ const encoding2 = {
   }
 }
 
-// @media/preview-by-size.small
-const encoding3_0 = c.frame(encoding2)
-// @media/preview-by-size.medium
-const encoding3_1 = encoding3_0
-// @media/preview-by-size.large
-const encoding3_2 = encoding3_0
-
-// @media/preview-by-size
-const encoding3 = {
-  preencode (state, m) {
-    state.end++ // max flag is 4 so always one byte
-
-    if (m.small) encoding3_0.preencode(state, m.small)
-    if (m.medium) encoding3_1.preencode(state, m.medium)
-    if (m.large) encoding3_2.preencode(state, m.large)
-  },
-  encode (state, m) {
-    const flags =
-      (m.small ? 1 : 0) |
-      (m.medium ? 2 : 0) |
-      (m.large ? 4 : 0)
-
-    c.uint.encode(state, flags)
-
-    if (m.small) encoding3_0.encode(state, m.small)
-    if (m.medium) encoding3_1.encode(state, m.medium)
-    if (m.large) encoding3_2.encode(state, m.large)
-  },
-  decode (state) {
-    const flags = c.uint.decode(state)
-
-    return {
-      small: (flags & 1) !== 0 ? encoding3_0.decode(state) : null,
-      medium: (flags & 2) !== 0 ? encoding3_1.decode(state) : null,
-      large: (flags & 4) !== 0 ? encoding3_2.decode(state) : null
-    }
-  }
-}
-
-// @media/sizePreview
-const encoding4 = {
-  preencode (state, m) {
-    c.uint.preencode(state, m.small)
-    c.uint.preencode(state, m.medium)
-    c.uint.preencode(state, m.large)
-  },
-  encode (state, m) {
-    c.uint.encode(state, m.small)
-    c.uint.encode(state, m.medium)
-    c.uint.encode(state, m.large)
-  },
-  decode (state) {
-    const r0 = c.uint.decode(state)
-    const r1 = c.uint.decode(state)
-    const r2 = c.uint.decode(state)
-
-    return {
-      small: r0,
-      medium: r1,
-      large: r2
-    }
-  }
-}
-
 // @media/create-preview-request
-const encoding5 = {
+const encoding3 = {
   preencode (state, m) {
     c.string.preencode(state, m.path)
     state.end++ // max flag is 16 so always one byte
@@ -210,92 +146,23 @@ const encoding5 = {
 }
 
 // @media/create-preview-response.metadata
-const encoding6_0 = encoding2_0
+const encoding4_0 = encoding2_0
 // @media/create-preview-response.preview
-const encoding6_1 = encoding3_0
+const encoding4_1 = c.frame(encoding2)
 
 // @media/create-preview-response
-const encoding6 = {
+const encoding4 = {
   preencode (state, m) {
-    encoding6_0.preencode(state, m.metadata)
-    encoding6_1.preencode(state, m.preview)
+    encoding4_0.preencode(state, m.metadata)
+    encoding4_1.preencode(state, m.preview)
   },
   encode (state, m) {
-    encoding6_0.encode(state, m.metadata)
-    encoding6_1.encode(state, m.preview)
+    encoding4_0.encode(state, m.metadata)
+    encoding4_1.encode(state, m.preview)
   },
   decode (state) {
-    const r0 = encoding6_0.decode(state)
-    const r1 = encoding6_1.decode(state)
-
-    return {
-      metadata: r0,
-      preview: r1
-    }
-  }
-}
-
-// @media/create-preview-all-request.maxWidth
-const encoding7_2 = c.frame(encoding4)
-// @media/create-preview-all-request.maxHeight
-const encoding7_3 = encoding7_2
-
-// @media/create-preview-all-request
-const encoding7 = {
-  preencode (state, m) {
-    c.string.preencode(state, m.path)
-    state.end++ // max flag is 2 so always one byte
-
-    if (m.mimetype) c.string.preencode(state, m.mimetype)
-    encoding7_2.preencode(state, m.maxWidth)
-    encoding7_3.preencode(state, m.maxHeight)
-    if (m.format) c.string.preencode(state, m.format)
-  },
-  encode (state, m) {
-    const flags =
-      (m.mimetype ? 1 : 0) |
-      (m.format ? 2 : 0)
-
-    c.string.encode(state, m.path)
-    c.uint.encode(state, flags)
-
-    if (m.mimetype) c.string.encode(state, m.mimetype)
-    encoding7_2.encode(state, m.maxWidth)
-    encoding7_3.encode(state, m.maxHeight)
-    if (m.format) c.string.encode(state, m.format)
-  },
-  decode (state) {
-    const r0 = c.string.decode(state)
-    const flags = c.uint.decode(state)
-
-    return {
-      path: r0,
-      mimetype: (flags & 1) !== 0 ? c.string.decode(state) : null,
-      maxWidth: encoding7_2.decode(state),
-      maxHeight: encoding7_3.decode(state),
-      format: (flags & 2) !== 0 ? c.string.decode(state) : null
-    }
-  }
-}
-
-// @media/create-preview-all-response.metadata
-const encoding8_0 = encoding2_0
-// @media/create-preview-all-response.preview
-const encoding8_1 = c.frame(encoding3)
-
-// @media/create-preview-all-response
-const encoding8 = {
-  preencode (state, m) {
-    encoding8_0.preencode(state, m.metadata)
-    encoding8_1.preencode(state, m.preview)
-  },
-  encode (state, m) {
-    encoding8_0.encode(state, m.metadata)
-    encoding8_1.encode(state, m.preview)
-  },
-  decode (state) {
-    const r0 = encoding8_0.decode(state)
-    const r1 = encoding8_1.decode(state)
+    const r0 = encoding4_0.decode(state)
+    const r1 = encoding4_1.decode(state)
 
     return {
       metadata: r0,
@@ -305,7 +172,7 @@ const encoding8 = {
 }
 
 // @media/decode-image-request
-const encoding9 = {
+const encoding5 = {
   preencode (state, m) {
     state.end++ // max flag is 4 so always one byte
 
@@ -337,14 +204,14 @@ const encoding9 = {
 }
 
 // @media/decode-image-response.metadata
-const encoding10_0 = encoding2_0
+const encoding6_0 = encoding2_0
 
 // @media/decode-image-response
-const encoding10 = {
+const encoding6 = {
   preencode (state, m) {
     state.end++ // max flag is 2 so always one byte
 
-    if (m.metadata) encoding10_0.preencode(state, m.metadata)
+    if (m.metadata) encoding6_0.preencode(state, m.metadata)
     if (m.data) c.buffer.preencode(state, m.data)
   },
   encode (state, m) {
@@ -354,14 +221,14 @@ const encoding10 = {
 
     c.uint.encode(state, flags)
 
-    if (m.metadata) encoding10_0.encode(state, m.metadata)
+    if (m.metadata) encoding6_0.encode(state, m.metadata)
     if (m.data) c.buffer.encode(state, m.data)
   },
   decode (state) {
     const flags = c.uint.decode(state)
 
     return {
-      metadata: (flags & 1) !== 0 ? encoding10_0.decode(state) : null,
+      metadata: (flags & 1) !== 0 ? encoding6_0.decode(state) : null,
       data: (flags & 2) !== 0 ? c.buffer.decode(state) : null
     }
   }
@@ -392,14 +259,10 @@ function getEncoding (name) {
     case '@media/dimensions': return encoding0
     case '@media/metadata': return encoding1
     case '@media/file': return encoding2
-    case '@media/preview-by-size': return encoding3
-    case '@media/sizePreview': return encoding4
-    case '@media/create-preview-request': return encoding5
-    case '@media/create-preview-response': return encoding6
-    case '@media/create-preview-all-request': return encoding7
-    case '@media/create-preview-all-response': return encoding8
-    case '@media/decode-image-request': return encoding9
-    case '@media/decode-image-response': return encoding10
+    case '@media/create-preview-request': return encoding3
+    case '@media/create-preview-response': return encoding4
+    case '@media/decode-image-request': return encoding5
+    case '@media/decode-image-response': return encoding6
     default: throw new Error('Encoder not found ' + name)
   }
 }
