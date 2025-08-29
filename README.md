@@ -40,7 +40,7 @@ worker.onClose = () => {
 
 ```
 
-You can also call the utilities directly without using a worker:
+Call the methods directly without a worker:
 
 ```js
 import { createPreview } from 'bare-media/worker/media.js'
