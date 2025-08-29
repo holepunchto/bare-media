@@ -20,7 +20,6 @@ export class WorkerClient {
   #attachMethods () {
     const methods = [
       'createPreview',
-      'createPreviewAll',
       'decodeImage'
     ]
 
