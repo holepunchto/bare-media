@@ -56,3 +56,7 @@ const data = await createPreview({ path, maxWidth, maxHeight })
 | `decodeImage`       | `path`, `httpLink, mimetype`                            | `metadata, data`    | Decode an image to RGBA
 
 > See [schema.js](shared/spec/schema.js) for the complete reference of parameters
+
+## License
+
+Apache-2.0
