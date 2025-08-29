@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 1,
   "schema": [
     {
       "id": 0,
@@ -38,7 +38,7 @@
         "name": "@media/decode-image-response",
         "stream": false
       },
-      "version": 2
+      "version": 1
     }
   ]
 }

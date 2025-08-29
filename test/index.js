@@ -151,7 +151,19 @@ test('media.createPreviewAll()', async t => {
   t.absent(preview.large.inlined)
 })
 
-test('media.decodeImage()', async t => {
+test('media.decodeImage() by path', async t => {
+  const path = './test/fixtures/sample.heic'
+  const mimetype = 'image/heic'
+
+  // decode
+  const { metadata, data } = await media.decodeImage({ path, mimetype })
+
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
+  t.alike(data.slice(0, 4), b4a.from([0xcb, 0xdb, 0xc1, 0xff]))
+  t.is(data.length, 72960)
+})
+
+test('media.decodeImage() by httpLink', async t => {
   const store = new Corestore(await tmp())
 
   const core = store.get({ name: 'test' })
