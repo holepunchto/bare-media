@@ -1,20 +1,20 @@
-import HRPC from '../shared/spec/hrpc/index.js'
-import { isCodecSupported } from '../shared/codecs.js'
-import { spawn } from './cross-spawn/index.js'
+import { spawn } from 'cross-worker/client'
+
+import HRPC from './shared/spec/hrpc/index.js'
+import { isCodecSupported } from './shared/codecs.js'
 
 export class WorkerClient {
   worker = null
   rpc = null
   opts = null
 
-  constructor (opts) {
+  constructor (opts = {}) {
     this.initialize(opts)
     this.#attachMethods()
   }
 
-  initialize (opts) {
-    const sourcePath = 'node_modules/bare-media/worker/index.js'
-    this.opts = { sourcePath, ...opts }
+  initialize ({ filename = 'node_modules/bare-media/worker/index.js', requireSource, args }) {
+    this.opts = { filename, requireSource, args }
   }
 
   #attachMethods () {
@@ -36,7 +36,9 @@ export class WorkerClient {
       return
     }
 
-    this.worker = await spawn(this.opts)
+    const { filename, requireSource, args } = this.opts
+    const source = requireSource?.()
+    this.worker = await spawn(filename, source, args)
     const ipc = this.worker.IPC
 
     ipc.on('end', () => ipc.end())

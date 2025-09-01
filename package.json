@@ -38,9 +38,9 @@
     "test-tmp": "^1.4.0"
   },
   "files": [
-    "client",
     "shared",
     "worker",
+    "client.js",
     "index.js"
   ],
   "standard": {
