@@ -27,6 +27,7 @@
     "get-mime-type": "^2.0.1",
     "hrpc": "^4.0.0",
     "hyperschema": "^1.12.3",
+    "ready-resource": "^1.2.0",
     "uncaughts": "^1.1.1"
   },
   "devDependencies": {

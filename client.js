@@ -1,15 +1,17 @@
 import { spawn } from 'cross-worker/client'
+import ReadyResource from 'ready-resource'
 
 import HRPC from './shared/spec/hrpc/index.js'
 import { isCodecSupported } from './shared/codecs.js'
 
-export class WorkerClient {
+export class WorkerClient extends ReadyResource {
   worker = null
   rpc = null
   opts = null
   running = false
 
   constructor (opts) {
+    super()
     this.initialize(opts)
     this.#attachMethods()
   }
@@ -26,15 +28,14 @@ export class WorkerClient {
 
     for (const method of methods) {
       this[method] = async (...args) => {
-        await this.ensureWorker()
+        await this.run()
+        await this.ready()
         return this.rpc[method](...args)
       }
     }
   }
 
-  async ensureWorker () {
-    await this.run()
-
+  async _open () {
     const MAX_RETRIES = 1000
     const RETRY_DELAY = 10
 
