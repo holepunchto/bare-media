@@ -8,7 +8,6 @@ export class WorkerClient extends ReadyResource {
   worker = null
   rpc = null
   opts = null
-  running = false
 
   constructor (opts) {
     super()
@@ -28,7 +27,6 @@ export class WorkerClient extends ReadyResource {
 
     for (const method of methods) {
       this[method] = async (...args) => {
-        await this.run()
         await this.ready()
         return this.rpc[method](...args)
       }
@@ -36,6 +34,8 @@ export class WorkerClient extends ReadyResource {
   }
 
   async _open () {
+    await this.run()
+
     const MAX_RETRIES = 1000
     const RETRY_DELAY = 10
 
@@ -51,9 +51,6 @@ export class WorkerClient extends ReadyResource {
   }
 
   async run () {
-    if (this.running) return
-    this.running = true
-
     const { filename, requireSource, args } = this.opts
     const source = requireSource?.()
     this.worker = await spawn(filename, source, args)
