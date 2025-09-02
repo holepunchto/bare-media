@@ -27,7 +27,7 @@ const worker = new WorkerClient()
 const data = await worker.createPreview({ path, maxWidth, maxHeight })
 ```
 
-> NOTE: A worker spawns when an operation is requested and it stays running until the parent process is killed. If you need to spawn it earlier it's also possible by calling `worker.run()`. 
+> NOTE: A worker spawns when an operation is requested and it stays running until the parent process is killed.
 
 Handle close event:
 

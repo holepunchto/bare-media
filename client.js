@@ -34,10 +34,10 @@ export class WorkerClient extends ReadyResource {
   }
 
   async _open () {
-    await this.run()
+    await this.#run()
   }
 
-  async run () {
+  async #run () {
     const { filename, requireSource, args } = this.opts
     const source = requireSource?.()
     this.worker = await spawn(filename, source, args)
