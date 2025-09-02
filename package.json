@@ -1,6 +1,6 @@
 {
   "name": "bare-media",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -23,7 +23,7 @@
     "bare-png": "^1.0.2",
     "bare-tiff": "^1.0.1",
     "bare-webp": "^1.0.3",
-    "cross-worker": "^1.0.0",
+    "cross-worker": "^1.1.0",
     "get-mime-type": "^2.0.1",
     "hrpc": "^4.0.0",
     "hyperschema": "^1.12.3",
@@ -38,9 +38,9 @@
     "test-tmp": "^1.4.0"
   },
   "files": [
-    "client",
     "shared",
     "worker",
+    "client.js",
     "index.js"
   ],
   "standard": {
