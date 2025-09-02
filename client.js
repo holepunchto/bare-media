@@ -1,14 +1,16 @@
 import { spawn } from 'cross-worker/client'
+import ReadyResource from 'ready-resource'
 
 import HRPC from './shared/spec/hrpc/index.js'
 import { isCodecSupported } from './shared/codecs.js'
 
-export class WorkerClient {
+export class WorkerClient extends ReadyResource {
   worker = null
   rpc = null
   opts = null
 
   constructor (opts) {
+    super()
     this.initialize(opts)
     this.#attachMethods()
   }
@@ -25,20 +27,21 @@ export class WorkerClient {
 
     for (const method of methods) {
       this[method] = async (...args) => {
-        await this.run()
+        await this.ready()
         return this.rpc[method](...args)
       }
     }
   }
 
-  async run () {
-    if (this.worker !== null) {
-      return
-    }
+  async _open () {
+    await this.#run()
+  }
 
+  async #run () {
     const { filename, requireSource, args } = this.opts
     const source = requireSource?.()
     this.worker = await spawn(filename, source, args)
+
     const ipc = this.worker.IPC
 
     ipc.on('end', () => ipc.end())
