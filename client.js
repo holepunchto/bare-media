@@ -8,12 +8,12 @@ export class WorkerClient {
   rpc = null
   opts = null
 
-  constructor (opts = {}) {
+  constructor (opts) {
     this.initialize(opts)
     this.#attachMethods()
   }
 
-  initialize ({ filename = 'node_modules/bare-media/worker/index.js', requireSource, args }) {
+  initialize ({ filename = 'node_modules/bare-media/worker/index.js', requireSource, args } = {}) {
     this.opts = { filename, requireSource, args }
   }
 
