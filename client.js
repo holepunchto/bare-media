@@ -35,19 +35,6 @@ export class WorkerClient extends ReadyResource {
 
   async _open () {
     await this.run()
-
-    const MAX_RETRIES = 1000
-    const RETRY_DELAY = 10
-
-    let i = 0
-    while (!this.worker && i < MAX_RETRIES) {
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY))
-      i += 1
-    }
-
-    if (!this.worker) {
-      throw new Error('Could not spawn the worker')
-    }
   }
 
   async run () {
