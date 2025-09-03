@@ -1,6 +1,6 @@
 # bare-media
 
-All the media things
+A set of media apis for Bare
 
 ## Install
 
