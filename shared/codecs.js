@@ -1,6 +1,7 @@
 export const codecs = {
   'image/jpeg': () => import('bare-jpeg'),
   'image/jpg': () => import('bare-jpeg'),
+  'image/avif': () => import('bare-heif'),
   'image/heic': () => import('bare-heif'),
   'image/heif': () => import('bare-heif'),
   'image/webp': () => import('bare-webp'),
