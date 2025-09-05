@@ -25,7 +25,6 @@
     "bare-webp": "^1.0.3",
     "cross-worker": "^1.1.0",
     "get-mime-type": "^2.0.1",
-    "graceful-goodbye": "^1.3.3",
     "hrpc": "^4.0.0",
     "hyperschema": "^1.12.3",
     "ready-resource": "^1.2.0",

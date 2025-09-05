@@ -1,6 +1,5 @@
 import { spawn } from 'cross-worker/client'
 import ReadyResource from 'ready-resource'
-import goodbye from 'graceful-goodbye'
 
 import HRPC from './shared/spec/hrpc/index.js'
 import { isCodecSupported } from './shared/codecs.js'
@@ -48,7 +47,6 @@ export class WorkerClient extends ReadyResource {
     this.worker = await spawn(filename, source, args)
 
     const ipc = this.worker.IPC
-    goodbye(() => ipc.destroy())
 
     ipc.on('end', () => ipc.end())
     ipc.on('close', () => this.onClose?.())
