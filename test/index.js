@@ -36,6 +36,19 @@ test('media.createPreview() of .png', async t => {
   t.absent(preview.inlined)
 })
 
+test('media.createPreview() of .avif', async t => {
+  const path = './test/fixtures/sample.avif'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({ path, maxWidth, maxHeight })
+
+  t.alike(metadata, { dimensions: { width: 128, height: 128 } })
+  t.alike(preview.metadata, { mimetype: 'image/webp', dimensions: { width: 32, height: 32 } })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
 test('media.createPreview() of .heic', async t => {
   const path = './test/fixtures/sample.heic'
   const maxWidth = 32
