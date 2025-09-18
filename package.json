@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "build:rpc": "cd shared/spec && bare ./build.js",
-    "format": "prettier --check .",
-    "format:fix": "prettier --write .",
-    "test": "npm run format && brittle-bare test/index.js"
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run format:check && brittle-bare test/index.js"
   },
   "keywords": [],
   "author": "Holepunch Inc",
