@@ -10,11 +10,11 @@ export const codecs = {
   'image/tiff': () => import('bare-tiff')
 }
 
-export function isCodecSupported (mimetype) {
+export function isCodecSupported(mimetype) {
   return mimetype in codecs
 }
 
-export async function importCodec (mimetype) {
+export async function importCodec(mimetype) {
   const codecImport = codecs[mimetype]
   if (!codecImport) throw new Error(`No codec for ${mimetype}`)
   return await codecImport()

@@ -1,6 +1,6 @@
 export const log = (...args) => console.log('[bare-media]', ...args)
 
-export function calculateFitDimensions (width, height, maxWidth, maxHeight) {
+export function calculateFitDimensions(width, height, maxWidth, maxHeight) {
   if (width <= maxWidth && height <= maxHeight) {
     return { width, height }
   }

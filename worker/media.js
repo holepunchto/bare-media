@@ -10,7 +10,14 @@ const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 
 const animatableMimetypes = ['image/webp']
 
-export async function createPreview ({ path, mimetype, maxWidth, maxHeight, format, encoding }) {
+export async function createPreview({
+  path,
+  mimetype,
+  maxWidth,
+  maxHeight,
+  format,
+  encoding
+}) {
   mimetype = mimetype || getMimeType(path)
   format = format || DEFAULT_PREVIEW_FORMAT
 
@@ -18,7 +25,13 @@ export async function createPreview ({ path, mimetype, maxWidth, maxHeight, form
   const rgba = await decodeImageToRGBA(buffer, mimetype)
   const { width, height } = rgba
 
-  const { dimensions, rgba: maybeResizedRGBA } = await resizeRGBA(rgba, width, height, maxWidth, maxHeight)
+  const { dimensions, rgba: maybeResizedRGBA } = await resizeRGBA(
+    rgba,
+    width,
+    height,
+    maxWidth,
+    maxHeight
+  )
 
   const encoded = await encodeImageFromRGBA(maybeResizedRGBA, format, encoding)
 
@@ -33,7 +46,7 @@ export async function createPreview ({ path, mimetype, maxWidth, maxHeight, form
   }
 }
 
-export async function decodeImage ({ path, httpLink, mimetype }) {
+export async function decodeImage({ path, httpLink, mimetype }) {
   let buffer
 
   if (path) {
@@ -54,7 +67,7 @@ export async function decodeImage ({ path, httpLink, mimetype }) {
   }
 }
 
-async function decodeImageToRGBA (buffer, mimetype) {
+async function decodeImageToRGBA(buffer, mimetype) {
   let rgba
 
   const codec = await importCodec(mimetype)
@@ -70,7 +83,7 @@ async function decodeImageToRGBA (buffer, mimetype) {
   return rgba
 }
 
-async function encodeImageFromRGBA (rgba, format, encoding) {
+async function encodeImageFromRGBA(rgba, format, encoding) {
   const codec = await importCodec(format)
   const encoded = codec.encode(rgba)
 
@@ -79,7 +92,7 @@ async function encodeImageFromRGBA (rgba, format, encoding) {
     : { buffer: encoded }
 }
 
-async function resizeRGBA (rgba, width, height, maxWidth, maxHeight) {
+async function resizeRGBA(rgba, width, height, maxWidth, maxHeight) {
   let maybeResizedRGBA, dimensions
 
   if (maxWidth && maxHeight && (width > maxWidth || height > maxHeight)) {
