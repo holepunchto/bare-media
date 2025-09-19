@@ -37,6 +37,10 @@ export class WorkerClient extends ReadyResource {
     await this.#run()
   }
 
+  async _close () {
+    this.worker?.IPC.end()
+  }
+
   async #run () {
     const { filename, requireSource, args } = this.opts
     const source = requireSource?.()
