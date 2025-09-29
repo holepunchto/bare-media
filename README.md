@@ -29,13 +29,13 @@ const data = await worker.createPreview({ path, maxWidth, maxHeight })
 
 > NOTE: A worker spawns when an operation is requested and it stays running until the parent process is killed.
 
-Handle close event:
+Terminate the worker:
 
 ```js
-import worker from 'bare-media'
+worker.close()
 
 worker.onClose = () => {
-  // worker closed unexpectedly
+  // worker terminated
 }
 ```
 
