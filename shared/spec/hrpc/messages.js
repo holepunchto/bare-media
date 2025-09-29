@@ -12,15 +12,15 @@ let version = VERSION
 
 // @media/dimensions
 const encoding0 = {
-  preencode (state, m) {
+  preencode(state, m) {
     c.uint.preencode(state, m.width)
     c.uint.preencode(state, m.height)
   },
-  encode (state, m) {
+  encode(state, m) {
     c.uint.encode(state, m.width)
     c.uint.encode(state, m.height)
   },
-  decode (state) {
+  decode(state) {
     const r0 = c.uint.decode(state)
     const r1 = c.uint.decode(state)
 
@@ -36,18 +36,16 @@ const encoding1_1 = c.frame(encoding0)
 
 // @media/metadata
 const encoding1 = {
-  preencode (state, m) {
+  preencode(state, m) {
     state.end++ // max flag is 4 so always one byte
 
     if (m.mimetype) c.string.preencode(state, m.mimetype)
     if (m.dimensions) encoding1_1.preencode(state, m.dimensions)
     if (m.duration) c.uint.preencode(state, m.duration)
   },
-  encode (state, m) {
+  encode(state, m) {
     const flags =
-      (m.mimetype ? 1 : 0) |
-      (m.dimensions ? 2 : 0) |
-      (m.duration ? 4 : 0)
+      (m.mimetype ? 1 : 0) | (m.dimensions ? 2 : 0) | (m.duration ? 4 : 0)
 
     c.uint.encode(state, flags)
 
@@ -55,7 +53,7 @@ const encoding1 = {
     if (m.dimensions) encoding1_1.encode(state, m.dimensions)
     if (m.duration) c.uint.encode(state, m.duration)
   },
-  decode (state) {
+  decode(state) {
     const flags = c.uint.decode(state)
 
     return {
@@ -71,18 +69,16 @@ const encoding2_0 = c.frame(encoding1)
 
 // @media/file
 const encoding2 = {
-  preencode (state, m) {
+  preencode(state, m) {
     state.end++ // max flag is 4 so always one byte
 
     if (m.metadata) encoding2_0.preencode(state, m.metadata)
     if (m.inlined) c.string.preencode(state, m.inlined)
     if (m.buffer) c.buffer.preencode(state, m.buffer)
   },
-  encode (state, m) {
+  encode(state, m) {
     const flags =
-      (m.metadata ? 1 : 0) |
-      (m.inlined ? 2 : 0) |
-      (m.buffer ? 4 : 0)
+      (m.metadata ? 1 : 0) | (m.inlined ? 2 : 0) | (m.buffer ? 4 : 0)
 
     c.uint.encode(state, flags)
 
@@ -90,7 +86,7 @@ const encoding2 = {
     if (m.inlined) c.string.encode(state, m.inlined)
     if (m.buffer) c.buffer.encode(state, m.buffer)
   },
-  decode (state) {
+  decode(state) {
     const flags = c.uint.decode(state)
 
     return {
@@ -103,7 +99,7 @@ const encoding2 = {
 
 // @media/create-preview-request
 const encoding3 = {
-  preencode (state, m) {
+  preencode(state, m) {
     c.string.preencode(state, m.path)
     state.end++ // max flag is 16 so always one byte
 
@@ -113,7 +109,7 @@ const encoding3 = {
     if (m.format) c.string.preencode(state, m.format)
     if (m.encoding) c.string.preencode(state, m.encoding)
   },
-  encode (state, m) {
+  encode(state, m) {
     const flags =
       (m.mimetype ? 1 : 0) |
       (m.maxWidth ? 2 : 0) |
@@ -130,7 +126,7 @@ const encoding3 = {
     if (m.format) c.string.encode(state, m.format)
     if (m.encoding) c.string.encode(state, m.encoding)
   },
-  decode (state) {
+  decode(state) {
     const r0 = c.string.decode(state)
     const flags = c.uint.decode(state)
 
@@ -152,15 +148,15 @@ const encoding4_1 = c.frame(encoding2)
 
 // @media/create-preview-response
 const encoding4 = {
-  preencode (state, m) {
+  preencode(state, m) {
     encoding4_0.preencode(state, m.metadata)
     encoding4_1.preencode(state, m.preview)
   },
-  encode (state, m) {
+  encode(state, m) {
     encoding4_0.encode(state, m.metadata)
     encoding4_1.encode(state, m.preview)
   },
-  decode (state) {
+  decode(state) {
     const r0 = encoding4_0.decode(state)
     const r1 = encoding4_1.decode(state)
 
@@ -173,18 +169,15 @@ const encoding4 = {
 
 // @media/decode-image-request
 const encoding5 = {
-  preencode (state, m) {
+  preencode(state, m) {
     state.end++ // max flag is 4 so always one byte
 
     if (m.path) c.string.preencode(state, m.path)
     if (m.httpLink) c.string.preencode(state, m.httpLink)
     if (m.mimetype) c.string.preencode(state, m.mimetype)
   },
-  encode (state, m) {
-    const flags =
-      (m.path ? 1 : 0) |
-      (m.httpLink ? 2 : 0) |
-      (m.mimetype ? 4 : 0)
+  encode(state, m) {
+    const flags = (m.path ? 1 : 0) | (m.httpLink ? 2 : 0) | (m.mimetype ? 4 : 0)
 
     c.uint.encode(state, flags)
 
@@ -192,7 +185,7 @@ const encoding5 = {
     if (m.httpLink) c.string.encode(state, m.httpLink)
     if (m.mimetype) c.string.encode(state, m.mimetype)
   },
-  decode (state) {
+  decode(state) {
     const flags = c.uint.decode(state)
 
     return {
@@ -208,23 +201,21 @@ const encoding6_0 = encoding2_0
 
 // @media/decode-image-response
 const encoding6 = {
-  preencode (state, m) {
+  preencode(state, m) {
     state.end++ // max flag is 2 so always one byte
 
     if (m.metadata) encoding6_0.preencode(state, m.metadata)
     if (m.data) c.buffer.preencode(state, m.data)
   },
-  encode (state, m) {
-    const flags =
-      (m.metadata ? 1 : 0) |
-      (m.data ? 2 : 0)
+  encode(state, m) {
+    const flags = (m.metadata ? 1 : 0) | (m.data ? 2 : 0)
 
     c.uint.encode(state, flags)
 
     if (m.metadata) encoding6_0.encode(state, m.metadata)
     if (m.data) c.buffer.encode(state, m.data)
   },
-  decode (state) {
+  decode(state) {
     const flags = c.uint.decode(state)
 
     return {
@@ -234,51 +225,60 @@ const encoding6 = {
   }
 }
 
-function setVersion (v) {
+function setVersion(v) {
   version = v
 }
 
-function encode (name, value, v = VERSION) {
+function encode(name, value, v = VERSION) {
   version = v
   return c.encode(getEncoding(name), value)
 }
 
-function decode (name, buffer, v = VERSION) {
+function decode(name, buffer, v = VERSION) {
   version = v
   return c.decode(getEncoding(name), buffer)
 }
 
-function getEnum (name) {
+function getEnum(name) {
   switch (name) {
-    default: throw new Error('Enum not found ' + name)
+    default:
+      throw new Error('Enum not found ' + name)
   }
 }
 
-function getEncoding (name) {
+function getEncoding(name) {
   switch (name) {
-    case '@media/dimensions': return encoding0
-    case '@media/metadata': return encoding1
-    case '@media/file': return encoding2
-    case '@media/create-preview-request': return encoding3
-    case '@media/create-preview-response': return encoding4
-    case '@media/decode-image-request': return encoding5
-    case '@media/decode-image-response': return encoding6
-    default: throw new Error('Encoder not found ' + name)
+    case '@media/dimensions':
+      return encoding0
+    case '@media/metadata':
+      return encoding1
+    case '@media/file':
+      return encoding2
+    case '@media/create-preview-request':
+      return encoding3
+    case '@media/create-preview-response':
+      return encoding4
+    case '@media/decode-image-request':
+      return encoding5
+    case '@media/decode-image-response':
+      return encoding6
+    default:
+      throw new Error('Encoder not found ' + name)
   }
 }
 
-function getStruct (name, v = VERSION) {
+function getStruct(name, v = VERSION) {
   const enc = getEncoding(name)
   return {
-    preencode (state, m) {
+    preencode(state, m) {
       version = v
       enc.preencode(state, m)
     },
-    encode (state, m) {
+    encode(state, m) {
       version = v
       enc.encode(state, m)
     },
-    decode (state) {
+    decode(state) {
       version = v
       return enc.decode(state)
     }
@@ -287,4 +287,13 @@ function getStruct (name, v = VERSION) {
 
 const resolveStruct = getStruct // compat
 
-export { resolveStruct, getStruct, getEnum, getEncoding, encode, decode, setVersion, version }
+export {
+  resolveStruct,
+  getStruct,
+  getEnum,
+  getEncoding,
+  encode,
+  decode,
+  setVersion,
+  version
+}

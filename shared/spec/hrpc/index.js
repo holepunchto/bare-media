@@ -12,7 +12,7 @@ const methods = new Map([
 ])
 
 class HRPC {
-  constructor (stream) {
+  constructor(stream) {
     this._stream = stream
     this._handlers = []
     this._requestEncodings = new Map([
@@ -39,23 +39,40 @@ class HRPC {
       }
       if (!this._requestIsStream(command) && this._responseIsStream(command)) {
         const request = req.data ? c.decode(requestEncoding, req.data) : null
-        const responseStream = new RPCStream(null, null, req.createResponseStream(), responseEncoding)
+        const responseStream = new RPCStream(
+          null,
+          null,
+          req.createResponseStream(),
+          responseEncoding
+        )
         responseStream.data = request
         await this._handlers[command](responseStream)
       }
       if (this._requestIsStream(command) && !this._responseIsStream(command)) {
-        const requestStream = new RPCRequestStream(req, responseEncoding, req.createRequestStream(), requestEncoding)
+        const requestStream = new RPCRequestStream(
+          req,
+          responseEncoding,
+          req.createRequestStream(),
+          requestEncoding
+        )
         const response = await this._handlers[command](requestStream)
         req.reply(c.encode(responseEncoding, response))
       }
       if (this._requestIsStream(command) && this._responseIsStream(command)) {
-        const requestStream = new RPCRequestStream(req, responseEncoding, req.createRequestStream(), requestEncoding, req.createResponseStream(), responseEncoding)
+        const requestStream = new RPCRequestStream(
+          req,
+          responseEncoding,
+          req.createRequestStream(),
+          requestEncoding,
+          req.createResponseStream(),
+          responseEncoding
+        )
         await this._handlers[command](requestStream)
       }
     })
   }
 
-  async _call (name, args) {
+  async _call(name, args) {
     const requestEncoding = this._requestEncodings.get(name)
     const responseEncoding = this._responseEncodings.get(name)
     const request = this._rpc.request(methods.get(name))
@@ -64,7 +81,7 @@ class HRPC {
     return c.decode(responseEncoding, await request.reply())
   }
 
-  _callSync (name, args) {
+  _callSync(name, args) {
     const requestEncoding = this._requestEncodings.get(name)
     const responseEncoding = this._responseEncodings.get(name)
     const request = this._rpc.request(methods.get(name))
@@ -78,42 +95,53 @@ class HRPC {
       return new RPCStream(request.createResponseStream(), responseEncoding)
     }
     if (this._requestIsStream(name) && !this._responseIsStream(name)) {
-      return new RPCRequestStream(request, responseEncoding, null, null, request.createRequestStream(), requestEncoding)
+      return new RPCRequestStream(
+        request,
+        responseEncoding,
+        null,
+        null,
+        request.createRequestStream(),
+        requestEncoding
+      )
     }
     if (this._requestIsStream(name) && this._responseIsStream(name)) {
-      return new RPCRequestStream(request, responseEncoding, request.createResponseStream(), responseEncoding, request.createRequestStream(), requestEncoding)
+      return new RPCRequestStream(
+        request,
+        responseEncoding,
+        request.createResponseStream(),
+        responseEncoding,
+        request.createRequestStream(),
+        requestEncoding
+      )
     }
   }
 
-  async createPreview (args) {
+  async createPreview(args) {
     return this._call('@media/create-preview', args)
   }
 
-  async decodeImage (args) {
+  async decodeImage(args) {
     return this._call('@media/decode-image', args)
   }
 
-  onCreatePreview (responseFn) {
+  onCreatePreview(responseFn) {
     this._handlers['@media/create-preview'] = responseFn
   }
 
-  onDecodeImage (responseFn) {
+  onDecodeImage(responseFn) {
     this._handlers['@media/decode-image'] = responseFn
   }
 
-  _requestIsStream (command) {
-    return [
-    ].includes(command)
+  _requestIsStream(command) {
+    return [].includes(command)
   }
 
-  _responseIsStream (command) {
-    return [
-    ].includes(command)
+  _responseIsStream(command) {
+    return [].includes(command)
   }
 
-  _requestIsSend (command) {
-    return [
-    ].includes(command)
+  _requestIsSend(command) {
+    return [].includes(command)
   }
 }
 

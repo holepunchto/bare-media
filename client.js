@@ -9,21 +9,22 @@ export class WorkerClient extends ReadyResource {
   rpc = null
   opts = null
 
-  constructor (opts) {
+  constructor(opts) {
     super()
     this.initialize(opts)
     this.#attachMethods()
   }
 
-  initialize ({ filename = 'node_modules/bare-media/worker/index.js', requireSource, args } = {}) {
+  initialize({
+    filename = 'node_modules/bare-media/worker/index.js',
+    requireSource,
+    args
+  } = {}) {
     this.opts = { filename, requireSource, args }
   }
 
-  #attachMethods () {
-    const methods = [
-      'createPreview',
-      'decodeImage'
-    ]
+  #attachMethods() {
+    const methods = ['createPreview', 'decodeImage']
 
     for (const method of methods) {
       this[method] = async (...args) => {
@@ -33,15 +34,15 @@ export class WorkerClient extends ReadyResource {
     }
   }
 
-  async _open () {
+  async _open() {
     await this.#run()
   }
 
-  async _close () {
+  async _close() {
     this.worker?.IPC.end()
   }
 
-  async #run () {
+  async #run() {
     const { filename, requireSource, args } = this.opts
     const source = requireSource?.()
     this.worker = await spawn(filename, source, args)
@@ -54,7 +55,7 @@ export class WorkerClient extends ReadyResource {
     this.rpc = new HRPC(ipc)
   }
 
-  isCodecSupported (mimetype) {
+  isCodecSupported(mimetype) {
     return isCodecSupported(mimetype)
   }
 }
