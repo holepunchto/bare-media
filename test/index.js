@@ -9,6 +9,7 @@ import b4a from 'b4a'
 
 import * as media from '../worker/media.js'
 import { calculateFitDimensions } from '../worker/util.js'
+import { isAnimatedWebP } from './helpers'
 
 test('media.createPreview() of .jpg', async (t) => {
   const path = './test/fixtures/sample.jpg'
@@ -181,6 +182,7 @@ test('media.createPreview() of an animated webp', async (t) => {
     dimensions: { width: 32, height: 19 }
   })
   t.ok(Buffer.isBuffer(preview.buffer))
+  t.ok(isAnimatedWebP(preview.buffer))
   t.absent(preview.inlined)
 })
 

@@ -25,13 +25,7 @@ export async function createPreview({
   const rgba = await decodeImageToRGBA(buffer, mimetype)
   const { width, height } = rgba
 
-  const { dimensions, rgba: maybeResizedRGBA } = await resizeRGBA(
-    rgba,
-    width,
-    height,
-    maxWidth,
-    maxHeight
-  )
+  const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
 
   const encoded = await encodeImageFromRGBA(maybeResizedRGBA, format, encoding)
 
@@ -40,7 +34,13 @@ export async function createPreview({
       dimensions: { width, height }
     },
     preview: {
-      metadata: { mimetype: format, dimensions },
+      metadata: {
+        mimetype: format,
+        dimensions: {
+          width: maybeResizedRGBA.width,
+          height: maybeResizedRGBA.height
+        }
+      },
       ...encoded
     }
   }
@@ -73,9 +73,12 @@ async function decodeImageToRGBA(buffer, mimetype) {
   const codec = await importCodec(mimetype)
 
   if (animatableMimetypes.includes(mimetype)) {
-    const { frames, width, height } = codec.decodeAnimated(buffer)
-    const { data } = frames.next().value
-    rgba = { width, height, data }
+    const { width, height, loops, frames } = codec.decodeAnimated(buffer)
+    const data = []
+    for (const frame of frames) {
+      data.push(frame)
+    }
+    rgba = { width, height, loops, frames: data }
   } else {
     rgba = codec.decode(buffer)
   }
@@ -85,24 +88,50 @@ async function decodeImageToRGBA(buffer, mimetype) {
 
 async function encodeImageFromRGBA(rgba, format, encoding) {
   const codec = await importCodec(format)
-  const encoded = codec.encode(rgba)
+
+  let encoded
+  if (Array.isArray(rgba.frames)) {
+    encoded = codec.encodeAnimated(rgba)
+  } else {
+    encoded = codec.encode(rgba)
+  }
 
   return encoding === 'base64'
     ? { inlined: b4a.toString(encoded, 'base64') }
     : { buffer: encoded }
 }
 
-async function resizeRGBA(rgba, width, height, maxWidth, maxHeight) {
-  let maybeResizedRGBA, dimensions
+async function resizeRGBA(rgba, maxWidth, maxHeight) {
+  const { width, height } = rgba
+
+  let maybeResizedRGBA
 
   if (maxWidth && maxHeight && (width > maxWidth || height > maxHeight)) {
     const { resize } = await import('bare-image-resample')
-    dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
-    maybeResizedRGBA = resize(rgba, dimensions.width, dimensions.height)
+    const dimensions = calculateFitDimensions(
+      width,
+      height,
+      maxWidth,
+      maxHeight
+    )
+    if (Array.isArray(rgba.frames)) {
+      const frames = []
+      for (const frame of rgba.frames) {
+        const resized = resize(frame, dimensions.width, dimensions.height)
+        frames.push({ ...resized, timestamp: frame.timestamp })
+      }
+      maybeResizedRGBA = {
+        width: frames[0].width,
+        height: frames[0].height,
+        loops: rgba.loops,
+        frames
+      }
+    } else {
+      maybeResizedRGBA = resize(rgba, dimensions.width, dimensions.height)
+    }
   } else {
-    dimensions = { width, height }
     maybeResizedRGBA = rgba
   }
 
-  return { dimensions, rgba: maybeResizedRGBA }
+  return maybeResizedRGBA
 }
