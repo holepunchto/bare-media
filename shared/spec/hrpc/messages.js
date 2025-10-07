@@ -101,11 +101,13 @@ const encoding2 = {
 const encoding3 = {
   preencode(state, m) {
     c.string.preencode(state, m.path)
-    state.end++ // max flag is 16 so always one byte
+    state.end++ // max flag is 64 so always one byte
 
     if (m.mimetype) c.string.preencode(state, m.mimetype)
     if (m.maxWidth) c.uint.preencode(state, m.maxWidth)
     if (m.maxHeight) c.uint.preencode(state, m.maxHeight)
+    if (m.maxFrames) c.uint.preencode(state, m.maxFrames)
+    if (m.maxBytes) c.uint.preencode(state, m.maxBytes)
     if (m.format) c.string.preencode(state, m.format)
     if (m.encoding) c.string.preencode(state, m.encoding)
   },
@@ -114,8 +116,10 @@ const encoding3 = {
       (m.mimetype ? 1 : 0) |
       (m.maxWidth ? 2 : 0) |
       (m.maxHeight ? 4 : 0) |
-      (m.format ? 8 : 0) |
-      (m.encoding ? 16 : 0)
+      (m.maxFrames ? 8 : 0) |
+      (m.maxBytes ? 16 : 0) |
+      (m.format ? 32 : 0) |
+      (m.encoding ? 64 : 0)
 
     c.string.encode(state, m.path)
     c.uint.encode(state, flags)
@@ -123,6 +127,8 @@ const encoding3 = {
     if (m.mimetype) c.string.encode(state, m.mimetype)
     if (m.maxWidth) c.uint.encode(state, m.maxWidth)
     if (m.maxHeight) c.uint.encode(state, m.maxHeight)
+    if (m.maxFrames) c.uint.encode(state, m.maxFrames)
+    if (m.maxBytes) c.uint.encode(state, m.maxBytes)
     if (m.format) c.string.encode(state, m.format)
     if (m.encoding) c.string.encode(state, m.encoding)
   },
@@ -135,8 +141,10 @@ const encoding3 = {
       mimetype: (flags & 1) !== 0 ? c.string.decode(state) : null,
       maxWidth: (flags & 2) !== 0 ? c.uint.decode(state) : 0,
       maxHeight: (flags & 4) !== 0 ? c.uint.decode(state) : 0,
-      format: (flags & 8) !== 0 ? c.string.decode(state) : null,
-      encoding: (flags & 16) !== 0 ? c.string.decode(state) : null
+      maxFrames: (flags & 8) !== 0 ? c.uint.decode(state) : 0,
+      maxBytes: (flags & 16) !== 0 ? c.uint.decode(state) : 0,
+      format: (flags & 32) !== 0 ? c.string.decode(state) : null,
+      encoding: (flags & 64) !== 0 ? c.string.decode(state) : null
     }
   }
 }
