@@ -154,7 +154,7 @@ test('media.createPreview() of .webp with maxBytes (reducing quality)', async (t
   t.ok(preview.buffer.byteLength < maxBytes)
 })
 
-test('media.createPreview() of .webp with maxBytes throws if bytes can\'t fit', async (t) => {
+test("media.createPreview() of .webp with maxBytes throws if bytes can't fit", async (t) => {
   const path = './test/fixtures/sample.webp'
   const maxWidth = 100
   const maxHeight = 100

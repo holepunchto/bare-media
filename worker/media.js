@@ -48,7 +48,11 @@ export async function createPreview({
 
   // fps reduction
 
-  if (maxBytes && preview.byteLength > maxBytes && maybeResizedRGBA.frames?.length > 1) {
+  if (
+    maxBytes &&
+    preview.byteLength > maxBytes &&
+    maybeResizedRGBA.frames?.length > 1
+  ) {
     const quality = 75
     const dropEvery = [4, 3, 2]
 
@@ -56,7 +60,9 @@ export async function createPreview({
 
     while (dropEvery.length > 0) {
       const every = dropEvery.shift()
-      const frames = maybeResizedRGBA.frames.filter((frame, index) => index % every !== 0)
+      const frames = maybeResizedRGBA.frames.filter(
+        (frame, index) => index % every !== 0
+      )
       const filtered = { ...maybeResizedRGBA, frames }
       preview = await encodeImageFromRGBA(filtered, format, { quality })
       if (!maxBytes || preview.byteLength < maxBytes) {
@@ -69,7 +75,11 @@ export async function createPreview({
     if (preview.byteLength > maxBytes) {
       const numFrames = 25
       const frames = []
-      for (let i = 0; i < maybeResizedRGBA.frames.length && frames.length < numFrames; i += 2) {
+      for (
+        let i = 0;
+        i < maybeResizedRGBA.frames.length && frames.length < numFrames;
+        i += 2
+      ) {
         frames.push(maybeResizedRGBA.frames[i])
       }
       const capped = { ...maybeResizedRGBA, frames }
@@ -79,7 +89,10 @@ export async function createPreview({
     // take only one frame
 
     if (preview.byteLength > maxBytes) {
-      const oneFrame = { ...maybeResizedRGBA, frames: maybeResizedRGBA.frames.slice(0, 1) }
+      const oneFrame = {
+        ...maybeResizedRGBA,
+        frames: maybeResizedRGBA.frames.slice(0, 1)
+      }
       preview = await encodeImageFromRGBA(oneFrame, format)
     }
   }
