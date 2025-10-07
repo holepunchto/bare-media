@@ -39,7 +39,7 @@ export async function createPreview({
 
     while (quality >= MIN_QUALITY) {
       preview = await encodeImageFromRGBA(maybeResizedRGBA, format, { quality })
-      if (preview.byteLength < maxBytes) {
+      if (preview.byteLength <= maxBytes) {
         break
       }
       quality -= 15
@@ -65,7 +65,7 @@ export async function createPreview({
       )
       const filtered = { ...maybeResizedRGBA, frames }
       preview = await encodeImageFromRGBA(filtered, format, { quality })
-      if (!maxBytes || preview.byteLength < maxBytes) {
+      if (!maxBytes || preview.byteLength <= maxBytes) {
         break
       }
     }

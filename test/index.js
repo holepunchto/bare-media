@@ -151,7 +151,7 @@ test('media.createPreview() of .webp with maxBytes (reducing quality)', async (t
   })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.absent(preview.inlined)
-  t.ok(preview.buffer.byteLength < maxBytes)
+  t.ok(preview.buffer.byteLength <= maxBytes)
 })
 
 test("media.createPreview() of .webp with maxBytes throws if bytes can't fit", async (t) => {
@@ -268,7 +268,7 @@ test('media.createPreview() of an animated .webp with maxBytes (reducing quality
   })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.ok(isAnimatedWebP(preview.buffer))
-  t.ok(preview.buffer.byteLength < maxBytes)
+  t.ok(preview.buffer.byteLength <= maxBytes)
   t.absent(preview.inlined)
 })
 
@@ -292,7 +292,7 @@ test('media.createPreview() of an animated webp with maxBytes (reducing fps)', a
   })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.not(isAnimatedWebP(preview.buffer))
-  t.ok(preview.buffer.byteLength < maxBytes)
+  t.ok(preview.buffer.byteLength <= maxBytes)
   t.absent(preview.inlined)
 })
 
