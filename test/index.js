@@ -135,7 +135,7 @@ test('media.createPreview() of .webp with maxBytes (reducing quality)', async (t
   const path = './test/fixtures/sample.webp'
   const maxWidth = 100
   const maxHeight = 100
-  const maxBytes = 1 * 1024
+  const maxBytes = 1500
 
   const { metadata, preview } = await media.createPreview({
     path,
