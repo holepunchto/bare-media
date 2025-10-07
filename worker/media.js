@@ -98,7 +98,9 @@ export async function createPreview({
   }
 
   if (maxBytes && preview.byteLength > maxBytes) {
-    throw new Error(`Could not create preview under maxBytes, reached ${preview.byteLength} bytes`)
+    throw new Error(
+      `Could not create preview under maxBytes, reached ${preview.byteLength} bytes`
+    )
   }
 
   const encoded =
