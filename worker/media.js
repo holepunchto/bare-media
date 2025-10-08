@@ -68,9 +68,9 @@ export async function createPreview({
     // cap to 25 frames
 
     if (preview.byteLength > maxBytes) {
-      const frames = maybeResizedRGBA.frames.slice(0, 50).filter(
-        (frame, index) => index % 2 === 0
-      )
+      const frames = maybeResizedRGBA.frames
+        .slice(0, 50)
+        .filter((frame, index) => index % 2 === 0)
       const capped = { ...maybeResizedRGBA, frames }
       preview = await encodeImageFromRGBA(capped, format, { quality })
     }
