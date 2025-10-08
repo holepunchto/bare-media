@@ -3,7 +3,7 @@ import fs from 'bare-fs'
 import fetch from 'bare-fetch'
 import getMimeType from 'get-mime-type'
 
-import { importCodec } from '../shared/codecs.js'
+import { importCodec, supportsQuality } from '../shared/codecs.js'
 import { calculateFitDimensions } from './util'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
@@ -33,7 +33,7 @@ export async function createPreview({
 
   // quality reduction
 
-  if (maxBytes && preview.byteLength > maxBytes) {
+  if (maxBytes && preview.byteLength > maxBytes && supportsQuality(format)) {
     const MIN_QUALITY = 50
     let quality = 80
 
