@@ -54,8 +54,7 @@ export async function createPreview({
 
     // drop every n frame
 
-    while (dropEvery.length > 0) {
-      const every = dropEvery.shift()
+    for (const dropEvery of [4, 3, 2]) {
       const frames = maybeResizedRGBA.frames.filter(
         (frame, index) => index % every !== 0
       )
