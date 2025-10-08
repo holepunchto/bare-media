@@ -51,7 +51,6 @@ export async function createPreview({
     maybeResizedRGBA.frames?.length > 1
   ) {
     const quality = 75
-    const dropEvery = [4, 3, 2]
 
     // drop every n frame
 
