@@ -56,7 +56,7 @@ export async function createPreview({
 
     for (const dropEvery of [4, 3, 2]) {
       const frames = maybeResizedRGBA.frames.filter(
-        (frame, index) => index % every !== 0
+        (frame, index) => index % dropEvery !== 0
       )
       const filtered = { ...maybeResizedRGBA, frames }
       preview = await encodeImageFromRGBA(filtered, format, { quality })
