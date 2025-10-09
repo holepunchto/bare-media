@@ -3,7 +3,7 @@ import fs from 'bare-fs'
 import fetch from 'bare-fetch'
 import getMimeType from 'get-mime-type'
 
-import { importCodec } from '../shared/codecs.js'
+import { importCodec, supportsQuality } from '../shared/codecs.js'
 import { calculateFitDimensions } from './util'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
@@ -15,6 +15,8 @@ export async function createPreview({
   mimetype,
   maxWidth,
   maxHeight,
+  maxFrames,
+  maxBytes,
   format,
   encoding
 }) {
@@ -22,12 +24,78 @@ export async function createPreview({
   format = format || DEFAULT_PREVIEW_FORMAT
 
   const buffer = fs.readFileSync(path)
-  const rgba = await decodeImageToRGBA(buffer, mimetype)
+  const rgba = await decodeImageToRGBA(buffer, mimetype, maxFrames)
   const { width, height } = rgba
 
   const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
 
-  const encoded = await encodeImageFromRGBA(maybeResizedRGBA, format, encoding)
+  let preview = await encodeImageFromRGBA(maybeResizedRGBA, format)
+
+  // quality reduction
+
+  if (maxBytes && preview.byteLength > maxBytes && supportsQuality(format)) {
+    const MIN_QUALITY = 50
+    for (let quality = 80; quality >= MIN_QUALITY; quality -= 15) {
+      preview = await encodeImageFromRGBA(maybeResizedRGBA, format, { quality })
+      if (preview.byteLength <= maxBytes) {
+        break
+      }
+    }
+  }
+
+  // fps reduction
+
+  if (
+    maxBytes &&
+    preview.byteLength > maxBytes &&
+    maybeResizedRGBA.frames?.length > 1
+  ) {
+    const quality = 75
+
+    // drop every n frame
+
+    for (const dropEvery of [4, 3, 2]) {
+      const frames = maybeResizedRGBA.frames.filter(
+        (frame, index) => index % dropEvery !== 0
+      )
+      const filtered = { ...maybeResizedRGBA, frames }
+      preview = await encodeImageFromRGBA(filtered, format, { quality })
+      if (!maxBytes || preview.byteLength <= maxBytes) {
+        break
+      }
+    }
+
+    // cap to 25 frames
+
+    if (preview.byteLength > maxBytes) {
+      const frames = maybeResizedRGBA.frames
+        .slice(0, 50)
+        .filter((frame, index) => index % 2 === 0)
+      const capped = { ...maybeResizedRGBA, frames }
+      preview = await encodeImageFromRGBA(capped, format, { quality })
+    }
+
+    // take only one frame
+
+    if (preview.byteLength > maxBytes) {
+      const oneFrame = {
+        ...maybeResizedRGBA,
+        frames: maybeResizedRGBA.frames.slice(0, 1)
+      }
+      preview = await encodeImageFromRGBA(oneFrame, format)
+    }
+  }
+
+  if (maxBytes && preview.byteLength > maxBytes) {
+    throw new Error(
+      `Could not create preview under maxBytes, reached ${preview.byteLength} bytes`
+    )
+  }
+
+  const encoded =
+    encoding === 'base64'
+      ? { inlined: b4a.toString(preview, 'base64') }
+      : { buffer: preview }
 
   return {
     metadata: {
@@ -67,7 +135,7 @@ export async function decodeImage({ path, httpLink, mimetype }) {
   }
 }
 
-async function decodeImageToRGBA(buffer, mimetype) {
+async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
   let rgba
 
   const codec = await importCodec(mimetype)
@@ -76,6 +144,7 @@ async function decodeImageToRGBA(buffer, mimetype) {
     const { width, height, loops, frames } = codec.decodeAnimated(buffer)
     const data = []
     for (const frame of frames) {
+      if (maxFrames > 0 && data.length >= maxFrames) break
       data.push(frame)
     }
     rgba = { width, height, loops, frames: data }
@@ -86,19 +155,17 @@ async function decodeImageToRGBA(buffer, mimetype) {
   return rgba
 }
 
-async function encodeImageFromRGBA(rgba, format, encoding) {
+async function encodeImageFromRGBA(rgba, format, opts) {
   const codec = await importCodec(format)
 
   let encoded
   if (Array.isArray(rgba.frames)) {
-    encoded = codec.encodeAnimated(rgba)
+    encoded = codec.encodeAnimated(rgba, opts)
   } else {
-    encoded = codec.encode(rgba)
+    encoded = codec.encode(rgba, opts)
   }
 
-  return encoding === 'base64'
-    ? { inlined: b4a.toString(encoded, 'base64') }
-    : { buffer: encoded }
+  return encoded
 }
 
 async function resizeRGBA(rgba, maxWidth, maxHeight) {

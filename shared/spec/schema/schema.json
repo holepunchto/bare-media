@@ -95,6 +95,16 @@
           "version": 1
         },
         {
+          "name": "maxFrames",
+          "type": "uint",
+          "version": 1
+        },
+        {
+          "name": "maxBytes",
+          "type": "uint",
+          "version": 1
+        },
+        {
           "name": "format",
           "type": "string",
           "version": 1

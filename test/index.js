@@ -131,6 +131,45 @@ test('media.createPreview() of .webp', async (t) => {
   t.absent(preview.inlined)
 })
 
+test('media.createPreview() of .webp with maxBytes (reducing quality)', async (t) => {
+  const path = './test/fixtures/sample.webp'
+  const maxWidth = 100
+  const maxHeight = 100
+  const maxBytes = 1500
+
+  const { metadata, preview } = await media.createPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    maxBytes
+  })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 100, height: 80 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+  t.ok(preview.buffer.byteLength <= maxBytes)
+})
+
+test("media.createPreview() of .webp with maxBytes throws if bytes can't fit", async (t) => {
+  const path = './test/fixtures/sample.webp'
+  const maxWidth = 100
+  const maxHeight = 100
+  const maxBytes = 500
+
+  await t.exception(async () => {
+    await media.createPreview({
+      path,
+      maxWidth,
+      maxHeight,
+      maxBytes
+    })
+  })
+})
+
 test('media.createPreview() does not upscale images', async (t) => {
   const path = './test/fixtures/sample.heic'
   const maxWidth = 256
@@ -165,7 +204,7 @@ test('media.createPreview() without resizing', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of an animated webp', async (t) => {
+test('media.createPreview() of an animated .webp', async (t) => {
   const path = './test/fixtures/animated.webp'
   const maxWidth = 32
   const maxHeight = 32
@@ -183,6 +222,77 @@ test('media.createPreview() of an animated webp', async (t) => {
   })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.ok(isAnimatedWebP(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of an animated .webp with maxFrames', async (t) => {
+  const path = './test/fixtures/animated.webp'
+  const maxWidth = 32
+  const maxHeight = 32
+  const maxFrames = 1
+
+  const { metadata, preview } = await media.createPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    maxFrames
+  })
+
+  t.alike(metadata, { dimensions: { width: 476, height: 280 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 32, height: 19 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.not(isAnimatedWebP(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of an animated .webp with maxBytes (reducing quality)', async (t) => {
+  const path = './test/fixtures/animated.webp'
+  const maxWidth = 32
+  const maxHeight = 32
+  const maxBytes = 3 * 1024
+
+  const { metadata, preview } = await media.createPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    maxBytes
+  })
+
+  t.alike(metadata, { dimensions: { width: 476, height: 280 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 32, height: 19 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.ok(isAnimatedWebP(preview.buffer))
+  t.ok(preview.buffer.byteLength <= maxBytes)
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of an animated webp with maxBytes (reducing fps)', async (t) => {
+  const path = './test/fixtures/animated.webp'
+  const maxWidth = 32
+  const maxHeight = 32
+  const maxBytes = 2 * 1024
+
+  const { metadata, preview } = await media.createPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    maxBytes
+  })
+
+  t.alike(metadata, { dimensions: { width: 476, height: 280 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 32, height: 19 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.not(isAnimatedWebP(preview.buffer))
+  t.ok(preview.buffer.byteLength <= maxBytes)
   t.absent(preview.inlined)
 })
 

@@ -49,12 +49,32 @@ const data = await createPreview({ path, maxWidth, maxHeight })
 
 ## API
 
-| Method          | Parameters                                              | Return Value        | Description                        |
-| --------------- | ------------------------------------------------------- | ------------------- | ---------------------------------- |
-| `createPreview` | `path, mimetype, maxWidth, maxHeight, format, encoding` | `metadata, preview` | Create a preview from a media file |
-| `decodeImage`   | `path`, `httpLink, mimetype`                            | `metadata, data`    | Decode an image to RGBA            |
-
 > See [schema.js](shared/spec/schema.js) for the complete reference of parameters
+
+### createPreview()
+
+Create a preview from a media file
+
+| Property    | Type   | Description                                                       |
+| ----------- | ------ | ----------------------------------------------------------------- |
+| `path`      | string | Path to the input file                                            |
+| `mimetype`  | string | Media type of the input file. If not provided it will be detected |
+| `maxWidth`  | number | Max width for the generated preview                               |
+| `maxHeight` | number | Max height for the generated preview                              |
+| `maxFrames` | number | Max frames for the generated preview in case the file is animated |
+| `maxBytes`  | number | Max bytes for the generated preview                               |
+| `format`    | string | Media type for the generated preview. Default `image/webp`        |
+| `encoding`  | string | `base64` or nothing for buffer                                    |
+
+### decodeImage()
+
+Decode an image to RGBA
+
+| Property   | Type   | Description                                                       |
+| ---------- | ------ | ----------------------------------------------------------------- |
+| `path`     | string | Path to the input file. Either this or `httpLink` is required     |
+| `httpLink` | string | Http link to the input file                                       |
+| `mimetype` | string | Media type of the input file. If not provided it will be detected |
 
 ## License
 

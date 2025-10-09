@@ -78,6 +78,14 @@ media.register({
       type: 'uint'
     },
     {
+      name: 'maxFrames',
+      type: 'uint'
+    },
+    {
+      name: 'maxBytes',
+      type: 'uint'
+    },
+    {
       name: 'format',
       type: 'string'
     },

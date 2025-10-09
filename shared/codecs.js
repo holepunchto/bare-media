@@ -19,3 +19,7 @@ export async function importCodec(mimetype) {
   if (!codecImport) throw new Error(`No codec for ${mimetype}`)
   return await codecImport()
 }
+
+export function supportsQuality(mimetype) {
+  return { 'image/webp': true, 'image/jpeg': true }[mimetype] || false
+}
