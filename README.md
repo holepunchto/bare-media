@@ -55,26 +55,29 @@ const data = await createPreview({ path, maxWidth, maxHeight })
 
 Create a preview from a media file
 
-| Property    | Type   | Description                                                       |
-| ----------- | ------ | ----------------------------------------------------------------- |
-| `path`      | string | Path to the input file                                            |
-| `mimetype`  | string | Media type of the input file. If not provided it will be detected |
-| `maxWidth`  | number | Max width for the generated preview                               |
-| `maxHeight` | number | Max height for the generated preview                              |
-| `maxFrames` | number | Max frames for the generated preview in case the file is animated |
-| `maxBytes`  | number | Max bytes for the generated preview                               |
-| `format`    | string | Media type for the generated preview. Default `image/webp`        |
-| `encoding`  | string | `base64` or nothing for buffer                                    |
+| Property    | Type   | Description                                                               |
+| ----------- | ------ | ------------------------------------------------------------------------- |
+| `path`      | string | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
+| `httpLink`  | string | Http link to the input file                                               |
+| `buffer`    | object | Bytes of the input file                                                   |
+| `mimetype`  | string | Media type of the input file. If not provided it will be detected         |
+| `maxWidth`  | number | Max width for the generated preview                                       |
+| `maxHeight` | number | Max height for the generated preview                                      |
+| `maxFrames` | number | Max frames for the generated preview in case the file is animated         |
+| `maxBytes`  | number | Max bytes for the generated preview                                       |
+| `format`    | string | Media type for the generated preview. Default `image/webp`                |
+| `encoding`  | string | `base64` or nothing for buffer                                            |
 
 ### decodeImage()
 
 Decode an image to RGBA
 
-| Property   | Type   | Description                                                       |
-| ---------- | ------ | ----------------------------------------------------------------- |
-| `path`     | string | Path to the input file. Either this or `httpLink` is required     |
-| `httpLink` | string | Http link to the input file                                       |
-| `mimetype` | string | Media type of the input file. If not provided it will be detected |
+| Property   | Type   | Description                                                               |
+| ---------- | ------ | ------------------------------------------------------------------------- |
+| `path`     | string | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
+| `httpLink` | string | Http link to the input file                                               |
+| `buffer`   | object | Bytes of the input file                                                   |
+| `mimetype` | string | Media type of the input file. If not provided it will be detected         |
 
 ## License
 

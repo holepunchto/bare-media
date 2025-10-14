@@ -71,12 +71,21 @@
       "name": "create-preview-request",
       "namespace": "media",
       "compact": false,
-      "flagsPosition": 1,
+      "flagsPosition": 0,
       "fields": [
         {
           "name": "path",
-          "required": true,
           "type": "string",
+          "version": 1
+        },
+        {
+          "name": "httpLink",
+          "type": "string",
+          "version": 1
+        },
+        {
+          "name": "buffer",
+          "type": "buffer",
           "version": 1
         },
         {
@@ -150,6 +159,11 @@
         {
           "name": "httpLink",
           "type": "string",
+          "version": 1
+        },
+        {
+          "name": "buffer",
+          "type": "buffer",
           "version": 1
         },
         {

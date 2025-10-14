@@ -100,9 +100,23 @@ const encoding2 = {
 // @media/create-preview-request
 const encoding3 = {
   preencode(state, m) {
-    c.string.preencode(state, m.path)
-    state.end++ // max flag is 64 so always one byte
+    const flags =
+      (m.path ? 1 : 0) |
+      (m.httpLink ? 2 : 0) |
+      (m.buffer ? 4 : 0) |
+      (m.mimetype ? 8 : 0) |
+      (m.maxWidth ? 16 : 0) |
+      (m.maxHeight ? 32 : 0) |
+      (m.maxFrames ? 64 : 0) |
+      (m.maxBytes ? 128 : 0) |
+      (m.format ? 256 : 0) |
+      (m.encoding ? 512 : 0)
 
+    c.uint.preencode(state, flags)
+
+    if (m.path) c.string.preencode(state, m.path)
+    if (m.httpLink) c.string.preencode(state, m.httpLink)
+    if (m.buffer) c.buffer.preencode(state, m.buffer)
     if (m.mimetype) c.string.preencode(state, m.mimetype)
     if (m.maxWidth) c.uint.preencode(state, m.maxWidth)
     if (m.maxHeight) c.uint.preencode(state, m.maxHeight)
@@ -113,17 +127,22 @@ const encoding3 = {
   },
   encode(state, m) {
     const flags =
-      (m.mimetype ? 1 : 0) |
-      (m.maxWidth ? 2 : 0) |
-      (m.maxHeight ? 4 : 0) |
-      (m.maxFrames ? 8 : 0) |
-      (m.maxBytes ? 16 : 0) |
-      (m.format ? 32 : 0) |
-      (m.encoding ? 64 : 0)
+      (m.path ? 1 : 0) |
+      (m.httpLink ? 2 : 0) |
+      (m.buffer ? 4 : 0) |
+      (m.mimetype ? 8 : 0) |
+      (m.maxWidth ? 16 : 0) |
+      (m.maxHeight ? 32 : 0) |
+      (m.maxFrames ? 64 : 0) |
+      (m.maxBytes ? 128 : 0) |
+      (m.format ? 256 : 0) |
+      (m.encoding ? 512 : 0)
 
-    c.string.encode(state, m.path)
     c.uint.encode(state, flags)
 
+    if (m.path) c.string.encode(state, m.path)
+    if (m.httpLink) c.string.encode(state, m.httpLink)
+    if (m.buffer) c.buffer.encode(state, m.buffer)
     if (m.mimetype) c.string.encode(state, m.mimetype)
     if (m.maxWidth) c.uint.encode(state, m.maxWidth)
     if (m.maxHeight) c.uint.encode(state, m.maxHeight)
@@ -133,18 +152,19 @@ const encoding3 = {
     if (m.encoding) c.string.encode(state, m.encoding)
   },
   decode(state) {
-    const r0 = c.string.decode(state)
     const flags = c.uint.decode(state)
 
     return {
-      path: r0,
-      mimetype: (flags & 1) !== 0 ? c.string.decode(state) : null,
-      maxWidth: (flags & 2) !== 0 ? c.uint.decode(state) : 0,
-      maxHeight: (flags & 4) !== 0 ? c.uint.decode(state) : 0,
-      maxFrames: (flags & 8) !== 0 ? c.uint.decode(state) : 0,
-      maxBytes: (flags & 16) !== 0 ? c.uint.decode(state) : 0,
-      format: (flags & 32) !== 0 ? c.string.decode(state) : null,
-      encoding: (flags & 64) !== 0 ? c.string.decode(state) : null
+      path: (flags & 1) !== 0 ? c.string.decode(state) : null,
+      httpLink: (flags & 2) !== 0 ? c.string.decode(state) : null,
+      buffer: (flags & 4) !== 0 ? c.buffer.decode(state) : null,
+      mimetype: (flags & 8) !== 0 ? c.string.decode(state) : null,
+      maxWidth: (flags & 16) !== 0 ? c.uint.decode(state) : 0,
+      maxHeight: (flags & 32) !== 0 ? c.uint.decode(state) : 0,
+      maxFrames: (flags & 64) !== 0 ? c.uint.decode(state) : 0,
+      maxBytes: (flags & 128) !== 0 ? c.uint.decode(state) : 0,
+      format: (flags & 256) !== 0 ? c.string.decode(state) : null,
+      encoding: (flags & 512) !== 0 ? c.string.decode(state) : null
     }
   }
 }
@@ -178,19 +198,25 @@ const encoding4 = {
 // @media/decode-image-request
 const encoding5 = {
   preencode(state, m) {
-    state.end++ // max flag is 4 so always one byte
+    state.end++ // max flag is 8 so always one byte
 
     if (m.path) c.string.preencode(state, m.path)
     if (m.httpLink) c.string.preencode(state, m.httpLink)
+    if (m.buffer) c.buffer.preencode(state, m.buffer)
     if (m.mimetype) c.string.preencode(state, m.mimetype)
   },
   encode(state, m) {
-    const flags = (m.path ? 1 : 0) | (m.httpLink ? 2 : 0) | (m.mimetype ? 4 : 0)
+    const flags =
+      (m.path ? 1 : 0) |
+      (m.httpLink ? 2 : 0) |
+      (m.buffer ? 4 : 0) |
+      (m.mimetype ? 8 : 0)
 
     c.uint.encode(state, flags)
 
     if (m.path) c.string.encode(state, m.path)
     if (m.httpLink) c.string.encode(state, m.httpLink)
+    if (m.buffer) c.buffer.encode(state, m.buffer)
     if (m.mimetype) c.string.encode(state, m.mimetype)
   },
   decode(state) {
@@ -199,7 +225,8 @@ const encoding5 = {
     return {
       path: (flags & 1) !== 0 ? c.string.decode(state) : null,
       httpLink: (flags & 2) !== 0 ? c.string.decode(state) : null,
-      mimetype: (flags & 4) !== 0 ? c.string.decode(state) : null
+      buffer: (flags & 4) !== 0 ? c.buffer.decode(state) : null,
+      mimetype: (flags & 8) !== 0 ? c.string.decode(state) : null
     }
   }
 }

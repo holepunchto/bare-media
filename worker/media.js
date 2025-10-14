@@ -12,6 +12,8 @@ const animatableMimetypes = ['image/webp']
 
 export async function createPreview({
   path,
+  httpLink,
+  buffer,
   mimetype,
   maxWidth,
   maxHeight,
@@ -23,8 +25,8 @@ export async function createPreview({
   mimetype = mimetype || getMimeType(path)
   format = format || DEFAULT_PREVIEW_FORMAT
 
-  const buffer = fs.readFileSync(path)
-  const rgba = await decodeImageToRGBA(buffer, mimetype, maxFrames)
+  const buff = await getBuffer({ path, httpLink, buffer })
+  const rgba = await decodeImageToRGBA(buff, mimetype, maxFrames)
   const { width, height } = rgba
 
   const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
@@ -114,17 +116,10 @@ export async function createPreview({
   }
 }
 
-export async function decodeImage({ path, httpLink, mimetype }) {
-  let buffer
+export async function decodeImage({ path, httpLink, buffer, mimetype }) {
+  const buff = await getBuffer({ path, httpLink, buffer })
 
-  if (path) {
-    buffer = fs.readFileSync(path)
-  } else if (httpLink) {
-    const response = await fetch(httpLink)
-    buffer = await response.buffer()
-  }
-
-  const rgba = await decodeImageToRGBA(buffer, mimetype)
+  const rgba = await decodeImageToRGBA(buff, mimetype)
   const { width, height, data } = rgba
 
   return {
@@ -133,6 +128,23 @@ export async function decodeImage({ path, httpLink, mimetype }) {
     },
     data
   }
+}
+
+async function getBuffer({ path, httpLink, buffer }) {
+  if (buffer) return buffer
+
+  if (path) {
+    return fs.readFileSync(path)
+  }
+
+  if (httpLink) {
+    const response = await fetch(httpLink)
+    return await response.buffer()
+  }
+
+  throw new Error(
+    'At least one of "path", "httpLink" or "buffer" must be provided'
+  )
 }
 
 async function decodeImageToRGBA(buffer, mimetype, maxFrames) {

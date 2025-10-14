@@ -1,15 +1,10 @@
 import { test } from 'brittle'
-import Corestore from 'corestore'
-import BlobServer from 'hypercore-blob-server'
-import Hyperblobs from 'hyperblobs'
-import fetch from 'bare-fetch'
 import fs from 'bare-fs'
-import tmp from 'test-tmp'
 import b4a from 'b4a'
 
 import * as media from '../worker/media.js'
 import { calculateFitDimensions } from '../worker/util.js'
-import { isAnimatedWebP } from './helpers'
+import { makeHttpLink, isAnimatedWebP } from './helpers'
 
 test('media.createPreview() of .jpg', async (t) => {
   const path = './test/fixtures/sample.jpg'
@@ -318,11 +313,56 @@ test('media.createPreview() passing mimetype', async (t) => {
   t.absent(preview.inlined)
 })
 
+test('media.createPreview() by httpLink', async (t) => {
+  const path = './test/fixtures/sample.jpg'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const buffer = fs.readFileSync(path)
+
+  const { metadata, preview } = await media.createPreview({
+    buffer,
+    mimetype: 'image/jpeg',
+    maxWidth,
+    maxHeight
+  })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 32, height: 26 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() by buffer', async (t) => {
+  const path = './test/fixtures/sample.jpg'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const buffer = fs.readFileSync(path)
+
+  const { metadata, preview } = await media.createPreview({
+    buffer,
+    mimetype: 'image/jpeg',
+    maxWidth,
+    maxHeight
+  })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 32, height: 26 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
 test('media.decodeImage() by path', async (t) => {
   const path = './test/fixtures/sample.heic'
   const mimetype = 'image/heic'
 
-  // decode
   const { metadata, data } = await media.decodeImage({ path, mimetype })
 
   t.alike(metadata, { dimensions: { width: 152, height: 120 } })
@@ -331,31 +371,23 @@ test('media.decodeImage() by path', async (t) => {
 })
 
 test('media.decodeImage() by httpLink', async (t) => {
-  const store = new Corestore(await tmp())
+  const path = './test/fixtures/sample.heic'
+  const mimetype = 'image/heic'
+  const httpLink = await makeHttpLink(t, path, mimetype)
 
-  const core = store.get({ name: 'test' })
-  const blobs = new Hyperblobs(core)
-  t.teardown(() => blobs.close())
+  const { metadata, data } = await media.decodeImage({ httpLink, mimetype })
 
+  t.alike(metadata, { dimensions: { width: 152, height: 120 } })
+  t.alike(data.slice(0, 4), b4a.from([0xcb, 0xdb, 0xc1, 0xff]))
+  t.is(data.length, 72960)
+})
+
+test('media.decodeImage() by buffer', async (t) => {
   const path = './test/fixtures/sample.heic'
   const mimetype = 'image/heic'
   const buffer = fs.readFileSync(path)
 
-  // save file
-  const id = await blobs.put(buffer)
-
-  const server = new BlobServer(store)
-  t.teardown(() => server.close())
-  await server.listen()
-
-  // get link
-  const httpLink = server.getLink(blobs.core.key, { blob: id })
-  const res = await fetch(httpLink)
-  t.is(res.status, 200)
-  t.alike(await res.buffer(), buffer)
-
-  // decode
-  const { metadata, data } = await media.decodeImage({ httpLink, mimetype })
+  const { metadata, data } = await media.decodeImage({ buffer, mimetype })
 
   t.alike(metadata, { dimensions: { width: 152, height: 120 } })
   t.alike(data.slice(0, 4), b4a.from([0xcb, 0xdb, 0xc1, 0xff]))
