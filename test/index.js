@@ -315,14 +315,14 @@ test('media.createPreview() passing mimetype', async (t) => {
 
 test('media.createPreview() by httpLink', async (t) => {
   const path = './test/fixtures/sample.jpg'
+  const mimetype = 'image/jpeg'
   const maxWidth = 32
   const maxHeight = 32
-
-  const buffer = fs.readFileSync(path)
+  const httpLink = await makeHttpLink(t, path, mimetype)
 
   const { metadata, preview } = await media.createPreview({
-    buffer,
-    mimetype: 'image/jpeg',
+    httpLink,
+    mimetype,
     maxWidth,
     maxHeight
   })
@@ -338,6 +338,7 @@ test('media.createPreview() by httpLink', async (t) => {
 
 test('media.createPreview() by buffer', async (t) => {
   const path = './test/fixtures/sample.jpg'
+  const mimetype = 'image/jpeg'
   const maxWidth = 32
   const maxHeight = 32
 
@@ -345,7 +346,7 @@ test('media.createPreview() by buffer', async (t) => {
 
   const { metadata, preview } = await media.createPreview({
     buffer,
-    mimetype: 'image/jpeg',
+    mimetype,
     maxWidth,
     maxHeight
   })
