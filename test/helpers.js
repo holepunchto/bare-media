@@ -25,15 +25,10 @@ export async function makeHttpLink(t, path, mimetype) {
   await server.listen()
 
   // get link
-  console.log('makeHttpLink 0')
   const httpLink = server.getLink(blobs.core.key, { blob: id })
-  console.log('makeHttpLink 1', httpLink)
   const res = await fetch(httpLink)
-  console.log('makeHttpLink 2')
   t.is(res.status, 200)
-  console.log('makeHttpLink 3')
   t.alike(await res.buffer(), buffer)
-  console.log('makeHttpLink 4')
 
   return httpLink
 }
