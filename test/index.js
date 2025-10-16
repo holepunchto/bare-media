@@ -318,7 +318,7 @@ test('media.createPreview() by httpLink', async (t) => {
   const mimetype = 'image/jpeg'
   const maxWidth = 32
   const maxHeight = 32
-  const httpLink = await makeHttpLink(t, path, mimetype)
+  const httpLink = await makeHttpLink(t, path)
 
   const { metadata, preview } = await media.createPreview({
     httpLink,
@@ -374,7 +374,7 @@ test('media.decodeImage() by path', async (t) => {
 test('media.decodeImage() by httpLink', async (t) => {
   const path = './test/fixtures/sample.heic'
   const mimetype = 'image/heic'
-  const httpLink = await makeHttpLink(t, path, mimetype)
+  const httpLink = await makeHttpLink(t, path)
 
   const { metadata, data } = await media.decodeImage({ httpLink, mimetype })
 

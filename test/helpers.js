@@ -7,7 +7,7 @@ import tmp from 'test-tmp'
 
 let port
 
-export async function makeHttpLink(t, path, mimetype) {
+export async function makeHttpLink(t, path) {
   const store = new Corestore(await tmp())
 
   const core = store.get({ name: 'test' })
