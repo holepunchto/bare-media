@@ -313,7 +313,7 @@ test('media.createPreview() passing mimetype', async (t) => {
   t.absent(preview.inlined)
 })
 
-test.skip('media.createPreview() by httpLink', async (t) => {
+test('media.createPreview() by httpLink', async (t) => {
   const path = './test/fixtures/sample.jpg'
   const mimetype = 'image/jpeg'
   const maxWidth = 32
