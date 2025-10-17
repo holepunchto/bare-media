@@ -62,8 +62,15 @@ media.register({
   fields: [
     {
       name: 'path',
-      type: 'string',
-      required: true
+      type: 'string'
+    },
+    {
+      name: 'httpLink',
+      type: 'string'
+    },
+    {
+      name: 'buffer',
+      type: 'buffer'
     },
     {
       name: 'mimetype',
@@ -122,6 +129,10 @@ media.register({
     {
       name: 'httpLink',
       type: 'string'
+    },
+    {
+      name: 'buffer',
+      type: 'buffer'
     },
     {
       name: 'mimetype',
