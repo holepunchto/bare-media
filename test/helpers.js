@@ -5,8 +5,6 @@ import BlobServer from 'hypercore-blob-server'
 import Hyperblobs from 'hyperblobs'
 import tmp from 'test-tmp'
 
-let port
-
 export async function makeHttpLink(t, path) {
   const store = new Corestore(await tmp())
 
@@ -19,8 +17,7 @@ export async function makeHttpLink(t, path) {
   // save file
   const id = await blobs.put(buffer)
 
-  const server = new BlobServer(store, { port })
-  port = server.port + 1
+  const server = new BlobServer(store)
   t.teardown(() => server.close())
   await server.listen()
 
