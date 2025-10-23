@@ -42,7 +42,7 @@ export class WorkerClient extends ReadyResource {
     this.worker?.IPC.end()
   }
 
-  #reset () {
+  #reset() {
     this.opening = null
     this.closing = null
 
