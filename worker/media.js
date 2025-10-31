@@ -1,10 +1,13 @@
 import b4a from 'b4a'
 import fs from 'bare-fs'
 import fetch from 'bare-fetch'
-import getMimeType from 'get-mime-type'
 
-import { importCodec, supportsQuality } from '../shared/codecs.js'
-import { calculateFitDimensions } from './util'
+import {
+  importCodec,
+  isCodecSupported,
+  supportsQuality
+} from '../shared/codecs.js'
+import { detectMimeType, calculateFitDimensions } from './util'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 
@@ -22,10 +25,15 @@ export async function createPreview({
   format,
   encoding
 }) {
-  mimetype = mimetype || getMimeType(path)
   format = format || DEFAULT_PREVIEW_FORMAT
 
   const buff = await getBuffer({ path, httpLink, buffer })
+  mimetype = mimetype || detectMimeType(buff, path)
+
+  if (!isCodecSupported(mimetype)) {
+    throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
+  }
+
   const rgba = await decodeImageToRGBA(buff, mimetype, maxFrames)
   const { width, height } = rgba
 
@@ -118,6 +126,11 @@ export async function createPreview({
 
 export async function decodeImage({ path, httpLink, buffer, mimetype }) {
   const buff = await getBuffer({ path, httpLink, buffer })
+  mimetype = mimetype || detectMimeType(buff, path)
+
+  if (!isCodecSupported(mimetype)) {
+    throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
+  }
 
   const rgba = await decodeImageToRGBA(buff, mimetype)
   const { width, height, data } = rgba
