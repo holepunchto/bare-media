@@ -7,7 +7,8 @@ export const codecs = {
   'image/webp': () => import('bare-webp'),
   'image/png': () => import('bare-png'),
   'image/tif': () => import('bare-tiff'),
-  'image/tiff': () => import('bare-tiff')
+  'image/tiff': () => import('bare-tiff'),
+  'image/gif': () => import('bare-gif')
 }
 
 export function isCodecSupported(mimetype) {

@@ -106,6 +106,49 @@ test('media.createPreview() of .tiff', async (t) => {
   t.absent(preview.inlined)
 })
 
+test('media.createPreview() of .gif (animated)', async (t) => {
+  const path = './test/fixtures/sample.gif'
+  const maxWidth = 100
+  const maxHeight = 100
+
+  const { metadata, preview } = await media.createPreview({
+    path,
+    maxWidth,
+    maxHeight
+  })
+
+  t.alike(metadata, { dimensions: { width: 400, height: 400 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 100, height: 100 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createPreview() of .gif with maxFrames', async (t) => {
+  const path = './test/fixtures/sample.gif'
+  const maxWidth = 100
+  const maxHeight = 100
+  const maxFrames = 1
+
+  const { metadata, preview } = await media.createPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    maxFrames
+  })
+
+  t.alike(metadata, { dimensions: { width: 400, height: 400 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 100, height: 100 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.not(isAnimatedWebP(preview.buffer))
+  t.absent(preview.inlined)
+})
+
 test('media.createPreview() of .webp', async (t) => {
   const path = './test/fixtures/sample.webp'
   const maxWidth = 32
