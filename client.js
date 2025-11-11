@@ -42,6 +42,17 @@ export class WorkerClient extends ReadyResource {
     this.worker?.IPC.end()
   }
 
+  #reset() {
+    this.opening = null
+    this.closing = null
+
+    this.opened = false
+    this.closed = false
+
+    this.worker = null
+    this.rpc = null
+  }
+
   async #run() {
     const { filename, requireSource, args } = this.opts
     const source = requireSource?.()
@@ -50,7 +61,13 @@ export class WorkerClient extends ReadyResource {
     const ipc = this.worker.IPC
 
     ipc.on('end', () => ipc.end())
-    ipc.on('close', () => this.onClose?.())
+    ipc.on('close', () => {
+      this.#reset()
+      this.onClose?.()
+      console.error(
+        '[bare-media] Worker has exited. IPC channel closed unexpectedly.'
+      )
+    })
 
     this.rpc = new HRPC(ipc)
   }
