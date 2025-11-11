@@ -64,6 +64,7 @@ export class WorkerClient extends ReadyResource {
     ipc.on('close', () => {
       this.#reset()
       this.onClose?.()
+      console.error('[bare-media] Worker has exited. IPC channel closed unexpectedly.')
     })
 
     this.rpc = new HRPC(ipc)
