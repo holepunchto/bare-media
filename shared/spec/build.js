@@ -25,4 +25,10 @@ ns.register({
   response: { name: '@media/decode-image-response', stream: false }
 })
 
+ns.register({
+  name: 'crop-image',
+  request: { name: '@media/crop-image-request', stream: false },
+  response: { name: '@media/crop-image-response', stream: false }
+})
+
 HRPCBuilder.toDisk(builder)

@@ -1,13 +1,11 @@
 import b4a from 'b4a'
-import fs from 'bare-fs'
-import fetch from 'bare-fetch'
 
 import {
   importCodec,
   isCodecSupported,
   supportsQuality
 } from '../shared/codecs.js'
-import { detectMimeType, calculateFitDimensions } from './util'
+import { getBuffer, detectMimeType, calculateFitDimensions } from './util'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 
@@ -143,21 +141,39 @@ export async function decodeImage({ path, httpLink, buffer, mimetype }) {
   }
 }
 
-async function getBuffer({ path, httpLink, buffer }) {
-  if (buffer) return buffer
+export async function cropImage({
+  path,
+  httpLink,
+  buffer,
+  mimetype,
+  left,
+  top,
+  width,
+  height,
+  format
+}) {
+  const buff = await getBuffer({ path, httpLink, buffer })
+  mimetype = mimetype || detectMimeType(buff, path)
 
-  if (path) {
-    return fs.readFileSync(path)
+  if (!isCodecSupported(mimetype)) {
+    throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
-  if (httpLink) {
-    const response = await fetch(httpLink)
-    return await response.buffer()
-  }
+  const rgba = await decodeImageToRGBA(buff, mimetype)
 
-  throw new Error(
-    'At least one of "path", "httpLink" or "buffer" must be provided'
-  )
+  const cropped = await cropRGBA(rgba, left, top, width, height)
+
+  const data = await encodeImageFromRGBA(cropped, format || mimetype)
+
+  return {
+    metadata: {
+      dimensions: {
+        width: rgba.width,
+        height: rgba.height
+      }
+    },
+    data
+  }
 }
 
 async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
@@ -226,4 +242,33 @@ async function resizeRGBA(rgba, maxWidth, maxHeight) {
   }
 
   return maybeResizedRGBA
+}
+
+async function cropRGBA(rgba, left, top, width, height) {
+  if (
+    left < 0 ||
+    top < 0 ||
+    width <= 0 ||
+    height <= 0 ||
+    left + width > rgba.width ||
+    top + height > rgba.height
+  ) {
+    throw new Error('Crop rectangle out of bounds')
+  }
+
+  const data = Buffer.alloc(width * height * 4)
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const srcIndex = ((y + top) * rgba.width + (x + left)) * 4
+      const dstIndex = (y * width + x) * 4
+
+      data[dstIndex] = rgba.data[srcIndex]
+      data[dstIndex + 1] = rgba.data[srcIndex + 1]
+      data[dstIndex + 2] = rgba.data[srcIndex + 2]
+      data[dstIndex + 3] = rgba.data[srcIndex + 3]
+    }
+  }
+
+  return { width, height, data }
 }

@@ -24,4 +24,5 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
       - run: npm -g install bare
       - run: npm install
+      - run: npm run lint
       - run: npm test

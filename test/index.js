@@ -458,6 +458,62 @@ test('media.decodeImage() by buffer', async (t) => {
   t.is(data.length, 72960)
 })
 
+test('media.cropImage()', async (t) => {
+  const path = './test/fixtures/sample.jpg'
+
+  const { metadata, data } = await media.cropImage({
+    path,
+    left: 75,
+    top: 15,
+    width: 50,
+    height: 50
+  })
+
+  t.alike(metadata, { dimensions: { width: 150, height: 120 } })
+  t.is(data.length, 1724)
+})
+
+test('media.cropImage() throws if the crop rectangle is out of bounds', async (t) => {
+  const path = './test/fixtures/sample.jpg'
+
+  await t.exception(async () => {
+    const { metadata, data } = await media.cropImage({
+      path,
+      left: -1,
+      top: 15,
+      width: 50,
+      height: 50
+    })
+  })
+  await t.exception(async () => {
+    const { metadata, data } = await media.cropImage({
+      path,
+      left: 75,
+      top: -1,
+      width: 50,
+      height: 50
+    })
+  })
+  await t.exception(async () => {
+    const { metadata, data } = await media.cropImage({
+      path,
+      left: 75,
+      top: 15,
+      width: 76,
+      height: 50
+    })
+  })
+  await t.exception(async () => {
+    const { metadata, data } = await media.cropImage({
+      path,
+      left: 75,
+      top: 15,
+      width: 50,
+      height: 106
+    })
+  })
+})
+
 test('util calculateFitDimensions()', async (t) => {
   {
     const width = 600
