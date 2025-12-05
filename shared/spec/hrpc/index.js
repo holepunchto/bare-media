@@ -9,7 +9,9 @@ const methods = new Map([
   ['@media/create-preview', 0],
   [0, '@media/create-preview'],
   ['@media/decode-image', 1],
-  [1, '@media/decode-image']
+  [1, '@media/decode-image'],
+  ['@media/crop-image', 2],
+  [2, '@media/crop-image']
 ])
 
 class HRPC {
@@ -18,11 +20,13 @@ class HRPC {
     this._handlers = []
     this._requestEncodings = new Map([
       ['@media/create-preview', getEncoding('@media/create-preview-request')],
-      ['@media/decode-image', getEncoding('@media/decode-image-request')]
+      ['@media/decode-image', getEncoding('@media/decode-image-request')],
+      ['@media/crop-image', getEncoding('@media/crop-image-request')]
     ])
     this._responseEncodings = new Map([
       ['@media/create-preview', getEncoding('@media/create-preview-response')],
-      ['@media/decode-image', getEncoding('@media/decode-image-response')]
+      ['@media/decode-image', getEncoding('@media/decode-image-response')],
+      ['@media/crop-image', getEncoding('@media/crop-image-response')]
     ])
     this._rpc = new RPC(stream, async (req) => {
       const command = methods.get(req.command)
@@ -125,12 +129,20 @@ class HRPC {
     return this._call('@media/decode-image', args)
   }
 
+  async cropImage(args) {
+    return this._call('@media/crop-image', args)
+  }
+
   onCreatePreview(responseFn) {
     this._handlers['@media/create-preview'] = responseFn
   }
 
   onDecodeImage(responseFn) {
     this._handlers['@media/decode-image'] = responseFn
+  }
+
+  onCropImage(responseFn) {
+    this._handlers['@media/crop-image'] = responseFn
   }
 
   _requestIsStream(command) {

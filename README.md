@@ -79,6 +79,22 @@ Decode an image to RGBA
 | `buffer`   | object | Bytes of the input file                                                   |
 | `mimetype` | string | Media type of the input file. If not provided it will be detected         |
 
+### cropImage()
+
+Crop an image
+
+| Property   | Type   | Description                                                               |
+| ---------- | ------ | ------------------------------------------------------------------------- |
+| `path`     | string | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
+| `httpLink` | string | Http link to the input file                                               |
+| `buffer`   | object | Bytes of the input file                                                   |
+| `mimetype` | string | Media type of the input file. If not provided it will be detected         |
+| `left`     | number | Offset from left edge                                                     |
+| `top`      | number | Offset from top edge                                                      |
+| `width`    | number | Width of the region to crop                                               |
+| `height`   | number | Height of the region to crop                                              |
+| `format`   | string | Media type for the cropped image. Default same as the input image         |
+
 ## License
 
 Apache-2.0

@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "schema": [
     {
       "name": "dimensions",
@@ -188,6 +188,77 @@
           "name": "data",
           "type": "buffer",
           "version": 1
+        }
+      ]
+    },
+    {
+      "name": "crop-image-request",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "path",
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "httpLink",
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "buffer",
+          "type": "buffer",
+          "version": 2
+        },
+        {
+          "name": "mimetype",
+          "type": "string",
+          "version": 2
+        },
+        {
+          "name": "left",
+          "type": "uint",
+          "version": 2
+        },
+        {
+          "name": "top",
+          "type": "uint",
+          "version": 2
+        },
+        {
+          "name": "width",
+          "type": "uint",
+          "version": 2
+        },
+        {
+          "name": "height",
+          "type": "uint",
+          "version": 2
+        },
+        {
+          "name": "format",
+          "type": "string",
+          "version": 2
+        }
+      ]
+    },
+    {
+      "name": "crop-image-response",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "metadata",
+          "type": "@media/metadata",
+          "version": 2
+        },
+        {
+          "name": "data",
+          "type": "buffer",
+          "version": 2
         }
       ]
     }

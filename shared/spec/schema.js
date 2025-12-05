@@ -154,3 +154,59 @@ media.register({
     }
   ]
 })
+
+media.register({
+  name: 'crop-image-request',
+  fields: [
+    {
+      name: 'path',
+      type: 'string'
+    },
+    {
+      name: 'httpLink',
+      type: 'string'
+    },
+    {
+      name: 'buffer',
+      type: 'buffer'
+    },
+    {
+      name: 'mimetype',
+      type: 'string'
+    },
+    {
+      name: 'left',
+      type: 'uint'
+    },
+    {
+      name: 'top',
+      type: 'uint'
+    },
+    {
+      name: 'width',
+      type: 'uint'
+    },
+    {
+      name: 'height',
+      type: 'uint'
+    },
+    {
+      name: 'format',
+      type: 'string'
+    }
+  ]
+})
+
+media.register({
+  name: 'crop-image-response',
+  fields: [
+    {
+      name: 'metadata',
+      type: '@media/metadata'
+    },
+    {
+      name: 'data',
+      type: 'buffer'
+    }
+  ]
+})
