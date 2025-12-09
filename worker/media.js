@@ -39,7 +39,9 @@ export async function createPreview({
     rgba = await extractRGBAFromVideo(path, DEFAULT_PREVIEW_FRAME_NUMBER)
   } else {
     if (!isCodecSupported(mimetype)) {
-      throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
+      throw new Error(
+        `Unsupported file type: No codec available for ${mimetype}`
+      )
     }
 
     rgba = await decodeImageToRGBA(buff, mimetype, maxFrames)
@@ -47,9 +49,7 @@ export async function createPreview({
 
   if (!rgba) {
     // TODO: review message
-    throw new Error(
-      `Could not create preview`
-    )
+    throw new Error(`Could not create preview`)
   }
 
   const { width, height } = rgba
@@ -354,9 +354,10 @@ async function extractRGBAFromVideo(filename, frameNum) {
   decoder.destroy()
 
   if (!result) {
-    throw new Error(`Frame ${frameNum} not found (video only has ${currentFrame} frames)`)
+    throw new Error(
+      `Frame ${frameNum} not found (video only has ${currentFrame} frames)`
+    )
   }
 
   return result
 }
-
