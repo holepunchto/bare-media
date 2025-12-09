@@ -24,3 +24,7 @@ export async function importCodec(mimetype) {
 export function supportsQuality(mimetype) {
   return { 'image/webp': true, 'image/jpeg': true }[mimetype] || false
 }
+
+export function isVideo(mimetype) {
+  return mimetype === 'video/mp4' || mimetype === 'video/webm'
+}

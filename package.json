@@ -17,11 +17,13 @@
   "dependencies": {
     "b4a": "^1.6.7",
     "bare-fetch": "^2.4.1",
+    "bare-ffmpeg": "^1.0.0-33",
     "bare-fs": "^4.1.5",
     "bare-gif": "^1.1.2",
     "bare-heif": "^1.0.5",
     "bare-image-resample": "^1.0.1",
     "bare-jpeg": "^1.0.1",
+    "bare-path": "^3.0.0",
     "bare-png": "^1.0.2",
     "bare-tiff": "^1.0.1",
     "bare-webp": "^1.0.3",

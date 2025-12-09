@@ -6,6 +6,26 @@ import * as media from '../worker/media.js'
 import { calculateFitDimensions } from '../worker/util.js'
 import { makeHttpLink, isAnimatedWebP } from './helpers'
 
+test('media.createPreview() of .webm', async (t) => {
+  const path = './test/fixtures/sample.webm'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createPreview({
+    path,
+    maxWidth,
+    maxHeight
+  })
+
+  t.alike(metadata, { dimensions: { width: 320, height: 240 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 32, height: 24 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
 test('media.createPreview() of .jpg', async (t) => {
   const path = './test/fixtures/sample.jpg'
   const maxWidth = 32
