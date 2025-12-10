@@ -12,7 +12,7 @@ import { getBuffer, detectMimeType, calculateFitDimensions } from './util'
 import { extractRGBAFromVideo } from './video.js'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
-const DEFAULT_PREVIEW_FRAME_NUMBER = 5
+const DEFAULT_PREVIEW_FRAME_NUMBER = 1
 
 export async function createPreview({
   path,
