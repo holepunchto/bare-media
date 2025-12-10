@@ -1,0 +1,74 @@
+import ffmpeg from 'bare-ffmpeg'
+import path from 'bare-path'
+import fs from 'bare-fs'
+
+export async function extractRGBAFromVideo(filename, frameNum) {
+  const video = fs.readFileSync(path.resolve(filename))
+  const io = new ffmpeg.IOContext(video)
+
+  using inputFormat = new ffmpeg.InputFormatContext(io)
+  const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
+  const decoder = stream.decoder()
+  decoder.open()
+
+  using packet = new ffmpeg.Packet()
+  using frame = new ffmpeg.Frame()
+
+  let currentFrame = 0
+  let result = null
+
+  while (inputFormat.readFrame(packet)) {
+    if (packet.streamIndex === stream.index) {
+      if (decoder.sendPacket(packet)) {
+        while (decoder.receiveFrame(frame)) {
+          if (currentFrame === frameNum) {
+            // Convert to RGBA
+            using scaler = new ffmpeg.Scaler(
+              frame.format,
+              frame.width,
+              frame.height,
+              ffmpeg.constants.pixelFormats.RGBA,
+              frame.width,
+              frame.height
+            )
+
+            using rgbaFrame = new ffmpeg.Frame()
+            rgbaFrame.width = frame.width
+            rgbaFrame.height = frame.height
+            rgbaFrame.format = ffmpeg.constants.pixelFormats.RGBA
+            rgbaFrame.alloc()
+
+            scaler.scale(frame, rgbaFrame)
+
+            const image = new ffmpeg.Image(
+              ffmpeg.constants.pixelFormats.RGBA,
+              rgbaFrame.width,
+              rgbaFrame.height
+            )
+            image.read(rgbaFrame)
+
+            result = {
+              width: rgbaFrame.width,
+              height: rgbaFrame.height,
+              data: image.data
+            }
+            break
+          }
+          currentFrame++
+        }
+      }
+    }
+    packet.unref()
+    if (result) break
+  }
+
+  decoder.destroy()
+
+  if (!result) {
+    throw new Error(
+      `Frame ${frameNum} not found (video only has ${currentFrame} frames)`
+    )
+  }
+
+  return result
+}

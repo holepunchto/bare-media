@@ -37,3 +37,7 @@ export async function importImageCodec(mimetype) {
 export function supportsQuality(mimetype) {
   return { 'image/webp': true, 'image/jpeg': true }[mimetype] || false
 }
+
+export function isAnimatable(mimetype) {
+  return ['image/webp', 'image/gif'].includes(mimetype)
+}
