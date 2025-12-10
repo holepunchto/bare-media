@@ -1,10 +1,27 @@
 import ffmpeg from 'bare-ffmpeg'
-import path from 'bare-path'
 import fs from 'bare-fs'
 
 export async function extractRGBAFromVideo(filename, frameNum) {
-  const video = fs.readFileSync(path.resolve(filename))
-  const io = new ffmpeg.IOContext(video)
+  const fd = fs.openSync(filename, 'r')
+  const fileSize = fs.fstatSync(fd).size
+  let offset = 0
+
+  const io = new ffmpeg.IOContext(4096, {
+    onread: (buffer, requested) => {
+      const read = fs.readSync(fd, buffer, 0, requested, offset)
+      if (read === 0) return 0
+      offset += read
+      return read
+    },
+    onseek: (o, whence) => {
+      if (whence === ffmpeg.constants.seek.SIZE) return fileSize
+      if (whence === ffmpeg.constants.seek.SET) offset = o
+      else if (whence === ffmpeg.constants.seek.CUR) offset += o
+      else if (whence === ffmpeg.constants.seek.END) offset = fileSize + o
+      else return -1
+      return offset
+    }
+  })
 
   using inputFormat = new ffmpeg.InputFormatContext(io)
   const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
@@ -63,6 +80,7 @@ export async function extractRGBAFromVideo(filename, frameNum) {
   }
 
   decoder.destroy()
+  fs.closeSync(fd)
 
   if (!result) {
     throw new Error(
