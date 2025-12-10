@@ -33,23 +33,19 @@ export async function createPreview({
   const buff = await getBuffer({ path, httpLink, buffer })
   mimetype = mimetype || detectMimeType(buff, path)
 
-  let rgba
+  if (!isCodecSupported(mimetype)) {
+    throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
+  }
 
+  let rgba
   if (isVideo(mimetype)) {
     rgba = await extractRGBAFromVideo(path, DEFAULT_PREVIEW_FRAME_NUMBER)
   } else {
-    if (!isCodecSupported(mimetype)) {
-      throw new Error(
-        `Unsupported file type: No codec available for ${mimetype}`
-      )
-    }
-
     rgba = await decodeImageToRGBA(buff, mimetype, maxFrames)
   }
 
   if (!rgba) {
-    // TODO: review message
-    throw new Error(`Could not create preview`)
+    throw new Error('Could not decode input image')
   }
 
   const { width, height } = rgba

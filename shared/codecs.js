@@ -12,7 +12,7 @@ export const codecs = {
 }
 
 export function isCodecSupported(mimetype) {
-  return mimetype in codecs
+  return mimetype in codecs || isVideo(mimetype)
 }
 
 export async function importCodec(mimetype) {
