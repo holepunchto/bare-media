@@ -1,15 +1,18 @@
 import b4a from 'b4a'
 
 import {
-  importCodec,
+  importImageCodec,
+  isImageCodecSupported,
+  isVideoCodecSupported,
   isCodecSupported,
-  supportsQuality
+  supportsQuality,
+  isAnimatable
 } from '../shared/codecs.js'
 import { getBuffer, detectMimeType, calculateFitDimensions } from './util'
+import { extractRGBAFromVideo } from './video.js'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
-
-const animatableMimetypes = ['image/webp']
+const DEFAULT_PREVIEW_FRAME_NUMBER = 1
 
 export async function createPreview({
   path,
@@ -32,9 +35,18 @@ export async function createPreview({
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
-  const rgba = await decodeImageToRGBA(buff, mimetype, maxFrames)
-  const { width, height } = rgba
+  let rgba
+  if (isVideoCodecSupported(mimetype)) {
+    rgba = await extractRGBAFromVideo(path, DEFAULT_PREVIEW_FRAME_NUMBER)
+  } else {
+    rgba = await decodeImageToRGBA(buff, mimetype, maxFrames)
+  }
 
+  if (!rgba) {
+    throw new Error('Could not decode input image')
+  }
+
+  const { width, height } = rgba
   const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
 
   let preview = await encodeImageFromRGBA(maybeResizedRGBA, format)
@@ -126,7 +138,7 @@ export async function decodeImage({ path, httpLink, buffer, mimetype }) {
   const buff = await getBuffer({ path, httpLink, buffer })
   mimetype = mimetype || detectMimeType(buff, path)
 
-  if (!isCodecSupported(mimetype)) {
+  if (!isImageCodecSupported(mimetype)) {
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
@@ -155,7 +167,7 @@ export async function cropImage({
   const buff = await getBuffer({ path, httpLink, buffer })
   mimetype = mimetype || detectMimeType(buff, path)
 
-  if (!isCodecSupported(mimetype)) {
+  if (!isImageCodecSupported(mimetype)) {
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
@@ -179,9 +191,9 @@ export async function cropImage({
 async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
   let rgba
 
-  const codec = await importCodec(mimetype)
+  const codec = await importImageCodec(mimetype)
 
-  if (animatableMimetypes.includes(mimetype)) {
+  if (isAnimatable(mimetype)) {
     const { width, height, loops, frames } = codec.decodeAnimated(buffer)
     const data = []
     for (const frame of frames) {
@@ -197,7 +209,7 @@ async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
 }
 
 async function encodeImageFromRGBA(rgba, format, opts) {
-  const codec = await importCodec(format)
+  const codec = await importImageCodec(format)
 
   let encoded
   if (Array.isArray(rgba.frames)) {
