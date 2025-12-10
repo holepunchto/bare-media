@@ -4,10 +4,11 @@ import path from 'bare-path'
 import fs from 'bare-fs'
 
 import {
-  importCodec,
+  importImageCodec,
+  isImageCodecSupported,
+  isVideoCodecSupported,
   isCodecSupported,
-  supportsQuality,
-  isVideo
+  supportsQuality
 } from '../shared/codecs.js'
 import { getBuffer, detectMimeType, calculateFitDimensions } from './util'
 
@@ -38,7 +39,7 @@ export async function createPreview({
   }
 
   let rgba
-  if (isVideo(mimetype)) {
+  if (isVideoCodecSupported(mimetype)) {
     rgba = await extractRGBAFromVideo(path, DEFAULT_PREVIEW_FRAME_NUMBER)
   } else {
     rgba = await decodeImageToRGBA(buff, mimetype, maxFrames)
@@ -140,7 +141,7 @@ export async function decodeImage({ path, httpLink, buffer, mimetype }) {
   const buff = await getBuffer({ path, httpLink, buffer })
   mimetype = mimetype || detectMimeType(buff, path)
 
-  if (!isCodecSupported(mimetype)) {
+  if (!isImageCodecSupported(mimetype)) {
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
@@ -169,7 +170,7 @@ export async function cropImage({
   const buff = await getBuffer({ path, httpLink, buffer })
   mimetype = mimetype || detectMimeType(buff, path)
 
-  if (!isCodecSupported(mimetype)) {
+  if (!isImageCodecSupported(mimetype)) {
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
@@ -193,7 +194,7 @@ export async function cropImage({
 async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
   let rgba
 
-  const codec = await importCodec(mimetype)
+  const codec = await importImageCodec(mimetype)
 
   if (animatableMimetypes.includes(mimetype)) {
     const { width, height, loops, frames } = codec.decodeAnimated(buffer)
@@ -211,7 +212,7 @@ async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
 }
 
 async function encodeImageFromRGBA(rgba, format, opts) {
-  const codec = await importCodec(format)
+  const codec = await importImageCodec(format)
 
   let encoded
   if (Array.isArray(rgba.frames)) {
