@@ -95,6 +95,22 @@ Crop an image
 | `height`   | number | Height of the region to crop                                              |
 | `format`   | string | Media type for the cropped image. Default same as the input image         |
 
+### transcode()
+
+Transcode a media file to a stream
+
+| Property                    | Type   | Description                                                               |
+| --------------------------- | ------ | ------------------------------------------------------------------------- |
+| `path`                      | string | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
+| `httpLink`                  | string | Http link to the input file                                               |
+| `buffer`                    | object | Bytes of the input file                                                   |
+| `mimetype`                  | string | Media type of the input file. If not provided it will be detected         |
+| `outputParameters`          | object | Output parameters                                                         |
+| `outputParameters.mimetype` | string | Media type for the output stream. Default `video/mp4`                     |
+| `outputParameters.codec`    | string | Video codec for the output stream. Default `h264`                         |
+| `outputParameters.width`    | number | Width of the output stream                                                |
+| `outputParameters.height`   | number | Height of the output stream                                               |
+
 ## License
 
 Apache-2.0
