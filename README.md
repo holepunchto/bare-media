@@ -111,6 +111,19 @@ Transcode a media file to a stream
 | `outputParameters.width`    | number | Width of the output stream                                                |
 | `outputParameters.height`   | number | Height of the output stream                                               |
 
+#### Example
+
+```javascript
+const stream = await worker.transcode({
+  path: 'video.mkv',
+  outputParameters: { mimetype: 'video/mp4' }
+})
+
+for await (const chunk of stream) {
+  console.log('Received chunk:', chunk.buffer.length)
+}
+```
+
 ## License
 
 Apache-2.0
