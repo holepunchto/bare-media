@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "schema": [
     {
       "id": 0,
@@ -39,6 +39,19 @@
         "stream": false
       },
       "version": 2
+    },
+    {
+      "id": 3,
+      "name": "@media/transcode",
+      "request": {
+        "name": "@media/transcode-request",
+        "stream": false
+      },
+      "response": {
+        "name": "@media/transcode-response",
+        "stream": true
+      },
+      "version": 3
     }
   ]
 }

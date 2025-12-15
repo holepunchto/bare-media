@@ -579,3 +579,41 @@ test('util calculateFitDimensions()', async (t) => {
     t.alike(dimensions, { width: 1574, height: 2560 })
   }
 })
+
+test('media.transcode() - streaming response (unit test)', async (t) => {
+  const path = './test/fixtures/sample.jpg'
+  const outputParameters = {
+    mimetype: 'video/mp4',
+    width: 1280,
+    height: 720
+  }
+
+  const mockStream = {
+    data: {
+      path,
+      outputParameters
+    },
+    chunks: [],
+    write(chunk) {
+      this.chunks.push(chunk)
+    },
+    end() {
+      this.ended = true
+    }
+  }
+
+  await media.transcode(mockStream)
+
+  t.is(mockStream.chunks.length, 5, 'Received 5 chunks')
+  t.is(
+    b4a.toString(mockStream.chunks[0].buffer),
+    'fake-transcoded-chunk-0',
+    'First chunk content matches'
+  )
+  t.is(
+    b4a.toString(mockStream.chunks[4].buffer),
+    'fake-transcoded-chunk-4',
+    'Last chunk content matches'
+  )
+  t.ok(mockStream.ended, 'Stream was ended')
+})

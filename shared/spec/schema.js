@@ -210,3 +210,61 @@ media.register({
     }
   ]
 })
+
+media.register({
+  name: 'output-parameters',
+  fields: [
+    {
+      name: 'mimetype',
+      type: 'string'
+    },
+    {
+      name: 'codec',
+      type: 'string'
+    },
+    {
+      name: 'width',
+      type: 'uint'
+    },
+    {
+      name: 'height',
+      type: 'uint'
+    }
+  ]
+})
+
+media.register({
+  name: 'transcode-request',
+  fields: [
+    {
+      name: 'path',
+      type: 'string'
+    },
+    {
+      name: 'httpLink',
+      type: 'string'
+    },
+    {
+      name: 'buffer',
+      type: 'buffer'
+    },
+    {
+      name: 'mimetype',
+      type: 'string'
+    },
+    {
+      name: 'outputParameters',
+      type: '@media/output-parameters'
+    }
+  ]
+})
+
+media.register({
+  name: 'transcode-response',
+  fields: [
+    {
+      name: 'buffer',
+      type: 'buffer'
+    }
+  ]
+})

@@ -1,5 +1,5 @@
 {
-  "version": 2,
+  "version": 3,
   "schema": [
     {
       "name": "dimensions",
@@ -259,6 +259,80 @@
           "name": "data",
           "type": "buffer",
           "version": 2
+        }
+      ]
+    },
+    {
+      "name": "output-parameters",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "mimetype",
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "codec",
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "width",
+          "type": "uint",
+          "version": 3
+        },
+        {
+          "name": "height",
+          "type": "uint",
+          "version": 3
+        }
+      ]
+    },
+    {
+      "name": "transcode-request",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "path",
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "httpLink",
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "buffer",
+          "type": "buffer",
+          "version": 3
+        },
+        {
+          "name": "mimetype",
+          "type": "string",
+          "version": 3
+        },
+        {
+          "name": "outputParameters",
+          "type": "@media/output-parameters",
+          "version": 3
+        }
+      ]
+    },
+    {
+      "name": "transcode-response",
+      "namespace": "media",
+      "compact": false,
+      "flagsPosition": 0,
+      "fields": [
+        {
+          "name": "buffer",
+          "type": "buffer",
+          "version": 3
         }
       ]
     }

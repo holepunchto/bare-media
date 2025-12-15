@@ -176,6 +176,29 @@ export async function cropImage({
   }
 }
 
+export async function transcode(stream) {
+  const { path, httpLink, buffer, mimetype, outputParameters } = stream.data
+
+  const buff = await getBuffer({ path, httpLink, buffer })
+  const detectedMime = mimetype || detectMimeType(buff, path)
+
+  console.log('[transcode] Starting transcoding...', {
+    path,
+    detectedMime,
+    outputParameters
+  })
+
+  // Simulate transcoding
+  for (let i = 0; i < 5; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    stream.write({
+      buffer: b4a.from(`fake-transcoded-chunk-${i}`)
+    })
+  }
+
+  stream.end()
+}
+
 async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
   let rgba
 
