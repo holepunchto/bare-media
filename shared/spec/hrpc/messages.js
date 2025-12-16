@@ -380,8 +380,7 @@ const encoding9 = {
     const flags = c.uint.decode(state)
 
     return {
-      mimetype:
-        version >= 3 && (flags & 1) !== 0 ? c.string.decode(state) : null,
+      mimetype: version >= 3 && (flags & 1) !== 0 ? c.string.decode(state) : null,
       codec: version >= 3 && (flags & 2) !== 0 ? c.string.decode(state) : null,
       width: version >= 3 && (flags & 4) !== 0 ? c.uint.decode(state) : 0,
       height: version >= 3 && (flags & 8) !== 0 ? c.uint.decode(state) : 0
@@ -401,8 +400,7 @@ const encoding10 = {
     if (version >= 3 && m.httpLink) c.string.preencode(state, m.httpLink)
     if (version >= 3 && m.buffer) c.buffer.preencode(state, m.buffer)
     if (version >= 3 && m.mimetype) c.string.preencode(state, m.mimetype)
-    if (version >= 3 && m.outputParameters)
-      encoding10_4.preencode(state, m.outputParameters)
+    if (version >= 3 && m.outputParameters) encoding10_4.preencode(state, m.outputParameters)
   },
   encode(state, m) {
     const flags =
@@ -418,21 +416,17 @@ const encoding10 = {
     if (version >= 3 && m.httpLink) c.string.encode(state, m.httpLink)
     if (version >= 3 && m.buffer) c.buffer.encode(state, m.buffer)
     if (version >= 3 && m.mimetype) c.string.encode(state, m.mimetype)
-    if (version >= 3 && m.outputParameters)
-      encoding10_4.encode(state, m.outputParameters)
+    if (version >= 3 && m.outputParameters) encoding10_4.encode(state, m.outputParameters)
   },
   decode(state) {
     const flags = c.uint.decode(state)
 
     return {
       path: version >= 3 && (flags & 1) !== 0 ? c.string.decode(state) : null,
-      httpLink:
-        version >= 3 && (flags & 2) !== 0 ? c.string.decode(state) : null,
+      httpLink: version >= 3 && (flags & 2) !== 0 ? c.string.decode(state) : null,
       buffer: version >= 3 && (flags & 4) !== 0 ? c.buffer.decode(state) : null,
-      mimetype:
-        version >= 3 && (flags & 8) !== 0 ? c.string.decode(state) : null,
-      outputParameters:
-        version >= 3 && (flags & 16) !== 0 ? encoding10_4.decode(state) : null
+      mimetype: version >= 3 && (flags & 8) !== 0 ? c.string.decode(state) : null,
+      outputParameters: version >= 3 && (flags & 16) !== 0 ? encoding10_4.decode(state) : null
     }
   }
 }
