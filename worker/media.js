@@ -1,10 +1,6 @@
 import b4a from 'b4a'
 
-import {
-  importCodec,
-  isCodecSupported,
-  supportsQuality
-} from '../shared/codecs.js'
+import { importCodec, isCodecSupported, supportsQuality } from '../shared/codecs.js'
 import { getBuffer, detectMimeType, calculateFitDimensions } from './util'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
@@ -53,19 +49,13 @@ export async function createPreview({
 
   // fps reduction
 
-  if (
-    maxBytes &&
-    preview.byteLength > maxBytes &&
-    maybeResizedRGBA.frames?.length > 1
-  ) {
+  if (maxBytes && preview.byteLength > maxBytes && maybeResizedRGBA.frames?.length > 1) {
     const quality = 75
 
     // drop every n frame
 
     for (const dropEvery of [4, 3, 2]) {
-      const frames = maybeResizedRGBA.frames.filter(
-        (frame, index) => index % dropEvery !== 0
-      )
+      const frames = maybeResizedRGBA.frames.filter((frame, index) => index % dropEvery !== 0)
       const filtered = { ...maybeResizedRGBA, frames }
       preview = await encodeImageFromRGBA(filtered, format, { quality })
       if (!maxBytes || preview.byteLength <= maxBytes) {
@@ -76,9 +66,7 @@ export async function createPreview({
     // cap to 25 frames
 
     if (preview.byteLength > maxBytes) {
-      const frames = maybeResizedRGBA.frames
-        .slice(0, 50)
-        .filter((frame, index) => index % 2 === 0)
+      const frames = maybeResizedRGBA.frames.slice(0, 50).filter((frame, index) => index % 2 === 0)
       const capped = { ...maybeResizedRGBA, frames }
       preview = await encodeImageFromRGBA(capped, format, { quality })
     }
@@ -95,15 +83,11 @@ export async function createPreview({
   }
 
   if (maxBytes && preview.byteLength > maxBytes) {
-    throw new Error(
-      `Could not create preview under maxBytes, reached ${preview.byteLength} bytes`
-    )
+    throw new Error(`Could not create preview under maxBytes, reached ${preview.byteLength} bytes`)
   }
 
   const encoded =
-    encoding === 'base64'
-      ? { inlined: b4a.toString(preview, 'base64') }
-      : { buffer: preview }
+    encoding === 'base64' ? { inlined: b4a.toString(preview, 'base64') } : { buffer: preview }
 
   return {
     metadata: {
@@ -239,12 +223,7 @@ async function resizeRGBA(rgba, maxWidth, maxHeight) {
 
   if (maxWidth && maxHeight && (width > maxWidth || height > maxHeight)) {
     const { resize } = await import('bare-image-resample')
-    const dimensions = calculateFitDimensions(
-      width,
-      height,
-      maxWidth,
-      maxHeight
-    )
+    const dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
     if (Array.isArray(rgba.frames)) {
       const frames = []
       for (const frame of rgba.frames) {

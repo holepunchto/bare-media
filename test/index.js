@@ -521,12 +521,7 @@ test('util calculateFitDimensions()', async (t) => {
     const maxWidth = 200
     const maxHeight = 100
 
-    const dimensions = calculateFitDimensions(
-      width,
-      height,
-      maxWidth,
-      maxHeight
-    )
+    const dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
 
     t.alike(dimensions, { width: 200, height: 67 })
   }
@@ -537,12 +532,7 @@ test('util calculateFitDimensions()', async (t) => {
     const maxWidth = 200
     const maxHeight = 100
 
-    const dimensions = calculateFitDimensions(
-      width,
-      height,
-      maxWidth,
-      maxHeight
-    )
+    const dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
 
     t.alike(dimensions, { width: 50, height: 100 })
   }
@@ -553,12 +543,7 @@ test('util calculateFitDimensions()', async (t) => {
     const maxWidth = 2560
     const maxHeight = 2560
 
-    const dimensions = calculateFitDimensions(
-      width,
-      height,
-      maxWidth,
-      maxHeight
-    )
+    const dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
 
     t.alike(dimensions, { width: 2560, height: 1574 })
   }
@@ -569,12 +554,7 @@ test('util calculateFitDimensions()', async (t) => {
     const maxWidth = 2560
     const maxHeight = 2560
 
-    const dimensions = calculateFitDimensions(
-      width,
-      height,
-      maxWidth,
-      maxHeight
-    )
+    const dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
 
     t.alike(dimensions, { width: 1574, height: 2560 })
   }
