@@ -15,11 +15,7 @@ export class WorkerClient extends ReadyResource {
     this.#attachMethods()
   }
 
-  initialize({
-    filename = 'node_modules/bare-media/worker/index.js',
-    requireSource,
-    args
-  } = {}) {
+  initialize({ filename = 'node_modules/bare-media/worker/index.js', requireSource, args } = {}) {
     this.opts = { filename, requireSource, args }
   }
 
@@ -64,9 +60,7 @@ export class WorkerClient extends ReadyResource {
     ipc.on('close', () => {
       this.#reset()
       this.onClose?.()
-      console.error(
-        '[bare-media] Worker has exited. IPC channel closed unexpectedly.'
-      )
+      console.error('[bare-media] Worker has exited. IPC channel closed unexpectedly.')
     })
 
     this.rpc = new HRPC(ipc)

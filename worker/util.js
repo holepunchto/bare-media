@@ -17,9 +17,7 @@ export async function getBuffer({ path, httpLink, buffer }) {
     return await response.buffer()
   }
 
-  throw new Error(
-    'At least one of "path", "httpLink" or "buffer" must be provided'
-  )
+  throw new Error('At least one of "path", "httpLink" or "buffer" must be provided')
 }
 
 export function detectMimeType(buffer, path) {
