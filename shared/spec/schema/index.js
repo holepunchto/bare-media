@@ -45,8 +45,7 @@ const encoding1 = {
     if (m.duration) c.uint.preencode(state, m.duration)
   },
   encode(state, m) {
-    const flags =
-      (m.mimetype ? 1 : 0) | (m.dimensions ? 2 : 0) | (m.duration ? 4 : 0)
+    const flags = (m.mimetype ? 1 : 0) | (m.dimensions ? 2 : 0) | (m.duration ? 4 : 0)
 
     c.uint.encode(state, flags)
 
@@ -78,8 +77,7 @@ const encoding2 = {
     if (m.buffer) c.buffer.preencode(state, m.buffer)
   },
   encode(state, m) {
-    const flags =
-      (m.metadata ? 1 : 0) | (m.inlined ? 2 : 0) | (m.buffer ? 4 : 0)
+    const flags = (m.metadata ? 1 : 0) | (m.inlined ? 2 : 0) | (m.buffer ? 4 : 0)
 
     c.uint.encode(state, flags)
 
@@ -208,10 +206,7 @@ const encoding5 = {
   },
   encode(state, m) {
     const flags =
-      (m.path ? 1 : 0) |
-      (m.httpLink ? 2 : 0) |
-      (m.buffer ? 4 : 0) |
-      (m.mimetype ? 8 : 0)
+      (m.path ? 1 : 0) | (m.httpLink ? 2 : 0) | (m.buffer ? 4 : 0) | (m.mimetype ? 8 : 0)
 
     c.uint.encode(state, flags)
 
@@ -316,17 +311,14 @@ const encoding7 = {
 
     return {
       path: version >= 2 && (flags & 1) !== 0 ? c.string.decode(state) : null,
-      httpLink:
-        version >= 2 && (flags & 2) !== 0 ? c.string.decode(state) : null,
+      httpLink: version >= 2 && (flags & 2) !== 0 ? c.string.decode(state) : null,
       buffer: version >= 2 && (flags & 4) !== 0 ? c.buffer.decode(state) : null,
-      mimetype:
-        version >= 2 && (flags & 8) !== 0 ? c.string.decode(state) : null,
+      mimetype: version >= 2 && (flags & 8) !== 0 ? c.string.decode(state) : null,
       left: version >= 2 && (flags & 16) !== 0 ? c.uint.decode(state) : 0,
       top: version >= 2 && (flags & 32) !== 0 ? c.uint.decode(state) : 0,
       width: version >= 2 && (flags & 64) !== 0 ? c.uint.decode(state) : 0,
       height: version >= 2 && (flags & 128) !== 0 ? c.uint.decode(state) : 0,
-      format:
-        version >= 2 && (flags & 256) !== 0 ? c.string.decode(state) : null
+      format: version >= 2 && (flags & 256) !== 0 ? c.string.decode(state) : null
     }
   }
 }
@@ -343,8 +335,7 @@ const encoding8 = {
     if (version >= 2 && m.data) c.buffer.preencode(state, m.data)
   },
   encode(state, m) {
-    const flags =
-      (version >= 2 && m.metadata ? 1 : 0) | (version >= 2 && m.data ? 2 : 0)
+    const flags = (version >= 2 && m.metadata ? 1 : 0) | (version >= 2 && m.data ? 2 : 0)
 
     c.uint.encode(state, flags)
 
@@ -355,8 +346,7 @@ const encoding8 = {
     const flags = c.uint.decode(state)
 
     return {
-      metadata:
-        version >= 2 && (flags & 1) !== 0 ? encoding8_0.decode(state) : null,
+      metadata: version >= 2 && (flags & 1) !== 0 ? encoding8_0.decode(state) : null,
       data: version >= 2 && (flags & 2) !== 0 ? c.buffer.decode(state) : null
     }
   }
@@ -428,13 +418,4 @@ function getStruct(name, v = VERSION) {
 
 const resolveStruct = getStruct // compat
 
-export {
-  resolveStruct,
-  getStruct,
-  getEnum,
-  getEncoding,
-  encode,
-  decode,
-  setVersion,
-  version
-}
+export { resolveStruct, getStruct, getEnum, getEncoding, encode, decode, setVersion, version }
