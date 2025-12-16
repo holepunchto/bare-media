@@ -352,7 +352,7 @@ const encoding8 = {
   }
 }
 
-// @media/output-parameters
+// @media/transcode-output-parameters
 const encoding9 = {
   preencode(state, m) {
     state.end++ // max flag is 8 so always one byte
@@ -495,7 +495,7 @@ function getEncoding(name) {
       return encoding7
     case '@media/crop-image-response':
       return encoding8
-    case '@media/output-parameters':
+    case '@media/transcode-output-parameters':
       return encoding9
     case '@media/transcode-request':
       return encoding10

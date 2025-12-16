@@ -93,11 +93,14 @@ class HRPC {
   _callSync(name, args) {
     const requestEncoding = this._requestEncodings.get(name)
     const responseEncoding = this._responseEncodings.get(name)
-    const request = this._rpc.request(methods.get(name))
     if (this._requestIsSend(name)) {
       const encoded = c.encode(requestEncoding, args)
+      const request = this._rpc.event(methods.get(name))
       request.send(encoded)
     }
+
+    const request = this._rpc.request(methods.get(name))
+
     if (!this._requestIsStream(name) && this._responseIsStream(name)) {
       const encoded = c.encode(requestEncoding, args)
       request.send(encoded)

@@ -263,7 +263,7 @@
       ]
     },
     {
-      "name": "output-parameters",
+      "name": "transcode-output-parameters",
       "namespace": "media",
       "compact": false,
       "flagsPosition": 0,
@@ -318,7 +318,7 @@
         },
         {
           "name": "outputParameters",
-          "type": "@media/output-parameters",
+          "type": "@media/transcode-output-parameters",
           "version": 3
         }
       ]

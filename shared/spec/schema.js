@@ -212,7 +212,7 @@ media.register({
 })
 
 media.register({
-  name: 'output-parameters',
+  name: 'transcode-output-parameters', // Renamed here
   fields: [
     {
       name: 'mimetype',
@@ -254,7 +254,7 @@ media.register({
     },
     {
       name: 'outputParameters',
-      type: '@media/output-parameters'
+      type: '@media/transcode-output-parameters'
     }
   ]
 })
