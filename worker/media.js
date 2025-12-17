@@ -316,7 +316,6 @@ export async function transcode(stream) {
             mapping.rescaler.scale(frame, outFrame)
 
             // Force CFR (Constant Frame Rate) to avoid timestamp issues
-
             outFrame.pts = mapping.nextVideoPts
 
             const frameDuration =
@@ -329,7 +328,6 @@ export async function transcode(stream) {
 
             outFrame.destroy()
           }
-          // Basic Audio Resampling
           else if (mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.AUDIO) {
             if (!mapping.resampler) {
               mapping.resampler = new ffmpeg.Resampler(
@@ -378,7 +376,6 @@ export async function transcode(stream) {
 
               mapping.fifo.read(mapping.fifoFrame, frameSize)
 
-              // Set PTS for audio frame
               mapping.fifoFrame.pts = mapping.totalSamplesOutput
               mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
 
@@ -398,7 +395,6 @@ export async function transcode(stream) {
         mapping.fifoFrame.nbSamples = remaining
         mapping.fifoFrame.alloc()
         mapping.fifo.read(mapping.fifoFrame, remaining)
-        // Set PTS for remaining audio frame
         mapping.fifoFrame.pts = mapping.totalSamplesOutput
         mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
         encodeAndWrite(mapping.encoder, mapping.fifoFrame, mapping.outputStream, outputFormat)
