@@ -31,4 +31,10 @@ ns.register({
   response: { name: '@media/crop-image-response', stream: false }
 })
 
+ns.register({
+  name: 'transcode',
+  request: { name: '@media/transcode-request', stream: false },
+  response: { name: '@media/transcode-response', stream: true }
+})
+
 HRPCBuilder.toDisk(builder)

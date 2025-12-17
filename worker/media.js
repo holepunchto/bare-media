@@ -1,4 +1,5 @@
 import b4a from 'b4a'
+import ffmpeg from 'bare-ffmpeg'
 
 import { importCodec, isCodecSupported, supportsQuality } from '../shared/codecs.js'
 import { getBuffer, detectMimeType, calculateFitDimensions } from './util'
@@ -157,6 +158,321 @@ export async function cropImage({
       }
     },
     data
+  }
+}
+
+export async function transcode(stream) {
+  const { path, httpLink, buffer, outputParameters, bufferSize = 32 * 1024 } = stream.data
+
+  const buff = await getBuffer({ path, httpLink, buffer })
+  const inIO = new ffmpeg.IOContext(buff)
+  const inputFormatContext = new ffmpeg.InputFormatContext(inIO)
+  const outIO = new ffmpeg.IOContext(bufferSize, {
+    onwrite: (chunk) => {
+      stream.write({ buffer: chunk })
+      return chunk.length
+    }
+  })
+
+  const outputFormatName = outputParameters?.format || 'mp4'
+  const outputFormat = new ffmpeg.OutputFormatContext(outputFormatName, outIO)
+
+  const streamMapping = []
+  for (const inputStream of inputFormatContext.streams) {
+    const codecType = inputStream.codecParameters.type
+
+    if (
+      codecType !== ffmpeg.constants.mediaTypes.VIDEO &&
+      codecType !== ffmpeg.constants.mediaTypes.AUDIO
+    ) {
+      continue
+    }
+
+    const decoderContext = inputStream.decoder()
+    try {
+      decoderContext.open()
+    } catch (err) {
+      console.warn(`Failed to open decoder for stream ${inputStream.index}: ${err.message}`)
+      decoderContext.destroy()
+      continue
+    }
+
+    const outputStream = outputFormat.createStream()
+
+    if (codecType === ffmpeg.constants.mediaTypes.VIDEO) {
+      outputStream.codecParameters.type = ffmpeg.constants.mediaTypes.VIDEO
+
+      // Select video codec based on output format
+      if (outputFormatName === 'webm') {
+        outputStream.codecParameters.id = ffmpeg.constants.codecs.VP8
+        outputStream.codecParameters.format = ffmpeg.constants.pixelFormats.YUV420P
+      } else {
+        // Default to H264 for mp4, matroska, etc.
+        outputStream.codecParameters.id = ffmpeg.constants.codecs.H264
+        outputStream.codecParameters.format = ffmpeg.constants.pixelFormats.YUV420P
+      }
+
+      const width = outputParameters?.width || decoderContext.width
+      const height = outputParameters?.height || decoderContext.height
+      outputStream.codecParameters.width = width
+      outputStream.codecParameters.height = height
+
+      outputStream.timeBase = new ffmpeg.Rational(1, 90000) // Use 90kHz timebase for video
+    } else if (codecType === ffmpeg.constants.mediaTypes.AUDIO) {
+      outputStream.codecParameters.type = ffmpeg.constants.mediaTypes.AUDIO
+
+      // Select audio codec based on output format
+      if (outputFormatName === 'webm') {
+        outputStream.codecParameters.id = ffmpeg.constants.codecs.OPUS
+        outputStream.codecParameters.format = ffmpeg.constants.sampleFormats.FLTP
+      } else {
+        // Default to AAC for mp4, matroska, etc.
+        outputStream.codecParameters.id = ffmpeg.constants.codecs.AAC
+        outputStream.codecParameters.format = ffmpeg.constants.sampleFormats.FLTP
+      }
+
+      outputStream.codecParameters.sampleRate = decoderContext.sampleRate
+      outputStream.codecParameters.channelLayout = decoderContext.channelLayout
+      outputStream.timeBase = new ffmpeg.Rational(1, decoderContext.sampleRate)
+    }
+
+    const encoder = outputStream.encoder()
+
+    if (codecType === ffmpeg.constants.mediaTypes.VIDEO) {
+      encoder.timeBase = outputStream.timeBase
+      encoder.width = outputStream.codecParameters.width
+      encoder.height = outputStream.codecParameters.height
+      encoder.pixelFormat = outputStream.codecParameters.format
+
+      if (decoderContext.frameRate && decoderContext.frameRate.valid) {
+        encoder.frameRate = decoderContext.frameRate
+      } else {
+        encoder.frameRate = new ffmpeg.Rational(30, 1)
+      }
+      encoder.gopSize = 30
+    } else if (codecType === ffmpeg.constants.mediaTypes.AUDIO) {
+      encoder.timeBase = outputStream.timeBase
+      encoder.sampleRate = outputStream.codecParameters.sampleRate
+      encoder.channelLayout = outputStream.codecParameters.channelLayout
+      encoder.sampleFormat = outputStream.codecParameters.format
+    }
+
+    if (outputFormat.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
+      encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
+    }
+
+    encoder.open()
+
+    outputStream.codecParameters.fromContext(encoder)
+
+    streamMapping[inputStream.index] = {
+      inputStream,
+      outputStream,
+      decoder: decoderContext,
+      encoder,
+      rescaler: null,
+      resampler: null,
+      fifo: null,
+      fifoFrame: null,
+      totalSamplesOutput: 0, // For audio PTS calculation
+      nextVideoPts: 0 // For video PTS calculation
+    }
+  }
+  const muxerOptions = new ffmpeg.Dictionary()
+
+  switch (outputFormatName) {
+    case 'mp4':
+      // Fragmented MP4 for streaming: allows playback before file is complete
+      muxerOptions.set('movflags', 'frag_keyframe+empty_moov+default_base_moof')
+      break
+    case 'webm':
+      // Live streaming mode for WebM
+      muxerOptions.set('live', '1')
+      break
+    case 'matroska':
+    case 'mkv':
+      // Live streaming mode for Matroska
+      muxerOptions.set('live', '1')
+      break
+    // Other formats (flv, mpegts, etc.) work without special flags
+  }
+
+  outputFormat.writeHeader(muxerOptions)
+
+  const packet = new ffmpeg.Packet()
+  const frame = new ffmpeg.Frame()
+
+  try {
+    while (inputFormatContext.readFrame(packet)) {
+      const mapping = streamMapping[packet.streamIndex]
+      if (!mapping) {
+        packet.unref()
+        continue
+      }
+
+      const { decoder, encoder, outputStream } = mapping
+
+      if (decoder.sendPacket(packet)) {
+        while (decoder.receiveFrame(frame)) {
+          if (mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.VIDEO) {
+            if (
+              !mapping.rescaler ||
+              mapping.lastWidth !== frame.width ||
+              mapping.lastHeight !== frame.height ||
+              mapping.lastFormat !== frame.format
+            ) {
+              if (mapping.rescaler) mapping.rescaler.destroy()
+
+              mapping.rescaler = new ffmpeg.Scaler(
+                frame.format,
+                frame.width,
+                frame.height,
+                encoder.pixelFormat,
+                encoder.width,
+                encoder.height
+              )
+
+              mapping.lastWidth = frame.width
+              mapping.lastHeight = frame.height
+              mapping.lastFormat = frame.format
+            }
+
+            const outFrame = new ffmpeg.Frame()
+            outFrame.format = encoder.pixelFormat
+            outFrame.width = encoder.width
+            outFrame.height = encoder.height
+            outFrame.alloc()
+            outFrame.copyProperties(frame)
+
+            mapping.rescaler.scale(frame, outFrame)
+
+            // Force CFR (Constant Frame Rate) to avoid timestamp issues
+            outFrame.pts = mapping.nextVideoPts
+
+            const frameDuration =
+              (encoder.timeBase.denominator * encoder.frameRate.denominator) /
+              (encoder.timeBase.numerator * encoder.frameRate.numerator)
+
+            mapping.nextVideoPts += frameDuration
+
+            encodeAndWrite(encoder, outFrame, outputStream, outputFormat, packet)
+
+            outFrame.destroy()
+          } else if (
+            mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.AUDIO
+          ) {
+            if (!mapping.resampler) {
+              mapping.resampler = new ffmpeg.Resampler(
+                frame.sampleRate,
+                frame.channelLayout,
+                frame.format,
+                encoder.sampleRate,
+                encoder.channelLayout,
+                encoder.sampleFormat
+              )
+            }
+
+            if (!mapping.fifo) {
+              mapping.fifo = new ffmpeg.AudioFIFO(
+                encoder.sampleFormat,
+                encoder.channelLayout.nbChannels,
+                encoder.frameSize
+              )
+              mapping.fifoFrame = new ffmpeg.Frame()
+              mapping.fifoFrame.format = encoder.sampleFormat
+              mapping.fifoFrame.channelLayout = encoder.channelLayout
+              mapping.fifoFrame.sampleRate = encoder.sampleRate
+            }
+
+            const outFrame = new ffmpeg.Frame()
+            outFrame.format = encoder.sampleFormat
+            outFrame.channelLayout = encoder.channelLayout
+            outFrame.sampleRate = encoder.sampleRate
+
+            const outSamples =
+              Math.ceil((frame.nbSamples * encoder.sampleRate) / frame.sampleRate) + 32
+            outFrame.nbSamples = outSamples
+            outFrame.alloc()
+
+            const converted = mapping.resampler.convert(frame, outFrame)
+            outFrame.nbSamples = converted
+
+            mapping.fifo.write(outFrame)
+            outFrame.destroy()
+
+            const frameSize = encoder.frameSize
+
+            while (mapping.fifo.size >= frameSize) {
+              mapping.fifoFrame.nbSamples = frameSize
+              mapping.fifoFrame.alloc()
+
+              mapping.fifo.read(mapping.fifoFrame, frameSize)
+
+              mapping.fifoFrame.pts = mapping.totalSamplesOutput
+              mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
+
+              encodeAndWrite(encoder, mapping.fifoFrame, outputStream, outputFormat, packet)
+            }
+          }
+        }
+      }
+      packet.unref()
+    }
+
+    for (const index in streamMapping) {
+      const mapping = streamMapping[index]
+
+      if (mapping.fifo && mapping.fifo.size > 0) {
+        const remaining = mapping.fifo.size
+        mapping.fifoFrame.nbSamples = remaining
+        mapping.fifoFrame.alloc()
+        mapping.fifo.read(mapping.fifoFrame, remaining)
+        mapping.fifoFrame.pts = mapping.totalSamplesOutput
+        mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
+        encodeAndWrite(
+          mapping.encoder,
+          mapping.fifoFrame,
+          mapping.outputStream,
+          outputFormat,
+          packet
+        )
+      }
+
+      encodeAndWrite(mapping.encoder, null, mapping.outputStream, outputFormat, packet)
+    }
+
+    outputFormat.writeTrailer()
+  } finally {
+    packet.destroy()
+    frame.destroy()
+
+    for (const index in streamMapping) {
+      const m = streamMapping[index]
+      m.decoder.destroy()
+      m.encoder.destroy()
+      if (m.rescaler) m.rescaler.destroy()
+      if (m.resampler) m.resampler.destroy()
+      if (m.fifo) m.fifo.destroy()
+      if (m.fifoFrame) m.fifoFrame.destroy()
+    }
+
+    // Note: inputFormatContext has the ownership of inIO so it will be destroy
+    // along it.
+    inputFormatContext.destroy()
+    outputFormat.destroy()
+  }
+
+  stream.end()
+}
+
+function encodeAndWrite(encoder, frame, outputStream, outputFormat, packet) {
+  if (encoder.sendFrame(frame)) {
+    while (encoder.receivePacket(packet)) {
+      packet.streamIndex = outputStream.index
+      packet.rescaleTimestamps(encoder.timeBase, outputStream.timeBase)
+      outputFormat.writeFrame(packet)
+      packet.unref()
+    }
   }
 }
 

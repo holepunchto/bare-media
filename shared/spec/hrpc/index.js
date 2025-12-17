@@ -11,7 +11,9 @@ const methods = new Map([
   ['@media/decode-image', 1],
   [1, '@media/decode-image'],
   ['@media/crop-image', 2],
-  [2, '@media/crop-image']
+  [2, '@media/crop-image'],
+  ['@media/transcode', 3],
+  [3, '@media/transcode']
 ])
 
 class HRPC {
@@ -21,12 +23,14 @@ class HRPC {
     this._requestEncodings = new Map([
       ['@media/create-preview', getEncoding('@media/create-preview-request')],
       ['@media/decode-image', getEncoding('@media/decode-image-request')],
-      ['@media/crop-image', getEncoding('@media/crop-image-request')]
+      ['@media/crop-image', getEncoding('@media/crop-image-request')],
+      ['@media/transcode', getEncoding('@media/transcode-request')]
     ])
     this._responseEncodings = new Map([
       ['@media/create-preview', getEncoding('@media/create-preview-response')],
       ['@media/decode-image', getEncoding('@media/decode-image-response')],
-      ['@media/crop-image', getEncoding('@media/crop-image-response')]
+      ['@media/crop-image', getEncoding('@media/crop-image-response')],
+      ['@media/transcode', getEncoding('@media/transcode-response')]
     ])
     this._rpc = new RPC(stream, async (req) => {
       const command = methods.get(req.command)
@@ -89,11 +93,14 @@ class HRPC {
   _callSync(name, args) {
     const requestEncoding = this._requestEncodings.get(name)
     const responseEncoding = this._responseEncodings.get(name)
-    const request = this._rpc.request(methods.get(name))
     if (this._requestIsSend(name)) {
       const encoded = c.encode(requestEncoding, args)
+      const request = this._rpc.event(methods.get(name))
       request.send(encoded)
     }
+
+    const request = this._rpc.request(methods.get(name))
+
     if (!this._requestIsStream(name) && this._responseIsStream(name)) {
       const encoded = c.encode(requestEncoding, args)
       request.send(encoded)
@@ -133,6 +140,10 @@ class HRPC {
     return this._call('@media/crop-image', args)
   }
 
+  transcode(args) {
+    return this._callSync('@media/transcode', args)
+  }
+
   onCreatePreview(responseFn) {
     this._handlers['@media/create-preview'] = responseFn
   }
@@ -145,12 +156,16 @@ class HRPC {
     this._handlers['@media/crop-image'] = responseFn
   }
 
+  onTranscode(responseFn) {
+    this._handlers['@media/transcode'] = responseFn
+  }
+
   _requestIsStream(command) {
     return [].includes(command)
   }
 
   _responseIsStream(command) {
-    return [].includes(command)
+    return ['@media/transcode'].includes(command)
   }
 
   // prettier-ignore-start
