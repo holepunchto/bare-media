@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "schema": [
     {
       "name": "dimensions",
@@ -320,6 +320,11 @@
           "name": "outputParameters",
           "type": "@media/transcode-output-parameters",
           "version": 3
+        },
+        {
+          "name": "bufferSize",
+          "type": "uint",
+          "version": 4
         }
       ]
     },

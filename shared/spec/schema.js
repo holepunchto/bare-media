@@ -255,6 +255,10 @@ media.register({
     {
       name: 'outputParameters',
       type: '@media/transcode-output-parameters'
+    },
+    {
+      name: 'bufferSize',
+      type: 'uint'
     }
   ]
 })

@@ -162,12 +162,12 @@ export async function cropImage({
 }
 
 export async function transcode(stream) {
-  const { path, httpLink, buffer, outputParameters } = stream.data
+  const { path, httpLink, buffer, outputParameters, bufferSize = 32 * 1024 } = stream.data
 
   const buff = await getBuffer({ path, httpLink, buffer })
   const inIO = new ffmpeg.IOContext(buff)
   const inputFormatContext = new ffmpeg.InputFormatContext(inIO)
-  const outIO = new ffmpeg.IOContext(4096, {
+  const outIO = new ffmpeg.IOContext(bufferSize, {
     onwrite: (chunk) => {
       stream.write({ buffer: chunk })
       return chunk.length
