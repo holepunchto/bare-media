@@ -324,7 +324,7 @@ export async function transcode(stream) {
 
             mapping.nextVideoPts += frameDuration
 
-            encodeAndWrite(encoder, outFrame, outputStream, outputFormat)
+            encodeAndWrite(encoder, outFrame, outputStream, outputFormat, packet)
 
             outFrame.destroy()
           } else if (
@@ -380,7 +380,7 @@ export async function transcode(stream) {
               mapping.fifoFrame.pts = mapping.totalSamplesOutput
               mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
 
-              encodeAndWrite(encoder, mapping.fifoFrame, outputStream, outputFormat)
+              encodeAndWrite(encoder, mapping.fifoFrame, outputStream, outputFormat, packet)
             }
           }
         }
@@ -398,10 +398,16 @@ export async function transcode(stream) {
         mapping.fifo.read(mapping.fifoFrame, remaining)
         mapping.fifoFrame.pts = mapping.totalSamplesOutput
         mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
-        encodeAndWrite(mapping.encoder, mapping.fifoFrame, mapping.outputStream, outputFormat)
+        encodeAndWrite(
+          mapping.encoder,
+          mapping.fifoFrame,
+          mapping.outputStream,
+          outputFormat,
+          packet
+        )
       }
 
-      encodeAndWrite(mapping.encoder, null, mapping.outputStream, outputFormat)
+      encodeAndWrite(mapping.encoder, null, mapping.outputStream, outputFormat, packet)
     }
 
     outputFormat.writeTrailer()
@@ -428,9 +434,7 @@ export async function transcode(stream) {
   stream.end()
 }
 
-function encodeAndWrite(encoder, frame, outputStream, outputFormat) {
-  const packet = new ffmpeg.Packet()
-
+function encodeAndWrite(encoder, frame, outputStream, outputFormat, packet) {
   if (encoder.sendFrame(frame)) {
     while (encoder.receivePacket(packet)) {
       packet.streamIndex = outputStream.index
@@ -439,7 +443,6 @@ function encodeAndWrite(encoder, frame, outputStream, outputFormat) {
       packet.unref()
     }
   }
-  packet.destroy()
 }
 
 async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
