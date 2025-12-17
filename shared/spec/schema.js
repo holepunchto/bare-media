@@ -212,10 +212,10 @@ media.register({
 })
 
 media.register({
-  name: 'transcode-output-parameters', // Renamed here
+  name: 'transcode-output-parameters',
   fields: [
     {
-      name: 'mimetype',
+      name: 'format',
       type: 'string'
     },
     {

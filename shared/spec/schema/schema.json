@@ -269,7 +269,7 @@
       "flagsPosition": 0,
       "fields": [
         {
-          "name": "mimetype",
+          "name": "format",
           "type": "string",
           "version": 3
         },

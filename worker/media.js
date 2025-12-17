@@ -174,7 +174,7 @@ export async function transcode(stream) {
     }
   })
 
-  const outputFormatName = outputParameters?.mimetype === 'video/mp4' ? 'mp4' : 'mp4'
+  const outputFormatName = outputParameters?.format || 'mp4'
   const outputFormat = new ffmpeg.OutputFormatContext(outputFormatName, outIO)
 
   const streamMapping = []
@@ -327,8 +327,9 @@ export async function transcode(stream) {
             encodeAndWrite(encoder, outFrame, outputStream, outputFormat)
 
             outFrame.destroy()
-          }
-          else if (mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.AUDIO) {
+          } else if (
+            mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.AUDIO
+          ) {
             if (!mapping.resampler) {
               mapping.resampler = new ffmpeg.Resampler(
                 frame.sampleRate,

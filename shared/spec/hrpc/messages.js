@@ -357,21 +357,21 @@ const encoding9 = {
   preencode(state, m) {
     state.end++ // max flag is 8 so always one byte
 
-    if (version >= 3 && m.mimetype) c.string.preencode(state, m.mimetype)
+    if (version >= 3 && m.format) c.string.preencode(state, m.format)
     if (version >= 3 && m.codec) c.string.preencode(state, m.codec)
     if (version >= 3 && m.width) c.uint.preencode(state, m.width)
     if (version >= 3 && m.height) c.uint.preencode(state, m.height)
   },
   encode(state, m) {
     const flags =
-      (version >= 3 && m.mimetype ? 1 : 0) |
+      (version >= 3 && m.format ? 1 : 0) |
       (version >= 3 && m.codec ? 2 : 0) |
       (version >= 3 && m.width ? 4 : 0) |
       (version >= 3 && m.height ? 8 : 0)
 
     c.uint.encode(state, flags)
 
-    if (version >= 3 && m.mimetype) c.string.encode(state, m.mimetype)
+    if (version >= 3 && m.format) c.string.encode(state, m.format)
     if (version >= 3 && m.codec) c.string.encode(state, m.codec)
     if (version >= 3 && m.width) c.uint.encode(state, m.width)
     if (version >= 3 && m.height) c.uint.encode(state, m.height)
@@ -380,7 +380,7 @@ const encoding9 = {
     const flags = c.uint.decode(state)
 
     return {
-      mimetype: version >= 3 && (flags & 1) !== 0 ? c.string.decode(state) : null,
+      format: version >= 3 && (flags & 1) !== 0 ? c.string.decode(state) : null,
       codec: version >= 3 && (flags & 2) !== 0 ? c.string.decode(state) : null,
       width: version >= 3 && (flags & 4) !== 0 ? c.uint.decode(state) : 0,
       height: version >= 3 && (flags & 8) !== 0 ? c.uint.decode(state) : 0

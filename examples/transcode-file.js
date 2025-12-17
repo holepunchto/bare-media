@@ -18,7 +18,7 @@ async function runTranscodeExample() {
     data: {
       buffer: inputBuffer,
       outputParameters: {
-        mimetype: 'video/mp4'
+        format: 'mp4'
       }
     },
     write(chunk) {

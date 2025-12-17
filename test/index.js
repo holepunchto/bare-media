@@ -563,7 +563,7 @@ test('util calculateFitDimensions()', async (t) => {
 test('media.transcode() - streaming response (unit test)', async (t) => {
   const path = './test/fixtures/sample.webm'
   const outputParameters = {
-    mimetype: 'video/mp4',
+    format: 'mp4',
     width: 1280,
     height: 720
   }
