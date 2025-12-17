@@ -561,7 +561,7 @@ test('util calculateFitDimensions()', async (t) => {
 })
 
 test('media.transcode() - streaming response (unit test)', async (t) => {
-  const path = './test/fixtures/sample.jpg'
+  const path = './test/fixtures/sample.webm'
   const outputParameters = {
     mimetype: 'video/mp4',
     width: 1280,
@@ -584,16 +584,13 @@ test('media.transcode() - streaming response (unit test)', async (t) => {
 
   await media.transcode(mockStream)
 
-  t.is(mockStream.chunks.length, 5, 'Received 5 chunks')
-  t.is(
-    b4a.toString(mockStream.chunks[0].buffer),
-    'fake-transcoded-chunk-0',
-    'First chunk content matches'
-  )
-  t.is(
-    b4a.toString(mockStream.chunks[4].buffer),
-    'fake-transcoded-chunk-4',
-    'Last chunk content matches'
-  )
+  t.ok(mockStream.chunks.length > 0, 'Received some chunks')
   t.ok(mockStream.ended, 'Stream was ended')
+
+  const totalOutputBuffer = b4a.concat(mockStream.chunks.map(c => c.buffer));
+  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data');
+
+  // Check for MP4 header (e.g., ftyp box)
+  const header = b4a.toString(totalOutputBuffer.subarray(4, 8)); // 'ftyp' is usually at byte 4
+  t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker');
 })
