@@ -200,23 +200,39 @@ export async function transcode(stream) {
     const outputStream = outputFormat.createStream()
 
     if (codecType === ffmpeg.constants.mediaTypes.VIDEO) {
-      outputStream.codecParameters.id = ffmpeg.Codec.H264.id
       outputStream.codecParameters.type = ffmpeg.constants.mediaTypes.VIDEO
+
+      // Select video codec based on output format
+      if (outputFormatName === 'webm') {
+        outputStream.codecParameters.id = ffmpeg.constants.codecs.VP8
+        outputStream.codecParameters.format = ffmpeg.constants.pixelFormats.YUV420P
+      } else {
+        // Default to H264 for mp4, matroska, etc.
+        outputStream.codecParameters.id = ffmpeg.constants.codecs.H264
+        outputStream.codecParameters.format = ffmpeg.constants.pixelFormats.YUV420P
+      }
 
       const width = outputParameters?.width || decoderContext.width
       const height = outputParameters?.height || decoderContext.height
       outputStream.codecParameters.width = width
       outputStream.codecParameters.height = height
 
-      // H264 commonly uses YUV420P
-      outputStream.codecParameters.format = ffmpeg.constants.pixelFormats.YUV420P
-      outputStream.timeBase = new ffmpeg.Rational(1, 90000) // Use 90kHz timebase for video in MP4
+      outputStream.timeBase = new ffmpeg.Rational(1, 90000) // Use 90kHz timebase for video
     } else if (codecType === ffmpeg.constants.mediaTypes.AUDIO) {
-      outputStream.codecParameters.id = ffmpeg.Codec.AAC.id
       outputStream.codecParameters.type = ffmpeg.constants.mediaTypes.AUDIO
+
+      // Select audio codec based on output format
+      if (outputFormatName === 'webm') {
+        outputStream.codecParameters.id = ffmpeg.constants.codecs.OPUS
+        outputStream.codecParameters.format = ffmpeg.constants.sampleFormats.FLTP
+      } else {
+        // Default to AAC for mp4, matroska, etc.
+        outputStream.codecParameters.id = ffmpeg.constants.codecs.AAC
+        outputStream.codecParameters.format = ffmpeg.constants.sampleFormats.FLTP
+      }
+
       outputStream.codecParameters.sampleRate = decoderContext.sampleRate
       outputStream.codecParameters.channelLayout = decoderContext.channelLayout
-      outputStream.codecParameters.format = ffmpeg.constants.sampleFormats.FLTP // AAC uses FLTP
       outputStream.timeBase = new ffmpeg.Rational(1, decoderContext.sampleRate)
     }
 
@@ -263,9 +279,24 @@ export async function transcode(stream) {
     }
   }
   const muxerOptions = new ffmpeg.Dictionary()
-  if (outputFormatName === 'mp4') {
-    muxerOptions.set('movflags', 'frag_keyframe+empty_moov+default_base_moof')
+
+  switch (outputFormatName) {
+    case 'mp4':
+      // Fragmented MP4 for streaming: allows playback before file is complete
+      muxerOptions.set('movflags', 'frag_keyframe+empty_moov+default_base_moof')
+      break
+    case 'webm':
+      // Live streaming mode for WebM
+      muxerOptions.set('live', '1')
+      break
+    case 'matroska':
+    case 'mkv':
+      // Live streaming mode for Matroska
+      muxerOptions.set('live', '1')
+      break
+    // Other formats (flv, mpegts, etc.) work without special flags
   }
+
   outputFormat.writeHeader(muxerOptions)
 
   const packet = new ffmpeg.Packet()

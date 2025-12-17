@@ -4,12 +4,12 @@ import process from 'bare-process'
 import b4a from 'b4a'
 import { transcode } from '../worker/media.js'
 
-async function runTranscodeExample() {
-  const inputFilePath = path.join(process.cwd(), 'test', 'fixtures', 'sample.mp4')
-  const outputFilePath = path.join(process.cwd(), 'examples', 'output.mp4')
+async function transcodeFile(inputFile, outputFile, outputFormat) {
+  const inputFilePath = path.join(process.cwd(), 'test', 'fixtures', inputFile)
+  const outputFilePath = path.join(process.cwd(), 'examples', outputFile)
   const inputBuffer = await fs.readFile(inputFilePath)
 
-  console.log(`Starting transcoding of ${inputFilePath} to ${outputFilePath}`)
+  console.log(`\nStarting transcoding: ${inputFile} -> ${outputFile} (${outputFormat})`)
 
   const outputChunks = []
 
@@ -18,7 +18,7 @@ async function runTranscodeExample() {
     data: {
       buffer: inputBuffer,
       outputParameters: {
-        format: 'mp4'
+        format: outputFormat
       }
     },
     write(chunk) {
@@ -38,7 +38,20 @@ async function runTranscodeExample() {
     console.log(`Successfully transcoded to ${outputFilePath}`)
   } catch (error) {
     console.error('Transcoding failed:', error)
+    throw error
   }
 }
 
-runTranscodeExample()
+async function runTranscodeExamples() {
+  console.log('=== Transcode Examples ===')
+
+  // Example 1: MP4 to WebM
+  await transcodeFile('sample.mp4', 'output-mp4-to-webm.webm', 'webm')
+
+  // Example 2: WebM to MP4
+  await transcodeFile('sample.webm', 'output-webm-to-mp4.mp4', 'mp4')
+
+  console.log('\n=== All transcoding examples completed successfully! ===')
+}
+
+runTranscodeExamples()
