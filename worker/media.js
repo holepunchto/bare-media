@@ -1,4 +1,5 @@
 import b4a from 'b4a'
+import exif from 'bare-exif'
 
 import {
   importCodec,
@@ -32,7 +33,7 @@ export async function createPreview({
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
-  const rgba = await decodeImageToRGBA(buff, mimetype, maxFrames)
+  const rgba = await decodeImageToRGBA(buff, { mimetype, maxFrames })
   const { width, height } = rgba
 
   const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
@@ -130,7 +131,7 @@ export async function decodeImage({ path, httpLink, buffer, mimetype }) {
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
-  const rgba = await decodeImageToRGBA(buff, mimetype)
+  const rgba = await decodeImageToRGBA(buff, { mimetype })
   const { width, height, data } = rgba
 
   return {
@@ -159,7 +160,7 @@ export async function cropImage({
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
-  const rgba = await decodeImageToRGBA(buff, mimetype)
+  const rgba = await decodeImageToRGBA(buff, { mimetype })
 
   const cropped = await cropRGBA(rgba, left, top, width, height)
 
@@ -176,7 +177,9 @@ export async function cropImage({
   }
 }
 
-async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
+async function decodeImageToRGBA(buffer, opts = {}) {
+  const { mimetype, maxFrames, applyOrientation = true } = opts
+
   let rgba
 
   const codec = await importCodec(mimetype)
@@ -191,6 +194,14 @@ async function decodeImageToRGBA(buffer, mimetype, maxFrames) {
     rgba = { width, height, loops, frames: data }
   } else {
     rgba = codec.decode(buffer)
+
+    if (applyOrientation) {
+      const exifData = new exif.Data(buffer)
+      const orientation = exifData.entry(exif.constants.tags.ORIENTATION)
+      if (orientation) {
+        rgba = rotateRGBA(rgba, orientation.read())
+      }
+    }
   }
 
   return rgba
@@ -271,4 +282,89 @@ async function cropRGBA(rgba, left, top, width, height) {
   }
 
   return { width, height, data }
+}
+
+const EXIF_ORIENTATION = {
+  NORMAL: 1,
+  MIRROR_HORIZONTAL: 2,
+  ROTATE_180: 3,
+  MIRROR_VERTICAL: 4,
+  TRANSPOSE: 5,
+  ROTATE_90: 6,
+  TRANSVERSE: 7,
+  ROTATE_270: 8
+}
+
+function rotateRGBA(rgba, exifOrientation) {
+  if (exifOrientation <= 1 || exifOrientation > 8) return rgba
+
+  const { width: srcW, height: srcH, data } = rgba
+
+  let dstW = srcW
+  let dstH = srcH
+
+  if (exifOrientation >= 5 && exifOrientation <= 8) {
+    dstW = srcH
+    dstH = srcW
+  }
+
+  const dstData = Buffer.alloc(dstW * dstH * 4)
+
+  const setPixel = (sx, sy, dx, dy) => {
+    const srcIdx = (sy * srcW + sx) * 4
+    const dstIdx = (dy * dstW + dx) * 4
+    dstData[dstIdx] = data[srcIdx]
+    dstData[dstIdx + 1] = data[srcIdx + 1]
+    dstData[dstIdx + 2] = data[srcIdx + 2]
+    dstData[dstIdx + 3] = data[srcIdx + 3]
+  }
+
+  for (let sy = 0; sy < srcH; sy++) {
+    for (let sx = 0; sx < srcW; sx++) {
+      let dx
+      let dy
+
+      switch (exifOrientation) {
+        case EXIF_ORIENTATION.MIRROR_HORIZONTAL:
+          dx = srcW - 1 - sx
+          dy = sy
+          break
+        case EXIF_ORIENTATION.ROTATE_180:
+          dx = srcW - 1 - sx
+          dy = srcH - 1 - sy
+          break
+        case EXIF_ORIENTATION.MIRROR_VERTICAL:
+          dx = sx
+          dy = srcH - 1 - sy
+          break
+        case EXIF_ORIENTATION.TRANSPOSE:
+          dx = sy
+          dy = sx
+          break
+        case EXIF_ORIENTATION.ROTATE_90:
+          dx = srcH - 1 - sy
+          dy = sx
+          break
+        case EXIF_ORIENTATION.TRANSVERSE:
+          dx = srcH - 1 - sy
+          dy = srcW - 1 - sx
+          break
+        case EXIF_ORIENTATION.ROTATE_270:
+          dx = sy
+          dy = srcW - 1 - sx
+          break
+        default:
+          dx = sx
+          dy = sy
+      }
+
+      setPixel(sx, sy, dx, dy)
+    }
+  }
+
+  return {
+    width: dstW,
+    height: dstH,
+    data: dstData
+  }
 }
