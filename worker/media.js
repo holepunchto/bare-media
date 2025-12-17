@@ -1,9 +1,7 @@
 import b4a from 'b4a'
 import ffmpeg from 'bare-ffmpeg'
 
-import {
-  importCodec, isCodecSupported, supportsQuality
-} from '../shared/codecs.js'
+import { importCodec, isCodecSupported, supportsQuality } from '../shared/codecs.js'
 import { getBuffer, detectMimeType, calculateFitDimensions } from './util'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
@@ -212,7 +210,7 @@ export async function transcode(stream) {
 
       // H264 commonly uses YUV420P
       outputStream.codecParameters.format = ffmpeg.constants.pixelFormats.YUV420P
-      outputStream.timeBase = new ffmpeg.Rational(1, 30) // Fixed 30fps base for simplicity for now
+      outputStream.timeBase = new ffmpeg.Rational(1, 90000) // Use 90kHz timebase for video in MP4
     } else if (codecType === ffmpeg.constants.mediaTypes.AUDIO) {
       outputStream.codecParameters.id = ffmpeg.Codec.AAC.id
       outputStream.codecParameters.type = ffmpeg.constants.mediaTypes.AUDIO
@@ -229,11 +227,22 @@ export async function transcode(stream) {
       encoder.width = outputStream.codecParameters.width
       encoder.height = outputStream.codecParameters.height
       encoder.pixelFormat = outputStream.codecParameters.format
+
+      if (decoderContext.frameRate && decoderContext.frameRate.valid) {
+        encoder.frameRate = decoderContext.frameRate
+      } else {
+        encoder.frameRate = new ffmpeg.Rational(30, 1)
+      }
+      encoder.gopSize = 30
     } else if (codecType === ffmpeg.constants.mediaTypes.AUDIO) {
       encoder.timeBase = outputStream.timeBase
       encoder.sampleRate = outputStream.codecParameters.sampleRate
       encoder.channelLayout = outputStream.codecParameters.channelLayout
       encoder.sampleFormat = outputStream.codecParameters.format
+    }
+
+    if (outputFormat.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
+      encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
     }
 
     encoder.open()
@@ -248,10 +257,11 @@ export async function transcode(stream) {
       rescaler: null,
       resampler: null,
       fifo: null,
-      fifoFrame: null
+      fifoFrame: null,
+      totalSamplesOutput: 0, // For audio PTS calculation
+      nextVideoPts: 0 // For video PTS calculation
     }
   }
-
   const muxerOptions = new ffmpeg.Dictionary()
   if (outputFormatName === 'mp4') {
     muxerOptions.set('movflags', 'frag_keyframe+empty_moov+default_base_moof')
@@ -274,11 +284,12 @@ export async function transcode(stream) {
       if (decoder.sendPacket(packet)) {
         while (decoder.receiveFrame(frame)) {
           if (mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.VIDEO) {
-            if (!mapping.rescaler ||
+            if (
+              !mapping.rescaler ||
               mapping.lastWidth !== frame.width ||
               mapping.lastHeight !== frame.height ||
-              mapping.lastFormat !== frame.format) {
-
+              mapping.lastFormat !== frame.format
+            ) {
               if (mapping.rescaler) mapping.rescaler.destroy()
 
               mapping.rescaler = new ffmpeg.Scaler(
@@ -304,11 +315,19 @@ export async function transcode(stream) {
 
             mapping.rescaler.scale(frame, outFrame)
 
-            outFrame.pts = frame.pts
+            // Force CFR (Constant Frame Rate) to avoid timestamp issues
+
+            outFrame.pts = mapping.nextVideoPts
+
+            const frameDuration =
+              (encoder.timeBase.denominator * encoder.frameRate.denominator) /
+              (encoder.timeBase.numerator * encoder.frameRate.numerator)
+
+            mapping.nextVideoPts += frameDuration
 
             encodeAndWrite(encoder, outFrame, outputStream, outputFormat)
-            outFrame.destroy()
 
+            outFrame.destroy()
           }
           // Basic Audio Resampling
           else if (mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.AUDIO) {
@@ -340,7 +359,8 @@ export async function transcode(stream) {
             outFrame.channelLayout = encoder.channelLayout
             outFrame.sampleRate = encoder.sampleRate
 
-            const outSamples = Math.ceil(frame.nbSamples * encoder.sampleRate / frame.sampleRate) + 32;
+            const outSamples =
+              Math.ceil((frame.nbSamples * encoder.sampleRate) / frame.sampleRate) + 32
             outFrame.nbSamples = outSamples
             outFrame.alloc()
 
@@ -358,10 +378,9 @@ export async function transcode(stream) {
 
               mapping.fifo.read(mapping.fifoFrame, frameSize)
 
-              if (mapping.nextPts === undefined) mapping.nextPts = frame.pts
-
-              mapping.fifoFrame.pts = mapping.nextPts
-              mapping.nextPts += frameSize
+              // Set PTS for audio frame
+              mapping.fifoFrame.pts = mapping.totalSamplesOutput
+              mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
 
               encodeAndWrite(encoder, mapping.fifoFrame, outputStream, outputFormat)
             }
@@ -379,7 +398,9 @@ export async function transcode(stream) {
         mapping.fifoFrame.nbSamples = remaining
         mapping.fifoFrame.alloc()
         mapping.fifo.read(mapping.fifoFrame, remaining)
-        mapping.fifoFrame.pts = mapping.nextPts
+        // Set PTS for remaining audio frame
+        mapping.fifoFrame.pts = mapping.totalSamplesOutput
+        mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
         encodeAndWrite(mapping.encoder, mapping.fifoFrame, mapping.outputStream, outputFormat)
       }
 
@@ -387,7 +408,6 @@ export async function transcode(stream) {
     }
 
     outputFormat.writeTrailer()
-
   } finally {
     packet.destroy()
     frame.destroy()

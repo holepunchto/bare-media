@@ -35,6 +35,8 @@
     "uncaughts": "^1.1.1"
   },
   "devDependencies": {
+    "bare-path": "^3.0.0",
+    "bare-process": "^4.2.2",
     "brittle": "^3.16.3",
     "corestore": "^7.4.5",
     "hyperblobs": "^2.8.0",

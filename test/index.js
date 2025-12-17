@@ -587,10 +587,10 @@ test('media.transcode() - streaming response (unit test)', async (t) => {
   t.ok(mockStream.chunks.length > 0, 'Received some chunks')
   t.ok(mockStream.ended, 'Stream was ended')
 
-  const totalOutputBuffer = b4a.concat(mockStream.chunks.map(c => c.buffer));
-  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data');
+  const totalOutputBuffer = b4a.concat(mockStream.chunks.map((c) => c.buffer))
+  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
 
   // Check for MP4 header (e.g., ftyp box)
-  const header = b4a.toString(totalOutputBuffer.subarray(4, 8)); // 'ftyp' is usually at byte 4
-  t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker');
+  const header = b4a.toString(totalOutputBuffer.subarray(4, 8)) // 'ftyp' is usually at byte 4
+  t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
 })
