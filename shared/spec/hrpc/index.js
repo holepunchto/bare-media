@@ -11,7 +11,9 @@ const methods = new Map([
   ['@media/decode-image', 1],
   [1, '@media/decode-image'],
   ['@media/crop-image', 2],
-  [2, '@media/crop-image']
+  [2, '@media/crop-image'],
+  ['@media/create-video-preview', 3],
+  [3, '@media/create-video-preview']
 ])
 
 class HRPC {
@@ -21,12 +23,14 @@ class HRPC {
     this._requestEncodings = new Map([
       ['@media/create-preview', getEncoding('@media/create-preview-request')],
       ['@media/decode-image', getEncoding('@media/decode-image-request')],
-      ['@media/crop-image', getEncoding('@media/crop-image-request')]
+      ['@media/crop-image', getEncoding('@media/crop-image-request')],
+      ['@media/create-video-preview', getEncoding('@media/create-video-preview-request')]
     ])
     this._responseEncodings = new Map([
       ['@media/create-preview', getEncoding('@media/create-preview-response')],
       ['@media/decode-image', getEncoding('@media/decode-image-response')],
-      ['@media/crop-image', getEncoding('@media/crop-image-response')]
+      ['@media/crop-image', getEncoding('@media/crop-image-response')],
+      ['@media/create-video-preview', getEncoding('@media/create-video-preview-response')]
     ])
     this._rpc = new RPC(stream, async (req) => {
       const command = methods.get(req.command)
@@ -133,6 +137,10 @@ class HRPC {
     return this._call('@media/crop-image', args)
   }
 
+  async createVideoPreview(args) {
+    return this._call('@media/create-video-preview', args)
+  }
+
   onCreatePreview(responseFn) {
     this._handlers['@media/create-preview'] = responseFn
   }
@@ -145,12 +153,18 @@ class HRPC {
     this._handlers['@media/crop-image'] = responseFn
   }
 
+  onCreateVideoPreview(responseFn) {
+    this._handlers['@media/create-video-preview'] = responseFn
+  }
+
   _requestIsStream(command) {
-    return [].includes(command)
+    return [
+    ].includes(command)
   }
 
   _responseIsStream(command) {
-    return [].includes(command)
+    return [
+    ].includes(command)
   }
 
   // prettier-ignore-start

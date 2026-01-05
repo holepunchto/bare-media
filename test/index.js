@@ -559,3 +559,126 @@ test('util calculateFitDimensions()', async (t) => {
     t.alike(dimensions, { width: 1574, height: 2560 })
   }
 })
+
+// Video preview tests
+
+test('media.createVideoPreview() single frame of .mp4', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const maxWidth = 64
+  const maxHeight = 64
+
+  const { metadata, preview } = await media.createVideoPreview({
+    path,
+    maxWidth,
+    maxHeight
+  })
+
+  t.ok(metadata.dimensions.width > 0)
+  t.ok(metadata.dimensions.height > 0)
+  t.ok(metadata.duration > 0)
+  t.is(preview.metadata.mimetype, 'image/webp')
+  t.ok(preview.metadata.dimensions.width <= maxWidth)
+  t.ok(preview.metadata.dimensions.height <= maxHeight)
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.not(isAnimatedWebP(preview.buffer))
+  t.absent(preview.inlined)
+})
+
+test('media.createVideoPreview() with timestamp', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const maxWidth = 64
+  const maxHeight = 64
+
+  const { metadata, preview } = await media.createVideoPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    timestamp: 1000
+  })
+
+  t.ok(metadata.duration > 0)
+  t.is(preview.metadata.mimetype, 'image/webp')
+  t.ok(Buffer.isBuffer(preview.buffer))
+})
+
+test('media.createVideoPreview() with percent', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const maxWidth = 64
+  const maxHeight = 64
+
+  const { metadata, preview } = await media.createVideoPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    percent: 50
+  })
+
+  t.ok(metadata.duration > 0)
+  t.is(preview.metadata.mimetype, 'image/webp')
+  t.ok(Buffer.isBuffer(preview.buffer))
+})
+
+test('media.createVideoPreview() animated preview', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const maxWidth = 64
+  const maxHeight = 64
+
+  const { metadata, preview } = await media.createVideoPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    animated: true,
+    frameCount: 5
+  })
+
+  t.ok(metadata.duration > 0)
+  t.is(preview.metadata.mimetype, 'image/webp')
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.ok(isAnimatedWebP(preview.buffer))
+})
+
+test('media.createVideoPreview() with maxBytes', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const maxWidth = 64
+  const maxHeight = 64
+  const maxBytes = 5000
+
+  const { preview } = await media.createVideoPreview({
+    path,
+    maxWidth,
+    maxHeight,
+    animated: true,
+    maxBytes
+  })
+
+  t.ok(preview.buffer.byteLength <= maxBytes)
+})
+
+test('media.createVideoPreview() throws for unsupported mimetype', async (t) => {
+  await t.exception(async () => {
+    await media.createVideoPreview({
+      path: './test/fixtures/sample.jpg',
+      mimetype: 'image/jpeg'
+    })
+  })
+})
+
+test('media.createVideoPreview() by buffer', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const mimetype = 'video/mp4'
+  const maxWidth = 64
+  const maxHeight = 64
+
+  const buffer = fs.readFileSync(path)
+
+  const { metadata, preview } = await media.createVideoPreview({
+    buffer,
+    mimetype,
+    maxWidth,
+    maxHeight
+  })
+
+  t.ok(metadata.duration > 0)
+  t.is(preview.metadata.mimetype, 'image/webp')
+  t.ok(Buffer.isBuffer(preview.buffer))
+})

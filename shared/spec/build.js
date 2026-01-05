@@ -31,4 +31,10 @@ ns.register({
   response: { name: '@media/crop-image-response', stream: false }
 })
 
+ns.register({
+  name: 'create-video-preview',
+  request: { name: '@media/create-video-preview-request', stream: false },
+  response: { name: '@media/create-video-preview-response', stream: false }
+})
+
 HRPCBuilder.toDisk(builder)

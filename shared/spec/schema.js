@@ -210,3 +210,77 @@ media.register({
     }
   ]
 })
+
+media.register({
+  name: 'create-video-preview-request',
+  fields: [
+    {
+      name: 'path',
+      type: 'string'
+    },
+    {
+      name: 'httpLink',
+      type: 'string'
+    },
+    {
+      name: 'buffer',
+      type: 'buffer'
+    },
+    {
+      name: 'mimetype',
+      type: 'string'
+    },
+    {
+      name: 'maxWidth',
+      type: 'uint'
+    },
+    {
+      name: 'maxHeight',
+      type: 'uint'
+    },
+    {
+      name: 'maxBytes',
+      type: 'uint'
+    },
+    {
+      name: 'timestamp',
+      type: 'uint'
+    },
+    {
+      name: 'percent',
+      type: 'uint'
+    },
+    {
+      name: 'animated',
+      type: 'bool'
+    },
+    {
+      name: 'frameCount',
+      type: 'uint'
+    },
+    {
+      name: 'format',
+      type: 'string'
+    },
+    {
+      name: 'encoding',
+      type: 'string'
+    }
+  ]
+})
+
+media.register({
+  name: 'create-video-preview-response',
+  fields: [
+    {
+      name: 'metadata',
+      type: '@media/metadata',
+      required: true
+    },
+    {
+      name: 'preview',
+      type: '@media/file',
+      required: true
+    }
+  ]
+})

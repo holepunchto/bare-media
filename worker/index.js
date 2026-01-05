@@ -19,6 +19,7 @@ const rpc = new HRPC(stream)
 rpc.onCreatePreview(media.createPreview)
 rpc.onDecodeImage(media.decodeImage)
 rpc.onCropImage(media.cropImage)
+rpc.onCreateVideoPreview(media.createVideoPreview)
 
 uncaughts.on((err) => {
   log('Uncaught error:', err)
