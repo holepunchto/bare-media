@@ -2,7 +2,7 @@ import { spawn } from 'cross-worker/client'
 import ReadyResource from 'ready-resource'
 
 import HRPC from './shared/spec/hrpc/index.js'
-import { isCodecSupported } from './shared/codecs.js'
+import { isImageSupported, isMediaSupported, isVideoSupported } from './shared/codecs.js'
 
 export class WorkerClient extends ReadyResource {
   worker = null
@@ -20,7 +20,7 @@ export class WorkerClient extends ReadyResource {
   }
 
   #attachMethods() {
-    const methods = ['createPreview', 'decodeImage', 'cropImage']
+    const methods = ['createImagePreview', 'decodeImage', 'cropImage', 'createVideoPreview']
 
     for (const method of methods) {
       this[method] = async (...args) => {
@@ -28,6 +28,9 @@ export class WorkerClient extends ReadyResource {
         return this.rpc[method](...args)
       }
     }
+
+    /** @deprecated Use createImagePreview instead */
+    this.createPreview = this.createImagePreview
   }
 
   async _open() {
@@ -66,7 +69,12 @@ export class WorkerClient extends ReadyResource {
     this.rpc = new HRPC(ipc)
   }
 
-  isCodecSupported(mimetype) {
-    return isCodecSupported(mimetype)
-  }
+  isImageSupported = isImageSupported
+
+  isVideoSupported = isVideoSupported
+
+  isMediaSupported = isMediaSupported
+
+  /** @deprecated Use isImageSupported instead */
+  isCodecSupported = this.isImageSupported
 }

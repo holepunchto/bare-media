@@ -11,8 +11,27 @@ export const codecs = {
   'image/gif': () => import('bare-gif')
 }
 
-export function isCodecSupported(mimetype) {
+export const videoMimetypes = [
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-matroska',
+  'video/x-msvideo'
+]
+
+export function isImageSupported(mimetype) {
   return mimetype in codecs
+}
+
+/** @deprecated Use isImageSupported instead */
+export const isCodecSupported = isImageSupported
+
+export function isVideoSupported(mimetype) {
+  return videoMimetypes.includes(mimetype)
+}
+
+export function isMediaSupported(mimetype) {
+  return isImageSupported(mimetype) || isVideoSupported(mimetype)
 }
 
 export async function importCodec(mimetype) {

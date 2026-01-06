@@ -1,15 +1,15 @@
 {
-  "version": 2,
+  "version": 3,
   "schema": [
     {
       "id": 0,
-      "name": "@media/create-preview",
+      "name": "@media/create-image-preview",
       "request": {
-        "name": "@media/create-preview-request",
+        "name": "@media/create-image-preview-request",
         "stream": false
       },
       "response": {
-        "name": "@media/create-preview-response",
+        "name": "@media/create-image-preview-response",
         "stream": false
       },
       "version": 1
@@ -39,6 +39,19 @@
         "stream": false
       },
       "version": 2
+    },
+    {
+      "id": 3,
+      "name": "@media/create-video-preview",
+      "request": {
+        "name": "@media/create-video-preview-request",
+        "stream": false
+      },
+      "response": {
+        "name": "@media/create-video-preview-response",
+        "stream": false
+      },
+      "version": 3
     }
   ]
 }

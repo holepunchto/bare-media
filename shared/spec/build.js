@@ -14,9 +14,9 @@ const builder = HRPCBuilder.from(SCHEMA_DIR, HRPC_DIR)
 const ns = builder.namespace('media')
 
 ns.register({
-  name: 'create-preview',
-  request: { name: '@media/create-preview-request', stream: false },
-  response: { name: '@media/create-preview-response', stream: false }
+  name: 'create-image-preview',
+  request: { name: '@media/create-image-preview-request', stream: false },
+  response: { name: '@media/create-image-preview-response', stream: false }
 })
 
 ns.register({
@@ -29,6 +29,12 @@ ns.register({
   name: 'crop-image',
   request: { name: '@media/crop-image-request', stream: false },
   response: { name: '@media/crop-image-response', stream: false }
+})
+
+ns.register({
+  name: 'create-video-preview',
+  request: { name: '@media/create-video-preview-request', stream: false },
+  response: { name: '@media/create-video-preview-response', stream: false }
 })
 
 HRPCBuilder.toDisk(builder)
