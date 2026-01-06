@@ -40,61 +40,7 @@ export async function createPreview({
 
   const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
 
-  let preview = await encodeImageFromRGBA(maybeResizedRGBA, format)
-
-  // quality reduction
-
-  if (maxBytes && preview.byteLength > maxBytes && supportsQuality(format)) {
-    const MIN_QUALITY = 50
-    for (let quality = 80; quality >= MIN_QUALITY; quality -= 15) {
-      preview = await encodeImageFromRGBA(maybeResizedRGBA, format, { quality })
-      if (preview.byteLength <= maxBytes) {
-        break
-      }
-    }
-  }
-
-  // fps reduction
-
-  if (maxBytes && preview.byteLength > maxBytes && maybeResizedRGBA.frames?.length > 1) {
-    const quality = 75
-
-    // drop every n frame
-
-    for (const dropEvery of [4, 3, 2]) {
-      const frames = maybeResizedRGBA.frames.filter((frame, index) => index % dropEvery !== 0)
-      const filtered = { ...maybeResizedRGBA, frames }
-      preview = await encodeImageFromRGBA(filtered, format, { quality })
-      if (!maxBytes || preview.byteLength <= maxBytes) {
-        break
-      }
-    }
-
-    // cap to 25 frames
-
-    if (preview.byteLength > maxBytes) {
-      const frames = maybeResizedRGBA.frames.slice(0, 50).filter((frame, index) => index % 2 === 0)
-      const capped = { ...maybeResizedRGBA, frames }
-      preview = await encodeImageFromRGBA(capped, format, { quality })
-    }
-
-    // take only one frame
-
-    if (preview.byteLength > maxBytes) {
-      const oneFrame = {
-        ...maybeResizedRGBA,
-        frames: maybeResizedRGBA.frames.slice(0, 1)
-      }
-      preview = await encodeImageFromRGBA(oneFrame, format)
-    }
-  }
-
-  if (maxBytes && preview.byteLength > maxBytes) {
-    throw new Error(`Could not create preview under maxBytes, reached ${preview.byteLength} bytes`)
-  }
-
-  const encoded =
-    encoding === 'base64' ? { inlined: b4a.toString(preview, 'base64') } : { buffer: preview }
+  const encoded = await optimizeForMaxBytes(maybeResizedRGBA, format, maxBytes, encoding)
 
   return {
     metadata: {
@@ -230,6 +176,50 @@ async function resizeRGBA(rgba, maxWidth, maxHeight) {
   return maybeResizedRGBA
 }
 
+async function optimizeForMaxBytes(rgba, format, maxBytes, encoding) {
+  let preview = await encodeImageFromRGBA(rgba, format)
+
+  if (maxBytes && preview.byteLength > maxBytes && supportsQuality(format)) {
+    const MIN_QUALITY = 50
+    for (let quality = 80; quality >= MIN_QUALITY; quality -= 15) {
+      preview = await encodeImageFromRGBA(rgba, format, { quality })
+      if (preview.byteLength <= maxBytes) {
+        break
+      }
+    }
+  }
+
+  if (maxBytes && preview.byteLength > maxBytes && rgba.frames?.length > 1) {
+    const quality = 75
+
+    for (const dropEvery of [4, 3, 2]) {
+      const frames = rgba.frames.filter((frame, index) => index % dropEvery !== 0)
+      const filtered = { ...rgba, frames }
+      preview = await encodeImageFromRGBA(filtered, format, { quality })
+      if (preview.byteLength <= maxBytes) {
+        break
+      }
+    }
+
+    if (preview.byteLength > maxBytes) {
+      const frames = rgba.frames.slice(0, 50).filter((frame, index) => index % 2 === 0)
+      const capped = { ...rgba, frames }
+      preview = await encodeImageFromRGBA(capped, format, { quality })
+    }
+
+    if (preview.byteLength > maxBytes) {
+      const oneFrame = { ...rgba, frames: rgba.frames.slice(0, 1) }
+      preview = await encodeImageFromRGBA(oneFrame, format)
+    }
+  }
+
+  if (maxBytes && preview.byteLength > maxBytes) {
+    throw new Error(`Could not create preview under maxBytes, reached ${preview.byteLength} bytes`)
+  }
+
+  return encoding === 'base64' ? { inlined: b4a.toString(preview, 'base64') } : { buffer: preview }
+}
+
 async function cropRGBA(rgba, left, top, width, height) {
   if (
     left < 0 ||
@@ -308,59 +298,7 @@ export async function createVideoPreview({
 
   const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
 
-  let preview = await encodeImageFromRGBA(maybeResizedRGBA, format)
-
-  // quality reduction
-
-  if (maxBytes && preview.byteLength > maxBytes && supportsQuality(format)) {
-    const MIN_QUALITY = 50
-    for (let quality = 80; quality >= MIN_QUALITY; quality -= 15) {
-      preview = await encodeImageFromRGBA(maybeResizedRGBA, format, { quality })
-      if (preview.byteLength <= maxBytes) {
-        break
-      }
-    }
-  }
-
-  // fps reduction (for animated)
-
-  if (maxBytes && preview.byteLength > maxBytes && maybeResizedRGBA.frames?.length > 1) {
-    const quality = 75
-
-    for (const dropEvery of [4, 3, 2]) {
-      const filteredFrames = maybeResizedRGBA.frames.filter(
-        (frame, index) => index % dropEvery !== 0
-      )
-      const filtered = { ...maybeResizedRGBA, frames: filteredFrames }
-      preview = await encodeImageFromRGBA(filtered, format, { quality })
-      if (preview.byteLength <= maxBytes) {
-        break
-      }
-    }
-
-    if (preview.byteLength > maxBytes) {
-      const cappedFrames = maybeResizedRGBA.frames
-        .slice(0, 50)
-        .filter((frame, index) => index % 2 === 0)
-      const capped = { ...maybeResizedRGBA, frames: cappedFrames }
-      preview = await encodeImageFromRGBA(capped, format, { quality })
-    }
-
-    if (preview.byteLength > maxBytes) {
-      const oneFrame = {
-        ...maybeResizedRGBA,
-        frames: maybeResizedRGBA.frames.slice(0, 1)
-      }
-      preview = await encodeImageFromRGBA(oneFrame, format)
-    }
-  }
-
-  if (maxBytes && preview.byteLength > maxBytes) {
-    throw new Error(`Could not create preview under maxBytes, reached ${preview.byteLength} bytes`)
-  }
-
-  const encoded =
-    encoding === 'base64' ? { inlined: b4a.toString(preview, 'base64') } : { buffer: preview }
+  const encoded = await optimizeForMaxBytes(maybeResizedRGBA, format, maxBytes, encoding)
 
   return {
     metadata: {
