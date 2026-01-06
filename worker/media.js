@@ -40,7 +40,7 @@ export async function createPreview({
 
   const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
 
-  const encoded = await optimizeForMaxBytes(maybeResizedRGBA, format, maxBytes, encoding)
+  const encoded = await encodeToMaxBytes(maybeResizedRGBA, format, maxBytes, encoding)
 
   return {
     metadata: {
@@ -176,7 +176,7 @@ async function resizeRGBA(rgba, maxWidth, maxHeight) {
   return maybeResizedRGBA
 }
 
-async function optimizeForMaxBytes(rgba, format, maxBytes, encoding) {
+async function encodeToMaxBytes(rgba, format, maxBytes, encoding) {
   let preview = await encodeImageFromRGBA(rgba, format)
 
   if (maxBytes && preview.byteLength > maxBytes && supportsQuality(format)) {
@@ -273,36 +273,15 @@ export async function createVideoPreview({
     throw new Error(`Unsupported video type: ${mimetype}`)
   }
 
-  const { frames, videoWidth, videoHeight, duration } = extractVideoFrames(
-    buff,
-    animated ? frameCount : 1,
-    timestamp,
-    percent
-  )
-
-  let rgba
-  if (animated && frames.length > 1) {
-    const frameInterval = Math.floor(duration / frames.length)
-    rgba = {
-      width: frames[0].width,
-      height: frames[0].height,
-      loops: 0,
-      frames: frames.map((frame, index) => ({
-        ...frame,
-        timestamp: index * frameInterval
-      }))
-    }
-  } else {
-    rgba = frames[0]
-  }
+  const { rgba, duration } = extractVideoFrames(buff, animated ? frameCount : 1, timestamp, percent)
 
   const maybeResizedRGBA = await resizeRGBA(rgba, maxWidth, maxHeight)
 
-  const encoded = await optimizeForMaxBytes(maybeResizedRGBA, format, maxBytes, encoding)
+  const encoded = await encodeToMaxBytes(maybeResizedRGBA, format, maxBytes, encoding)
 
   return {
     metadata: {
-      dimensions: { width: videoWidth, height: videoHeight },
+      dimensions: { width: rgba.width, height: rgba.height },
       duration
     },
     preview: {
@@ -429,5 +408,21 @@ function extractVideoFrames(buffer, frameCount, timestamp, percent) {
   decoder.destroy()
   formatCtx.destroy()
 
-  return { frames, videoWidth: width, videoHeight: height, duration }
+  let rgba
+  if (frameCount > 1 && frames.length > 1) {
+    const frameInterval = Math.floor(duration / frames.length)
+    rgba = {
+      width: frames[0].width,
+      height: frames[0].height,
+      loops: 0,
+      frames: frames.map((f, index) => ({
+        ...f,
+        timestamp: index * frameInterval
+      }))
+    }
+  } else {
+    rgba = frames[0]
+  }
+
+  return { rgba, duration }
 }
