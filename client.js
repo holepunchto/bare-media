@@ -2,7 +2,7 @@ import { spawn } from 'cross-worker/client'
 import ReadyResource from 'ready-resource'
 
 import HRPC from './shared/spec/hrpc/index.js'
-import { isCodecSupported, isVideoSupported } from './shared/codecs.js'
+import { isImageSupported, isMediaSupported, isVideoSupported } from './shared/codecs.js'
 
 export class WorkerClient extends ReadyResource {
   worker = null
@@ -69,11 +69,12 @@ export class WorkerClient extends ReadyResource {
     this.rpc = new HRPC(ipc)
   }
 
-  isCodecSupported(mimetype) {
-    return isCodecSupported(mimetype)
-  }
+  isImageSupported = isImageSupported
 
-  isVideoSupported(mimetype) {
-    return isVideoSupported(mimetype)
-  }
+  isVideoSupported = isVideoSupported
+
+  isMediaSupported = isMediaSupported
+
+  /** @deprecated Use isImageSupported instead */
+  isCodecSupported = this.isImageSupported
 }

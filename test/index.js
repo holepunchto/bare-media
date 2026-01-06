@@ -682,3 +682,23 @@ test('media.createVideoPreview() by buffer', async (t) => {
   t.is(preview.metadata.mimetype, 'image/webp')
   t.ok(Buffer.isBuffer(preview.buffer))
 })
+
+test('codecs support flags', async (t) => {
+  const { isImageSupported, isVideoSupported, isMediaSupported, isCodecSupported } =
+    await import('../shared/codecs.js')
+
+  t.ok(isImageSupported('image/jpeg'))
+  t.ok(isImageSupported('image/png'))
+  t.absent(isImageSupported('video/mp4'))
+
+  t.ok(isVideoSupported('video/mp4'))
+  t.absent(isVideoSupported('image/jpeg'))
+
+  t.ok(isMediaSupported('image/jpeg'))
+  t.ok(isMediaSupported('video/mp4'))
+  t.absent(isMediaSupported('application/pdf'))
+
+  // Deprecated alias
+  t.ok(isCodecSupported('image/jpeg'))
+  t.absent(isCodecSupported('video/mp4'))
+})

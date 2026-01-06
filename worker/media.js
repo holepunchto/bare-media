@@ -3,7 +3,7 @@ import { IOContext, InputFormatContext, Packet, Frame, Scaler, Image, constants 
 
 import {
   importCodec,
-  isCodecSupported,
+  isImageSupported,
   supportsQuality,
   isVideoSupported
 } from '../shared/codecs.js'
@@ -31,7 +31,7 @@ export async function createImagePreview({
   const buff = await getBuffer({ path, httpLink, buffer })
   mimetype = mimetype || detectMimeType(buff, path)
 
-  if (!isCodecSupported(mimetype)) {
+  if (!isImageSupported(mimetype)) {
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
@@ -66,7 +66,7 @@ export async function decodeImage({ path, httpLink, buffer, mimetype }) {
   const buff = await getBuffer({ path, httpLink, buffer })
   mimetype = mimetype || detectMimeType(buff, path)
 
-  if (!isCodecSupported(mimetype)) {
+  if (!isImageSupported(mimetype)) {
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
@@ -95,7 +95,7 @@ export async function cropImage({
   const buff = await getBuffer({ path, httpLink, buffer })
   mimetype = mimetype || detectMimeType(buff, path)
 
-  if (!isCodecSupported(mimetype)) {
+  if (!isImageSupported(mimetype)) {
     throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   }
 
