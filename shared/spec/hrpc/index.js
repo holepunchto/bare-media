@@ -158,13 +158,11 @@ class HRPC {
   }
 
   _requestIsStream(command) {
-    return [
-    ].includes(command)
+    return [].includes(command)
   }
 
   _responseIsStream(command) {
-    return [
-    ].includes(command)
+    return [].includes(command)
   }
 
   // prettier-ignore-start
