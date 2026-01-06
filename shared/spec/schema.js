@@ -58,7 +58,7 @@ media.register({
 })
 
 media.register({
-  name: 'create-preview-request',
+  name: 'create-image-preview-request',
   fields: [
     {
       name: 'path',
@@ -104,7 +104,7 @@ media.register({
 })
 
 media.register({
-  name: 'create-preview-response',
+  name: 'create-image-preview-response',
   fields: [
     {
       name: 'metadata',

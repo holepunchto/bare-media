@@ -96,7 +96,7 @@ const encoding2 = {
   }
 }
 
-// @media/create-preview-request
+// @media/create-image-preview-request
 const encoding3 = {
   preencode(state, m) {
     const flags =
@@ -168,12 +168,12 @@ const encoding3 = {
   }
 }
 
-// @media/create-preview-response.metadata
+// @media/create-image-preview-response.metadata
 const encoding4_0 = encoding2_0
-// @media/create-preview-response.preview
+// @media/create-image-preview-response.preview
 const encoding4_1 = c.frame(encoding2)
 
-// @media/create-preview-response
+// @media/create-image-preview-response
 const encoding4 = {
   preencode(state, m) {
     encoding4_0.preencode(state, m.metadata)
@@ -492,9 +492,9 @@ function getEncoding(name) {
       return encoding1
     case '@media/file':
       return encoding2
-    case '@media/create-preview-request':
+    case '@media/create-image-preview-request':
       return encoding3
-    case '@media/create-preview-response':
+    case '@media/create-image-preview-response':
       return encoding4
     case '@media/decode-image-request':
       return encoding5

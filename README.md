@@ -15,7 +15,7 @@ From a single worker:
 ```js
 import worker from 'bare-media'
 
-const data = await worker.createPreview({ path, maxWidth, maxHeight })
+const data = await worker.createImagePreview({ path, maxWidth, maxHeight })
 ```
 
 Manually instantiate one or multiple workers:
@@ -24,7 +24,7 @@ Manually instantiate one or multiple workers:
 import { WorkerClient } from 'bare-media/client'
 
 const worker = new WorkerClient()
-const data = await worker.createPreview({ path, maxWidth, maxHeight })
+const data = await worker.createImagePreview({ path, maxWidth, maxHeight })
 ```
 
 > NOTE: A worker spawns when an operation is requested and it stays running until the parent process is killed.
@@ -42,16 +42,16 @@ worker.onClose = () => {
 Call the methods directly without a worker:
 
 ```js
-import { createPreview } from 'bare-media/worker/media.js'
+import { createImagePreview } from 'bare-media/worker/media.js'
 
-const data = await createPreview({ path, maxWidth, maxHeight })
+const data = await createImagePreview({ path, maxWidth, maxHeight })
 ```
 
 ## API
 
 > See [schema.js](shared/spec/schema.js) for the complete reference of parameters
 
-### createPreview()
+### createImagePreview()
 
 Create a preview from a media file
 

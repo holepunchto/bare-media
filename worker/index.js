@@ -16,7 +16,7 @@ stream.on('close', () => Bare.exit(0))
 
 const rpc = new HRPC(stream)
 
-rpc.onCreatePreview(media.createPreview)
+rpc.onCreateImagePreview(media.createImagePreview)
 rpc.onDecodeImage(media.decodeImage)
 rpc.onCropImage(media.cropImage)
 rpc.onCreateVideoPreview(media.createVideoPreview)

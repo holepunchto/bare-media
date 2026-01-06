@@ -14,7 +14,7 @@ const DEFAULT_FRAME_COUNT = 10
 
 const animatableMimetypes = ['image/webp']
 
-export async function createPreview({
+export async function createImagePreview({
   path,
   httpLink,
   buffer,
@@ -58,6 +58,9 @@ export async function createPreview({
     }
   }
 }
+
+/** @deprecated Use createImagePreview instead */
+export const createPreview = createImagePreview
 
 export async function decodeImage({ path, httpLink, buffer, mimetype }) {
   const buff = await getBuffer({ path, httpLink, buffer })

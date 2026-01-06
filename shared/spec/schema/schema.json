@@ -68,7 +68,7 @@
       ]
     },
     {
-      "name": "create-preview-request",
+      "name": "create-image-preview-request",
       "namespace": "media",
       "compact": false,
       "flagsPosition": 0,
@@ -126,7 +126,7 @@
       ]
     },
     {
-      "name": "create-preview-response",
+      "name": "create-image-preview-response",
       "namespace": "media",
       "compact": false,
       "flagsPosition": -1,

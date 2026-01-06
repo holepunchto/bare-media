@@ -6,12 +6,12 @@ import * as media from '../worker/media.js'
 import { calculateFitDimensions } from '../worker/util.js'
 import { makeHttpLink, isAnimatedWebP } from './helpers'
 
-test('media.createPreview() of .jpg', async (t) => {
+test('media.createImagePreview() of .jpg', async (t) => {
   const path = './test/fixtures/sample.jpg'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -26,12 +26,12 @@ test('media.createPreview() of .jpg', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .png', async (t) => {
+test('media.createImagePreview() of .png', async (t) => {
   const path = './test/fixtures/sample.png'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -46,12 +46,12 @@ test('media.createPreview() of .png', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .avif', async (t) => {
+test('media.createImagePreview() of .avif', async (t) => {
   const path = './test/fixtures/sample.avif'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -66,12 +66,12 @@ test('media.createPreview() of .avif', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .heic', async (t) => {
+test('media.createImagePreview() of .heic', async (t) => {
   const path = './test/fixtures/sample.heic'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -86,12 +86,12 @@ test('media.createPreview() of .heic', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .tiff', async (t) => {
+test('media.createImagePreview() of .tiff', async (t) => {
   const path = './test/fixtures/sample.tiff'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -106,12 +106,12 @@ test('media.createPreview() of .tiff', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .gif (animated)', async (t) => {
+test('media.createImagePreview() of .gif (animated)', async (t) => {
   const path = './test/fixtures/sample.gif'
   const maxWidth = 100
   const maxHeight = 100
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -126,13 +126,13 @@ test('media.createPreview() of .gif (animated)', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .gif with maxFrames', async (t) => {
+test('media.createImagePreview() of .gif with maxFrames', async (t) => {
   const path = './test/fixtures/sample.gif'
   const maxWidth = 100
   const maxHeight = 100
   const maxFrames = 1
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight,
@@ -149,12 +149,12 @@ test('media.createPreview() of .gif with maxFrames', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .webp', async (t) => {
+test('media.createImagePreview() of .webp', async (t) => {
   const path = './test/fixtures/sample.webp'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -169,13 +169,13 @@ test('media.createPreview() of .webp', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of .webp with maxBytes (reducing quality)', async (t) => {
+test('media.createImagePreview() of .webp with maxBytes (reducing quality)', async (t) => {
   const path = './test/fixtures/sample.webp'
   const maxWidth = 100
   const maxHeight = 100
   const maxBytes = 1500
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight,
@@ -192,14 +192,14 @@ test('media.createPreview() of .webp with maxBytes (reducing quality)', async (t
   t.ok(preview.buffer.byteLength <= maxBytes)
 })
 
-test("media.createPreview() of .webp with maxBytes throws if bytes can't fit", async (t) => {
+test("media.createImagePreview() of .webp with maxBytes throws if bytes can't fit", async (t) => {
   const path = './test/fixtures/sample.webp'
   const maxWidth = 100
   const maxHeight = 100
   const maxBytes = 500
 
   await t.exception(async () => {
-    await media.createPreview({
+    await media.createImagePreview({
       path,
       maxWidth,
       maxHeight,
@@ -208,12 +208,12 @@ test("media.createPreview() of .webp with maxBytes throws if bytes can't fit", a
   })
 })
 
-test('media.createPreview() does not upscale images', async (t) => {
+test('media.createImagePreview() does not upscale images', async (t) => {
   const path = './test/fixtures/sample.heic'
   const maxWidth = 256
   const maxHeight = 256
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -228,10 +228,10 @@ test('media.createPreview() does not upscale images', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() without resizing', async (t) => {
+test('media.createImagePreview() without resizing', async (t) => {
   const path = './test/fixtures/sample.heic'
 
-  const { metadata, preview } = await media.createPreview({ path })
+  const { metadata, preview } = await media.createImagePreview({ path })
 
   t.alike(metadata, { dimensions: { width: 152, height: 120 } })
   t.alike(preview.metadata, {
@@ -242,12 +242,12 @@ test('media.createPreview() without resizing', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of an animated .webp', async (t) => {
+test('media.createImagePreview() of an animated .webp', async (t) => {
   const path = './test/fixtures/animated.webp'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -263,13 +263,13 @@ test('media.createPreview() of an animated .webp', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of an animated .webp with maxFrames', async (t) => {
+test('media.createImagePreview() of an animated .webp with maxFrames', async (t) => {
   const path = './test/fixtures/animated.webp'
   const maxWidth = 32
   const maxHeight = 32
   const maxFrames = 1
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight,
@@ -286,13 +286,13 @@ test('media.createPreview() of an animated .webp with maxFrames', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of an animated .webp with maxBytes (reducing quality)', async (t) => {
+test('media.createImagePreview() of an animated .webp with maxBytes (reducing quality)', async (t) => {
   const path = './test/fixtures/animated.webp'
   const maxWidth = 32
   const maxHeight = 32
   const maxBytes = 3 * 1024
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight,
@@ -310,13 +310,13 @@ test('media.createPreview() of an animated .webp with maxBytes (reducing quality
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() of an animated webp with maxBytes (reducing fps)', async (t) => {
+test('media.createImagePreview() of an animated webp with maxBytes (reducing fps)', async (t) => {
   const path = './test/fixtures/animated.webp'
   const maxWidth = 32
   const maxHeight = 32
   const maxBytes = 2 * 1024
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight,
@@ -334,13 +334,13 @@ test('media.createPreview() of an animated webp with maxBytes (reducing fps)', a
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() passing mimetype', async (t) => {
+test('media.createImagePreview() passing mimetype', async (t) => {
   const path = './test/fixtures/jpg-sample'
   const mimetype = 'image/jpg'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     mimetype,
     maxWidth,
@@ -356,12 +356,12 @@ test('media.createPreview() passing mimetype', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() with wrong file extension', async (t) => {
+test('media.createImagePreview() with wrong file extension', async (t) => {
   const path = './test/fixtures/wrong-extension.jpg'
   const maxWidth = 32
   const maxHeight = 32
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     path,
     maxWidth,
     maxHeight
@@ -376,14 +376,14 @@ test('media.createPreview() with wrong file extension', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() by httpLink', async (t) => {
+test('media.createImagePreview() by httpLink', async (t) => {
   const path = './test/fixtures/sample.jpg'
   const mimetype = 'image/jpeg'
   const maxWidth = 32
   const maxHeight = 32
   const httpLink = await makeHttpLink(t, path)
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     httpLink,
     mimetype,
     maxWidth,
@@ -399,7 +399,7 @@ test('media.createPreview() by httpLink', async (t) => {
   t.absent(preview.inlined)
 })
 
-test('media.createPreview() by buffer', async (t) => {
+test('media.createImagePreview() by buffer', async (t) => {
   const path = './test/fixtures/sample.jpg'
   const mimetype = 'image/jpeg'
   const maxWidth = 32
@@ -407,7 +407,7 @@ test('media.createPreview() by buffer', async (t) => {
 
   const buffer = fs.readFileSync(path)
 
-  const { metadata, preview } = await media.createPreview({
+  const { metadata, preview } = await media.createImagePreview({
     buffer,
     mimetype,
     maxWidth,

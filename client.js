@@ -20,7 +20,7 @@ export class WorkerClient extends ReadyResource {
   }
 
   #attachMethods() {
-    const methods = ['createPreview', 'decodeImage', 'cropImage', 'createVideoPreview']
+    const methods = ['createImagePreview', 'decodeImage', 'cropImage', 'createVideoPreview']
 
     for (const method of methods) {
       this[method] = async (...args) => {
@@ -28,6 +28,9 @@ export class WorkerClient extends ReadyResource {
         return this.rpc[method](...args)
       }
     }
+
+    /** @deprecated Use createImagePreview instead */
+    this.createPreview = this.createImagePreview
   }
 
   async _open() {
