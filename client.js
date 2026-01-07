@@ -1,10 +1,10 @@
-import { spawn } from 'cross-worker/client'
 import ReadyResource from 'ready-resource'
 
 import HRPC from './shared/spec/hrpc/index.js'
 import { isImageSupported, isMediaSupported, isVideoSupported } from './shared/codecs.js'
 
 export class WorkerClient extends ReadyResource {
+  spawn = null
   worker = null
   rpc = null
   opts = null
@@ -15,7 +15,13 @@ export class WorkerClient extends ReadyResource {
     this.#attachMethods()
   }
 
-  initialize({ filename = 'node_modules/bare-media/worker/index.js', requireSource, args } = {}) {
+  initialize({
+    spawn,
+    filename = 'node_modules/bare-media/worker/index.js',
+    requireSource,
+    args
+  } = {}) {
+    this.spawn = spawn
     this.opts = { filename, requireSource, args }
   }
 
@@ -55,7 +61,7 @@ export class WorkerClient extends ReadyResource {
   async #run() {
     const { filename, requireSource, args } = this.opts
     const source = requireSource?.()
-    this.worker = await spawn(filename, source, args)
+    this.worker = await this.spawn(filename, source, args)
 
     const ipc = this.worker.IPC
 
