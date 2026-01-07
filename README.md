@@ -10,20 +10,11 @@ npm i bare-media
 
 ## Usage
 
-From a single worker:
-
 ```js
-import worker from 'bare-media'
+import { WorkerClient } from 'bare-media'
+import { spawn } from 'cross-worker-pear' // or 'cross-worker-bare-kit'
 
-const data = await worker.createImagePreview({ path, maxWidth, maxHeight })
-```
-
-Manually instantiate one or multiple workers:
-
-```js
-import { WorkerClient } from 'bare-media/client'
-
-const worker = new WorkerClient()
+const worker = new WorkerClient({ spawn })
 const data = await worker.createImagePreview({ path, maxWidth, maxHeight })
 ```
 
