@@ -15,7 +15,12 @@ export class WorkerClient extends ReadyResource {
     this.#attachMethods()
   }
 
-  initialize({ spawn, filename = 'node_modules/bare-media/worker/index.js', requireSource, args } = {}) {
+  initialize({
+    spawn,
+    filename = 'node_modules/bare-media/worker/index.js',
+    requireSource,
+    args
+  } = {}) {
     this.spawn = spawn
     this.opts = { filename, requireSource, args }
   }
