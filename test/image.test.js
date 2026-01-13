@@ -5,7 +5,7 @@ import fs from 'bare-fs'
 import { image } from '..'
 import { makeHttpLink, isAnimatedWebP } from './helpers'
 
-const { read, decode, encode, crop, resize } = image
+const { read, decode, encode, crop, resize, slice } = image
 
 test('image read() path', async (t) => {
   const path = './test/fixtures/sample.jpg'
@@ -299,6 +299,57 @@ test('image resize()', async (t) => {
   t.is(resized.height, 40)
 })
 
+test('image slice()', async (t) => {
+  const path = './test/fixtures/animated.webp'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const sliced = await slice(rgba, {
+    start: 4,
+    end: 8
+  })
+
+  t.is(sliced.frames.length, 4)
+})
+
+test('image slice() no start', async (t) => {
+  const path = './test/fixtures/animated.webp'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const sliced = await slice(rgba, {
+    end: 8
+  })
+
+  t.is(sliced.frames.length, 8)
+})
+
+test('image slice() no end', async (t) => {
+  const path = './test/fixtures/animated.webp'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const sliced = await slice(rgba, {
+    start: 4
+  })
+
+  t.is(sliced.frames.length, 8)
+})
+
+test('image slice() throws if start > end', async (t) => {
+  const path = './test/fixtures/animated.webp'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+
+  await t.exception(async () => {
+    const sliced = await slice(rgba, {
+      start: 4,
+      end: 2
+    })
+  })
+})
+
 test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {
   const path = './test/fixtures/sample.jpg'
 
@@ -313,8 +364,7 @@ test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {
 })
 
 test('codecs support flags', async (t) => {
-  const { isImageSupported, isVideoSupported, isMediaSupported, isCodecSupported } =
-    await import('../src/codecs.js')
+  const { isImageSupported, isVideoSupported, isMediaSupported } = await import('../src/codecs.js')
 
   t.ok(isImageSupported('image/jpeg'))
   t.ok(isImageSupported('image/png'))

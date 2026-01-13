@@ -79,6 +79,16 @@ Encodes an image to a specific format
 | `opts.maxWidth`  | number | Max width of the output rgba  |
 | `opts.maxHeight` | number | Max height of the output rgba |
 
+### slice()
+
+Limits an animated image to a subset of frames. If the image is not animated, it returns the same rgba.
+
+| Parameter    | Type   | Description                                                              |
+| ------------ | ------ | ------------------------------------------------------------------------ |
+| `buffer`     | string | The rgba image                                                           |
+| `opts.start` | number | Frame index at which to start extraction. Default 0.                     |
+| `opts.end`   | number | Frame index at which to end extraction. Defaults to end of the animation |
+
 ## Video API
 
 ### extractFrames()

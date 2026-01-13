@@ -158,6 +158,26 @@ async function resize(rgba, opts = {}) {
   return maybeResizedRGBA
 }
 
+async function slice(rgba, opts = {}) {
+  if (Array.isArray(rgba.frames)) {
+    let { start = 0, end = rgba.frames.length } = opts
+
+    start = Math.max(0, start)
+    end = Math.max(0, end)
+
+    if (start >= end) {
+      throw new Error('slice(): "start" must be less than "end"')
+    }
+
+    return {
+      ...rgba,
+      frames: rgba.frames.slice(start, end)
+    }
+  }
+
+  return rgba
+}
+
 async function _encodeRGBA(rgba, mimetype, opts) {
   const codec = await importCodec(mimetype)
 
@@ -221,6 +241,7 @@ image.read = read
 image.decode = decode
 image.resize = resize
 image.crop = crop
+image.slice = slice
 image.encode = encode
 
 export { image }
