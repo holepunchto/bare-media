@@ -218,6 +218,11 @@ class ImagePipeline {
   }
 
   async encode(opts) {
+    const buffer = await this.resolve()
+    return encode(buffer, opts)
+  }
+
+  async resolve() {
     let buffer = await read(this.input)
 
     for (const step of this.steps) {
@@ -238,7 +243,7 @@ class ImagePipeline {
       }
     }
 
-    return encode(buffer, opts)
+    return buffer
   }
 }
 
