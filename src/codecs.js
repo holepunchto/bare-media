@@ -1,14 +1,14 @@
 export const codecs = {
-  'image/jpeg': () => import('bare-jpeg'),
-  'image/jpg': () => import('bare-jpeg'),
   'image/avif': () => import('bare-heif'),
+  'image/gif': () => import('bare-gif'),
   'image/heic': () => import('bare-heif'),
   'image/heif': () => import('bare-heif'),
-  'image/webp': () => import('bare-webp'),
+  'image/jpeg': () => import('bare-jpeg'),
+  'image/jpg': () => import('bare-jpeg'),
   'image/png': () => import('bare-png'),
   'image/tif': () => import('bare-tiff'),
   'image/tiff': () => import('bare-tiff'),
-  'image/gif': () => import('bare-gif')
+  'image/webp': () => import('bare-webp'),
 }
 
 export const videoMimetypes = [
@@ -23,9 +23,6 @@ export function isImageSupported(mimetype) {
   return mimetype in codecs
 }
 
-/** @deprecated Use isImageSupported instead */
-export const isCodecSupported = isImageSupported
-
 export function isVideoSupported(mimetype) {
   return videoMimetypes.includes(mimetype)
 }
@@ -36,7 +33,7 @@ export function isMediaSupported(mimetype) {
 
 export async function importCodec(mimetype) {
   const codecImport = codecs[mimetype]
-  if (!codecImport) throw new Error(`No codec for ${mimetype}`)
+  if (!codecImport) throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
   return await codecImport()
 }
 

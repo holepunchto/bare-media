@@ -10,115 +10,100 @@ npm i bare-media
 
 ## Usage
 
-```js
-import { WorkerClient } from 'bare-media'
-import { spawn } from 'cross-worker-pear' // or 'cross-worker-bare-kit'
-
-const worker = new WorkerClient({ spawn })
-const data = await worker.createImagePreview({ path, maxWidth, maxHeight })
-```
-
-> NOTE: A worker spawns when an operation is requested and it stays running until the parent process is killed.
-
-Terminate the worker:
+Image:
 
 ```js
-worker.close()
+import { image } from 'bare-media'
 
-worker.onClose = () => {
-  // worker terminated
-}
+const preview = image(path)
+  .decode({ maxFrames })
+  .resize({ maxWidth, maxHeight })
+  .encode('image/webp')
 ```
 
-Call the methods directly without a worker:
+Video:
 
 ```js
-import { createImagePreview } from 'bare-media/worker/media.js'
+import { video } from 'bare-media'
 
-const data = await createImagePreview({ path, maxWidth, maxHeight })
+const frames = video(path)
+  .extractFrames({ frameNum })
 ```
 
-## API
+Each method can also be used independently:
 
-> See [schema.js](shared/spec/schema.js) for the complete reference of parameters
+```js
+const rgba1 = image.decode(buffer, { maxFrames })
+const rgba2 = video.extractFrames(fd, { frameNum })
+````
 
-### createImagePreview()
+## Image API
 
-Create a preview from a media file
-
-| Property    | Type   | Description                                                               |
-| ----------- | ------ | ------------------------------------------------------------------------- |
-| `path`      | string | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
-| `httpLink`  | string | Http link to the input file                                               |
-| `buffer`    | object | Bytes of the input file                                                   |
-| `mimetype`  | string | Media type of the input file. If not provided it will be detected         |
-| `maxWidth`  | number | Max width for the generated preview                                       |
-| `maxHeight` | number | Max height for the generated preview                                      |
-| `maxFrames` | number | Max frames for the generated preview in case the file is animated         |
-| `maxBytes`  | number | Max bytes for the generated preview                                       |
-| `format`    | string | Media type for the generated preview. Default `image/webp`                |
-| `encoding`  | string | `base64` or nothing for buffer                                            |
-
-### createVideoPreview()
-
-Create a preview from a video file
-
-| Property     | Type    | Description                                                               |
-| ------------ | ------- | ------------------------------------------------------------------------- |
-| `path`       | string  | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
-| `httpLink`   | string  | Http link to the input file                                               |
-| `buffer`     | object  | Bytes of the input file                                                   |
-| `mimetype`   | string  | Media type of the input file. If not provided it will be detected         |
-| `maxWidth`   | number  | Max width for the generated preview                                       |
-| `maxHeight`  | number  | Max height for the generated preview                                      |
-| `maxBytes`   | number  | Max bytes for the generated preview                                       |
-| `timestamp`  | number  | Timestamp in milliseconds to extract the preview from                     |
-| `percent`    | number  | Percentage (0-100) of the video duration to extract the preview from      |
-| `animated`   | boolean | If true, creates an animated preview (default: `false`)                   |
-| `frameCount` | number  | Number of frames for animated preview (default: `10`)                     |
-| `format`     | string  | Media type for the generated preview. Default `image/webp`                |
-| `encoding`   | string  | `base64` or nothing for buffer                                            |
-
-### decodeImage()
+### decode()
 
 Decode an image to RGBA
 
-| Property   | Type   | Description                                                               |
-| ---------- | ------ | ------------------------------------------------------------------------- |
-| `path`     | string | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
-| `httpLink` | string | Http link to the input file                                               |
-| `buffer`   | object | Bytes of the input file                                                   |
-| `mimetype` | string | Media type of the input file. If not provided it will be detected         |
+| Parameter         | Type   | Description                                                               |
+| -----------      | ------ | ------------------------------------------------------------------------- |
+| `buffer`         | string | The encoded image |
+| `opts.maxFrames` | number | Max number for frames to decode in case of animated images |
 
-### cropImage()
+### encode()
 
-Crop an image
+Encodes an image to a specific format
 
-| Property   | Type   | Description                                                               |
-| ---------- | ------ | ------------------------------------------------------------------------- |
-| `path`     | string | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
-| `httpLink` | string | Http link to the input file                                               |
-| `buffer`   | object | Bytes of the input file                                                   |
-| `mimetype` | string | Media type of the input file. If not provided it will be detected         |
-| `left`     | number | Offset from left edge                                                     |
-| `top`      | number | Offset from top edge                                                      |
-| `width`    | number | Width of the region to crop                                               |
-| `height`   | number | Height of the region to crop                                              |
-| `format`   | string | Media type for the cropped image. Default same as the input image         |
+| Parameter         | Type   | Description                                                               |
+| -----------      | ------ | ------------------------------------------------------------------------- |
+| `buffer`         | string | The rgba image |
+| `mimetype`       | string | The mimetype of the output image |
+| `opts.maxBytes`  | number | Max bytes for the encoded image (reduces quality or fps in case of animated images) |
 
-### Helpers
+### crop()
 
-The worker client instance exposes helpers to check for supported media types.
+Encodes an image to a specific format
 
-#### isImageSupported(mimetype)
+| Parameter         | Type   | Description                                                               |
+| -----------      | ------ | ------------------------------------------------------------------------- |
+| `buffer`         | string | The rgba image |
+| `opts.left`  | number | Offset from left edge |
+| `opts.top`  | number | Offset from top edge|
+| `opts.width`  | number | Width of the region to crop |
+| `opts.height`  | number | Height of the region to crop |
+
+### resize()
+
+Encodes an image to a specific format
+
+| Parameter         | Type   | Description                                                               |
+| -----------      | ------ | ------------------------------------------------------------------------- |
+| `buffer`         | string | The rgba image |
+| `opts.maxWidth`  | number | Max width of the output rgba |
+| `opts.maxHeight` | number | Max height of the output rgba |
+
+## Video API
+
+### extractFrames()
+
+Extracts frames from a video in RGBA
+
+| Parameter         | Type   | Description                                                               |
+| -----------      | ------ | ------------------------------------------------------------------------- |
+| `fd`         | number | File descriptor |
+| `opts.frameNum` | number | Number of the frame to extract |
+
+## Helpers
+
+The library also exposes helpers to check for supported media types.
+
+### isImageSupported(mimetype)
 
 Returns `true` if the mimetype is a supported image format (e.g. `image/jpeg`, `image/png`, `image/webp`, etc).
 
-#### isVideoSupported(mimetype)
+### isVideoSupported(mimetype)
 
 Returns `true` if the mimetype is a supported video format (e.g. `video/mp4`, `video/webm`, etc).
 
-#### isMediaSupported(mimetype)
+### isMediaSupported(mimetype)
 
 Returns `true` if the mimetype is either a supported image or video format.
 

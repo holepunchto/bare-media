@@ -4,18 +4,16 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "build:rpc": "cd shared/spec && bare ./build.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run format:check && lunte",
-    "test": "brittle-bare test/index.js"
+    "test": "brittle-bare test/*.test.js"
   },
   "keywords": [],
   "author": "Holepunch Inc",
   "license": "Apache-2.0",
   "description": "",
   "dependencies": {
-    "b4a": "^1.6.7",
     "bare-fetch": "^2.4.1",
     "bare-ffmpeg": "^1.0.0",
     "bare-fs": "^4.1.5",
@@ -26,15 +24,11 @@
     "bare-png": "^1.0.2",
     "bare-tiff": "^1.0.1",
     "bare-webp": "^1.0.3",
-    "cross-worker": "^2.0.0",
     "get-file-format": "^1.0.1",
-    "get-mime-type": "^2.0.1",
-    "hrpc": "^4.0.0",
-    "hyperschema": "^1.12.3",
-    "ready-resource": "^1.2.0",
-    "uncaughts": "^1.1.1"
+    "get-mime-type": "^2.0.1"
   },
   "devDependencies": {
+    "b4a": "^1.7.3",
     "brittle": "^3.16.3",
     "corestore": "^7.4.5",
     "hyperblobs": "^2.8.0",
@@ -45,9 +39,7 @@
     "test-tmp": "^1.4.0"
   },
   "files": [
-    "shared",
-    "worker",
-    "client.js",
+    "src",
     "index.js"
   ]
 }
