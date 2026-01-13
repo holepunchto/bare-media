@@ -34,7 +34,6 @@ test('image read() buffer', async (t) => {
 
   t.ok(Buffer.isBuffer(buffer))
   t.alike(buffer.slice(0, 2), b4a.from([0xff, 0xd8]), 'jpeg')
-
 })
 
 test('image decode() avif', async (t) => {
@@ -258,7 +257,7 @@ test('image encode() with maxBytes (reducing fps)', async (t) => {
   t.ok((await decode(encoded)).frames.length < rgba.frames.length)
 })
 
-test('image encode() with maxBytes throws if bytes can\'t fit', async (t) => {
+test("image encode() with maxBytes throws if bytes can't fit", async (t) => {
   const path = './test/fixtures/sample.jpg'
 
   await t.exception(async () => {

@@ -6,7 +6,7 @@ import { detectMimeType, calculateFitDimensions } from './util'
 
 const animatableMimetypes = ['image/gif', 'image/webp']
 
-async function read (input) {
+async function read(input) {
   let buffer
 
   if (typeof input === 'string') {
@@ -87,7 +87,9 @@ async function encode(rgba, mimetype, opts = {}) {
     }
 
     if (encoded.byteLength > maxBytes) {
-      throw new Error(`Could not create preview under maxBytes, reached ${encoded.byteLength} bytes`)
+      throw new Error(
+        `Could not create preview under maxBytes, reached ${encoded.byteLength} bytes`
+      )
     }
   }
 

@@ -83,9 +83,7 @@ function extractFrames(fd, opts = {}) {
   decoder.destroy()
 
   if (!result) {
-    throw new Error(
-      `Frame ${frameNum} not found (video only has ${currentFrame} frames)`
-    )
+    throw new Error(`Frame ${frameNum} not found (video only has ${currentFrame} frames)`)
   }
 
   return result

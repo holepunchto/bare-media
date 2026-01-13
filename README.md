@@ -26,8 +26,7 @@ Video:
 ```js
 import { video } from 'bare-media'
 
-const frames = video(path)
-  .extractFrames({ frameNum })
+const frames = video(path).extractFrames({ frameNum })
 ```
 
 Each method can also be used independently:
@@ -35,7 +34,7 @@ Each method can also be used independently:
 ```js
 const rgba1 = image.decode(buffer, { maxFrames })
 const rgba2 = video.extractFrames(fd, { frameNum })
-````
+```
 
 ## Image API
 
@@ -43,41 +42,41 @@ const rgba2 = video.extractFrames(fd, { frameNum })
 
 Decode an image to RGBA
 
-| Parameter         | Type   | Description                                                               |
-| -----------      | ------ | ------------------------------------------------------------------------- |
-| `buffer`         | string | The encoded image |
+| Parameter        | Type   | Description                                                |
+| ---------------- | ------ | ---------------------------------------------------------- |
+| `buffer`         | string | The encoded image                                          |
 | `opts.maxFrames` | number | Max number for frames to decode in case of animated images |
 
 ### encode()
 
 Encodes an image to a specific format
 
-| Parameter         | Type   | Description                                                               |
-| -----------      | ------ | ------------------------------------------------------------------------- |
-| `buffer`         | string | The rgba image |
-| `mimetype`       | string | The mimetype of the output image |
-| `opts.maxBytes`  | number | Max bytes for the encoded image (reduces quality or fps in case of animated images) |
+| Parameter       | Type   | Description                                                                         |
+| --------------- | ------ | ----------------------------------------------------------------------------------- |
+| `buffer`        | string | The rgba image                                                                      |
+| `mimetype`      | string | The mimetype of the output image                                                    |
+| `opts.maxBytes` | number | Max bytes for the encoded image (reduces quality or fps in case of animated images) |
 
 ### crop()
 
 Encodes an image to a specific format
 
-| Parameter         | Type   | Description                                                               |
-| -----------      | ------ | ------------------------------------------------------------------------- |
-| `buffer`         | string | The rgba image |
-| `opts.left`  | number | Offset from left edge |
-| `opts.top`  | number | Offset from top edge|
-| `opts.width`  | number | Width of the region to crop |
-| `opts.height`  | number | Height of the region to crop |
+| Parameter     | Type   | Description                  |
+| ------------- | ------ | ---------------------------- |
+| `buffer`      | string | The rgba image               |
+| `opts.left`   | number | Offset from left edge        |
+| `opts.top`    | number | Offset from top edge         |
+| `opts.width`  | number | Width of the region to crop  |
+| `opts.height` | number | Height of the region to crop |
 
 ### resize()
 
 Encodes an image to a specific format
 
-| Parameter         | Type   | Description                                                               |
-| -----------      | ------ | ------------------------------------------------------------------------- |
-| `buffer`         | string | The rgba image |
-| `opts.maxWidth`  | number | Max width of the output rgba |
+| Parameter        | Type   | Description                   |
+| ---------------- | ------ | ----------------------------- |
+| `buffer`         | string | The rgba image                |
+| `opts.maxWidth`  | number | Max width of the output rgba  |
 | `opts.maxHeight` | number | Max height of the output rgba |
 
 ## Video API
@@ -86,9 +85,9 @@ Encodes an image to a specific format
 
 Extracts frames from a video in RGBA
 
-| Parameter         | Type   | Description                                                               |
-| -----------      | ------ | ------------------------------------------------------------------------- |
-| `fd`         | number | File descriptor |
+| Parameter       | Type   | Description                    |
+| --------------- | ------ | ------------------------------ |
+| `fd`            | number | File descriptor                |
 | `opts.frameNum` | number | Number of the frame to extract |
 
 ## Helpers

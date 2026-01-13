@@ -8,7 +8,7 @@ export const codecs = {
   'image/png': () => import('bare-png'),
   'image/tif': () => import('bare-tiff'),
   'image/tiff': () => import('bare-tiff'),
-  'image/webp': () => import('bare-webp'),
+  'image/webp': () => import('bare-webp')
 }
 
 export const videoMimetypes = [
