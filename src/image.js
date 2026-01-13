@@ -158,7 +158,7 @@ async function resize(rgba, opts = {}) {
   return maybeResizedRGBA
 }
 
-async function slice(rgba, opts = {}) {
+function slice(rgba, opts = {}) {
   if (Array.isArray(rgba.frames)) {
     let { start = 0, end = rgba.frames.length } = opts
 
@@ -212,6 +212,11 @@ class ImagePipeline {
     return this
   }
 
+  slice(opts) {
+    this.steps.push({ op: 'slice', opts })
+    return this
+  }
+
   async encode(opts) {
     let buffer = await read(this.input)
 
@@ -226,6 +231,10 @@ class ImagePipeline {
 
       if (step.op === 'crop') {
         buffer = await crop(buffer, step.opts)
+      }
+
+      if (step.op === 'slice') {
+        buffer = slice(buffer, step.opts)
       }
     }
 
