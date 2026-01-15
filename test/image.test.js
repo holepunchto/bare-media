@@ -291,7 +291,7 @@ test('image crop() throws if the rectangle is out of bounds', async (t) => {
   const rgba = await decode(buffer)
 
   await t.exception(async () => {
-    const { metadata, data } = await crop(rgba, {
+    await crop(rgba, {
       left: -1,
       top: 15,
       width: 50,
@@ -299,7 +299,7 @@ test('image crop() throws if the rectangle is out of bounds', async (t) => {
     })
   })
   await t.exception(async () => {
-    const { metadata, data } = await crop(rgba, {
+    await crop(rgba, {
       left: 75,
       top: -1,
       width: 50,
@@ -307,7 +307,7 @@ test('image crop() throws if the rectangle is out of bounds', async (t) => {
     })
   })
   await t.exception(async () => {
-    const { metadata, data } = await crop(rgba, {
+    await crop(rgba, {
       left: 75,
       top: 15,
       width: 76,
@@ -315,7 +315,7 @@ test('image crop() throws if the rectangle is out of bounds', async (t) => {
     })
   })
   await t.exception(async () => {
-    const { metadata, data } = await crop(rgba, {
+    await crop(rgba, {
       left: 75,
       top: 15,
       width: 50,
