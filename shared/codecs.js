@@ -8,7 +8,9 @@ export const codecs = {
   'image/png': () => import('bare-png'),
   'image/tif': () => import('bare-tiff'),
   'image/tiff': () => import('bare-tiff'),
-  'image/gif': () => import('bare-gif')
+  'image/gif': () => import('bare-gif'),
+  'image/bmp': () => import('bare-bmp'),
+  'image/x-ms-bmp': () => import('bare-bmp')
 }
 
 export const videoMimetypes = [

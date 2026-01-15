@@ -106,6 +106,26 @@ test('media.createImagePreview() of .tiff', async (t) => {
   t.absent(preview.inlined)
 })
 
+test('media.createImagePreview() of .bmp', async (t) => {
+  const path = './test/fixtures/sample.bmp'
+  const maxWidth = 32
+  const maxHeight = 32
+
+  const { metadata, preview } = await media.createImagePreview({
+    path,
+    maxWidth,
+    maxHeight
+  })
+
+  t.alike(metadata, { dimensions: { width: 2, height: 2 } })
+  t.alike(preview.metadata, {
+    mimetype: 'image/webp',
+    dimensions: { width: 2, height: 2 }
+  })
+  t.ok(Buffer.isBuffer(preview.buffer))
+  t.absent(preview.inlined)
+})
+
 test('media.createImagePreview() of .gif (animated)', async (t) => {
   const path = './test/fixtures/sample.gif'
   const maxWidth = 100
