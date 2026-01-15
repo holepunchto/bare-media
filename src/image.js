@@ -195,26 +195,14 @@ class ImagePipeline {
   constructor(input) {
     this.input = input
     this.steps = []
-  }
 
-  decode(opts) {
-    this.steps.push({ op: 'decode', opts })
-    return this
-  }
-
-  resize(opts) {
-    this.steps.push({ op: 'resize', opts })
-    return this
-  }
-
-  crop(opts) {
-    this.steps.push({ op: 'crop', opts })
-    return this
-  }
-
-  slice(opts) {
-    this.steps.push({ op: 'slice', opts })
-    return this
+    const methods = ['decode', 'resize', 'crop', 'slice']
+    for (let method of methods) {
+      this[method] = (opts) => {
+        this.steps.push({ op: method, opts })
+        return this
+      }
+    }
   }
 
   async encode(opts) {
