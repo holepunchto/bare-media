@@ -1,6 +1,7 @@
 export const codecs = {
   'image/avif': () => import('bare-heif'),
   'image/gif': () => import('bare-gif'),
+  'image/bmp': () => import('bare-bmp'),
   'image/heic': () => import('bare-heif'),
   'image/heif': () => import('bare-heif'),
   'image/jpeg': () => import('bare-jpeg'),
@@ -8,7 +9,8 @@ export const codecs = {
   'image/png': () => import('bare-png'),
   'image/tif': () => import('bare-tiff'),
   'image/tiff': () => import('bare-tiff'),
-  'image/webp': () => import('bare-webp')
+  'image/webp': () => import('bare-webp'),
+  'image/x-ms-bmp': () => import('bare-bmp')
 }
 
 export const videoMimetypes = [
