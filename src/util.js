@@ -19,3 +19,11 @@ export function calculateFitDimensions(width, height, maxWidth, maxHeight) {
     height: Math.round(height * ratio)
   }
 }
+
+export function isImage(buffer) {
+  return detectMimeType(buffer).startsWith('image/')
+}
+
+export function isVideo(buffer) {
+  return detectMimeType(buffer).startsWith('video/')
+}
