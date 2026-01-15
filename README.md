@@ -15,7 +15,7 @@ Image:
 ```js
 import { image } from 'bare-media'
 
-const preview = image(path)
+const preview = await image(path)
   .decode({ maxFrames })
   .resize({ maxWidth, maxHeight })
   .encode('image/webp')
