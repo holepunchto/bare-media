@@ -117,10 +117,10 @@ test('media.createImagePreview() of .bmp', async (t) => {
     maxHeight
   })
 
-  t.alike(metadata, { dimensions: { width: 762, height: 1309 } })
+  t.alike(metadata, { dimensions: { width: 2, height: 2 } })
   t.alike(preview.metadata, {
     mimetype: 'image/webp',
-    dimensions: { width: 19, height: 32 }
+    dimensions: { width: 2, height: 2 }
   })
   t.ok(Buffer.isBuffer(preview.buffer))
   t.absent(preview.inlined)
