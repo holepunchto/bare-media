@@ -1,15 +1,15 @@
 {
-  "version": 3,
+  "version": 4,
   "schema": [
     {
       "id": 0,
-      "name": "@media/create-preview",
+      "name": "@media/create-image-preview",
       "request": {
-        "name": "@media/create-preview-request",
+        "name": "@media/create-image-preview-request",
         "stream": false
       },
       "response": {
-        "name": "@media/create-preview-response",
+        "name": "@media/create-image-preview-response",
         "stream": false
       },
       "version": 1
@@ -50,6 +50,19 @@
       "response": {
         "name": "@media/transcode-response",
         "stream": true
+      },
+      "version": 3
+    },
+    {
+      "id": 4,
+      "name": "@media/create-video-preview",
+      "request": {
+        "name": "@media/create-video-preview-request",
+        "stream": false
+      },
+      "response": {
+        "name": "@media/create-video-preview-response",
+        "stream": false
       },
       "version": 3
     }

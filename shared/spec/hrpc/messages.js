@@ -45,7 +45,10 @@ const encoding1 = {
     if (m.duration) c.uint.preencode(state, m.duration)
   },
   encode(state, m) {
-    const flags = (m.mimetype ? 1 : 0) | (m.dimensions ? 2 : 0) | (m.duration ? 4 : 0)
+    const flags =
+      (m.mimetype ? 1 : 0) |
+      (m.dimensions ? 2 : 0) |
+      (m.duration ? 4 : 0)
 
     c.uint.encode(state, flags)
 
@@ -77,7 +80,10 @@ const encoding2 = {
     if (m.buffer) c.buffer.preencode(state, m.buffer)
   },
   encode(state, m) {
-    const flags = (m.metadata ? 1 : 0) | (m.inlined ? 2 : 0) | (m.buffer ? 4 : 0)
+    const flags =
+      (m.metadata ? 1 : 0) |
+      (m.inlined ? 2 : 0) |
+      (m.buffer ? 4 : 0)
 
     c.uint.encode(state, flags)
 
@@ -96,7 +102,7 @@ const encoding2 = {
   }
 }
 
-// @media/create-preview-request
+// @media/create-image-preview-request
 const encoding3 = {
   preencode(state, m) {
     const flags =
@@ -168,12 +174,12 @@ const encoding3 = {
   }
 }
 
-// @media/create-preview-response.metadata
+// @media/create-image-preview-response.metadata
 const encoding4_0 = encoding2_0
-// @media/create-preview-response.preview
+// @media/create-image-preview-response.preview
 const encoding4_1 = c.frame(encoding2)
 
-// @media/create-preview-response
+// @media/create-image-preview-response
 const encoding4 = {
   preencode(state, m) {
     encoding4_0.preencode(state, m.metadata)
@@ -206,7 +212,10 @@ const encoding5 = {
   },
   encode(state, m) {
     const flags =
-      (m.path ? 1 : 0) | (m.httpLink ? 2 : 0) | (m.buffer ? 4 : 0) | (m.mimetype ? 8 : 0)
+      (m.path ? 1 : 0) |
+      (m.httpLink ? 2 : 0) |
+      (m.buffer ? 4 : 0) |
+      (m.mimetype ? 8 : 0)
 
     c.uint.encode(state, flags)
 
@@ -239,7 +248,9 @@ const encoding6 = {
     if (m.data) c.buffer.preencode(state, m.data)
   },
   encode(state, m) {
-    const flags = (m.metadata ? 1 : 0) | (m.data ? 2 : 0)
+    const flags =
+      (m.metadata ? 1 : 0) |
+      (m.data ? 2 : 0)
 
     c.uint.encode(state, flags)
 
@@ -260,15 +271,15 @@ const encoding6 = {
 const encoding7 = {
   preencode(state, m) {
     const flags =
-      (version >= 2 && m.path ? 1 : 0) |
-      (version >= 2 && m.httpLink ? 2 : 0) |
-      (version >= 2 && m.buffer ? 4 : 0) |
-      (version >= 2 && m.mimetype ? 8 : 0) |
-      (version >= 2 && m.left ? 16 : 0) |
-      (version >= 2 && m.top ? 32 : 0) |
-      (version >= 2 && m.width ? 64 : 0) |
-      (version >= 2 && m.height ? 128 : 0) |
-      (version >= 2 && m.format ? 256 : 0)
+      ((version >= 2 && m.path) ? 1 : 0) |
+      ((version >= 2 && m.httpLink) ? 2 : 0) |
+      ((version >= 2 && m.buffer) ? 4 : 0) |
+      ((version >= 2 && m.mimetype) ? 8 : 0) |
+      ((version >= 2 && m.left) ? 16 : 0) |
+      ((version >= 2 && m.top) ? 32 : 0) |
+      ((version >= 2 && m.width) ? 64 : 0) |
+      ((version >= 2 && m.height) ? 128 : 0) |
+      ((version >= 2 && m.format) ? 256 : 0)
 
     c.uint.preencode(state, flags)
 
@@ -284,15 +295,15 @@ const encoding7 = {
   },
   encode(state, m) {
     const flags =
-      (version >= 2 && m.path ? 1 : 0) |
-      (version >= 2 && m.httpLink ? 2 : 0) |
-      (version >= 2 && m.buffer ? 4 : 0) |
-      (version >= 2 && m.mimetype ? 8 : 0) |
-      (version >= 2 && m.left ? 16 : 0) |
-      (version >= 2 && m.top ? 32 : 0) |
-      (version >= 2 && m.width ? 64 : 0) |
-      (version >= 2 && m.height ? 128 : 0) |
-      (version >= 2 && m.format ? 256 : 0)
+      ((version >= 2 && m.path) ? 1 : 0) |
+      ((version >= 2 && m.httpLink) ? 2 : 0) |
+      ((version >= 2 && m.buffer) ? 4 : 0) |
+      ((version >= 2 && m.mimetype) ? 8 : 0) |
+      ((version >= 2 && m.left) ? 16 : 0) |
+      ((version >= 2 && m.top) ? 32 : 0) |
+      ((version >= 2 && m.width) ? 64 : 0) |
+      ((version >= 2 && m.height) ? 128 : 0) |
+      ((version >= 2 && m.format) ? 256 : 0)
 
     c.uint.encode(state, flags)
 
@@ -310,15 +321,15 @@ const encoding7 = {
     const flags = c.uint.decode(state)
 
     return {
-      path: version >= 2 && (flags & 1) !== 0 ? c.string.decode(state) : null,
-      httpLink: version >= 2 && (flags & 2) !== 0 ? c.string.decode(state) : null,
-      buffer: version >= 2 && (flags & 4) !== 0 ? c.buffer.decode(state) : null,
-      mimetype: version >= 2 && (flags & 8) !== 0 ? c.string.decode(state) : null,
-      left: version >= 2 && (flags & 16) !== 0 ? c.uint.decode(state) : 0,
-      top: version >= 2 && (flags & 32) !== 0 ? c.uint.decode(state) : 0,
-      width: version >= 2 && (flags & 64) !== 0 ? c.uint.decode(state) : 0,
-      height: version >= 2 && (flags & 128) !== 0 ? c.uint.decode(state) : 0,
-      format: version >= 2 && (flags & 256) !== 0 ? c.string.decode(state) : null
+      path: (version >= 2 && (flags & 1) !== 0) ? c.string.decode(state) : null,
+      httpLink: (version >= 2 && (flags & 2) !== 0) ? c.string.decode(state) : null,
+      buffer: (version >= 2 && (flags & 4) !== 0) ? c.buffer.decode(state) : null,
+      mimetype: (version >= 2 && (flags & 8) !== 0) ? c.string.decode(state) : null,
+      left: (version >= 2 && (flags & 16) !== 0) ? c.uint.decode(state) : 0,
+      top: (version >= 2 && (flags & 32) !== 0) ? c.uint.decode(state) : 0,
+      width: (version >= 2 && (flags & 64) !== 0) ? c.uint.decode(state) : 0,
+      height: (version >= 2 && (flags & 128) !== 0) ? c.uint.decode(state) : 0,
+      format: (version >= 2 && (flags & 256) !== 0) ? c.string.decode(state) : null
     }
   }
 }
@@ -335,7 +346,9 @@ const encoding8 = {
     if (version >= 2 && m.data) c.buffer.preencode(state, m.data)
   },
   encode(state, m) {
-    const flags = (version >= 2 && m.metadata ? 1 : 0) | (version >= 2 && m.data ? 2 : 0)
+    const flags =
+      ((version >= 2 && m.metadata) ? 1 : 0) |
+      ((version >= 2 && m.data) ? 2 : 0)
 
     c.uint.encode(state, flags)
 
@@ -346,8 +359,8 @@ const encoding8 = {
     const flags = c.uint.decode(state)
 
     return {
-      metadata: version >= 2 && (flags & 1) !== 0 ? encoding8_0.decode(state) : null,
-      data: version >= 2 && (flags & 2) !== 0 ? c.buffer.decode(state) : null
+      metadata: (version >= 2 && (flags & 1) !== 0) ? encoding8_0.decode(state) : null,
+      data: (version >= 2 && (flags & 2) !== 0) ? c.buffer.decode(state) : null
     }
   }
 }
@@ -364,10 +377,10 @@ const encoding9 = {
   },
   encode(state, m) {
     const flags =
-      (version >= 3 && m.format ? 1 : 0) |
-      (version >= 3 && m.codec ? 2 : 0) |
-      (version >= 3 && m.width ? 4 : 0) |
-      (version >= 3 && m.height ? 8 : 0)
+      ((version >= 3 && m.format) ? 1 : 0) |
+      ((version >= 3 && m.codec) ? 2 : 0) |
+      ((version >= 3 && m.width) ? 4 : 0) |
+      ((version >= 3 && m.height) ? 8 : 0)
 
     c.uint.encode(state, flags)
 
@@ -380,10 +393,10 @@ const encoding9 = {
     const flags = c.uint.decode(state)
 
     return {
-      format: version >= 3 && (flags & 1) !== 0 ? c.string.decode(state) : null,
-      codec: version >= 3 && (flags & 2) !== 0 ? c.string.decode(state) : null,
-      width: version >= 3 && (flags & 4) !== 0 ? c.uint.decode(state) : 0,
-      height: version >= 3 && (flags & 8) !== 0 ? c.uint.decode(state) : 0
+      format: (version >= 3 && (flags & 1) !== 0) ? c.string.decode(state) : null,
+      codec: (version >= 3 && (flags & 2) !== 0) ? c.string.decode(state) : null,
+      width: (version >= 3 && (flags & 4) !== 0) ? c.uint.decode(state) : 0,
+      height: (version >= 3 && (flags & 8) !== 0) ? c.uint.decode(state) : 0
     }
   }
 }
@@ -405,12 +418,12 @@ const encoding10 = {
   },
   encode(state, m) {
     const flags =
-      (version >= 3 && m.path ? 1 : 0) |
-      (version >= 3 && m.httpLink ? 2 : 0) |
-      (version >= 3 && m.buffer ? 4 : 0) |
-      (version >= 3 && m.mimetype ? 8 : 0) |
-      (version >= 3 && m.outputParameters ? 16 : 0) |
-      (version >= 4 && m.bufferSize ? 32 : 0)
+      ((version >= 3 && m.path) ? 1 : 0) |
+      ((version >= 3 && m.httpLink) ? 2 : 0) |
+      ((version >= 3 && m.buffer) ? 4 : 0) |
+      ((version >= 3 && m.mimetype) ? 8 : 0) |
+      ((version >= 3 && m.outputParameters) ? 16 : 0) |
+      ((version >= 4 && m.bufferSize) ? 32 : 0)
 
     c.uint.encode(state, flags)
 
@@ -425,12 +438,12 @@ const encoding10 = {
     const flags = c.uint.decode(state)
 
     return {
-      path: version >= 3 && (flags & 1) !== 0 ? c.string.decode(state) : null,
-      httpLink: version >= 3 && (flags & 2) !== 0 ? c.string.decode(state) : null,
-      buffer: version >= 3 && (flags & 4) !== 0 ? c.buffer.decode(state) : null,
-      mimetype: version >= 3 && (flags & 8) !== 0 ? c.string.decode(state) : null,
-      outputParameters: version >= 3 && (flags & 16) !== 0 ? encoding10_4.decode(state) : null,
-      bufferSize: version >= 4 && (flags & 32) !== 0 ? c.uint.decode(state) : 0
+      path: (version >= 3 && (flags & 1) !== 0) ? c.string.decode(state) : null,
+      httpLink: (version >= 3 && (flags & 2) !== 0) ? c.string.decode(state) : null,
+      buffer: (version >= 3 && (flags & 4) !== 0) ? c.buffer.decode(state) : null,
+      mimetype: (version >= 3 && (flags & 8) !== 0) ? c.string.decode(state) : null,
+      outputParameters: (version >= 3 && (flags & 16) !== 0) ? encoding10_4.decode(state) : null,
+      bufferSize: (version >= 4 && (flags & 32) !== 0) ? c.uint.decode(state) : 0
     }
   }
 }
@@ -443,7 +456,7 @@ const encoding11 = {
     if (version >= 3 && m.buffer) c.buffer.preencode(state, m.buffer)
   },
   encode(state, m) {
-    const flags = version >= 3 && m.buffer ? 1 : 0
+    const flags = (version >= 3 && m.buffer) ? 1 : 0
 
     c.uint.encode(state, flags)
 
@@ -453,7 +466,118 @@ const encoding11 = {
     const flags = c.uint.decode(state)
 
     return {
-      buffer: version >= 3 && (flags & 1) !== 0 ? c.buffer.decode(state) : null
+      buffer: (version >= 3 && (flags & 1) !== 0) ? c.buffer.decode(state) : null
+    }
+  }
+}
+
+// @media/create-video-preview-request
+const encoding12 = {
+  preencode(state, m) {
+    const flags =
+      ((version >= 3 && m.path) ? 1 : 0) |
+      ((version >= 3 && m.httpLink) ? 2 : 0) |
+      ((version >= 3 && m.buffer) ? 4 : 0) |
+      ((version >= 3 && m.mimetype) ? 8 : 0) |
+      ((version >= 3 && m.maxWidth) ? 16 : 0) |
+      ((version >= 3 && m.maxHeight) ? 32 : 0) |
+      ((version >= 3 && m.maxBytes) ? 64 : 0) |
+      ((version >= 3 && m.timestamp) ? 128 : 0) |
+      ((version >= 3 && m.percent) ? 256 : 0) |
+      ((version >= 3 && m.animated) ? 512 : 0) |
+      ((version >= 3 && m.frameCount) ? 1024 : 0) |
+      ((version >= 3 && m.format) ? 2048 : 0) |
+      ((version >= 3 && m.encoding) ? 4096 : 0)
+
+    c.uint.preencode(state, flags)
+
+    if (version >= 3 && m.path) c.string.preencode(state, m.path)
+    if (version >= 3 && m.httpLink) c.string.preencode(state, m.httpLink)
+    if (version >= 3 && m.buffer) c.buffer.preencode(state, m.buffer)
+    if (version >= 3 && m.mimetype) c.string.preencode(state, m.mimetype)
+    if (version >= 3 && m.maxWidth) c.uint.preencode(state, m.maxWidth)
+    if (version >= 3 && m.maxHeight) c.uint.preencode(state, m.maxHeight)
+    if (version >= 3 && m.maxBytes) c.uint.preencode(state, m.maxBytes)
+    if (version >= 3 && m.timestamp) c.uint.preencode(state, m.timestamp)
+    if (version >= 3 && m.percent) c.uint.preencode(state, m.percent)
+    if (version >= 3 && m.frameCount) c.uint.preencode(state, m.frameCount)
+    if (version >= 3 && m.format) c.string.preencode(state, m.format)
+    if (version >= 3 && m.encoding) c.string.preencode(state, m.encoding)
+  },
+  encode(state, m) {
+    const flags =
+      ((version >= 3 && m.path) ? 1 : 0) |
+      ((version >= 3 && m.httpLink) ? 2 : 0) |
+      ((version >= 3 && m.buffer) ? 4 : 0) |
+      ((version >= 3 && m.mimetype) ? 8 : 0) |
+      ((version >= 3 && m.maxWidth) ? 16 : 0) |
+      ((version >= 3 && m.maxHeight) ? 32 : 0) |
+      ((version >= 3 && m.maxBytes) ? 64 : 0) |
+      ((version >= 3 && m.timestamp) ? 128 : 0) |
+      ((version >= 3 && m.percent) ? 256 : 0) |
+      ((version >= 3 && m.animated) ? 512 : 0) |
+      ((version >= 3 && m.frameCount) ? 1024 : 0) |
+      ((version >= 3 && m.format) ? 2048 : 0) |
+      ((version >= 3 && m.encoding) ? 4096 : 0)
+
+    c.uint.encode(state, flags)
+
+    if (version >= 3 && m.path) c.string.encode(state, m.path)
+    if (version >= 3 && m.httpLink) c.string.encode(state, m.httpLink)
+    if (version >= 3 && m.buffer) c.buffer.encode(state, m.buffer)
+    if (version >= 3 && m.mimetype) c.string.encode(state, m.mimetype)
+    if (version >= 3 && m.maxWidth) c.uint.encode(state, m.maxWidth)
+    if (version >= 3 && m.maxHeight) c.uint.encode(state, m.maxHeight)
+    if (version >= 3 && m.maxBytes) c.uint.encode(state, m.maxBytes)
+    if (version >= 3 && m.timestamp) c.uint.encode(state, m.timestamp)
+    if (version >= 3 && m.percent) c.uint.encode(state, m.percent)
+    if (version >= 3 && m.frameCount) c.uint.encode(state, m.frameCount)
+    if (version >= 3 && m.format) c.string.encode(state, m.format)
+    if (version >= 3 && m.encoding) c.string.encode(state, m.encoding)
+  },
+  decode(state) {
+    const flags = c.uint.decode(state)
+
+    return {
+      path: (version >= 3 && (flags & 1) !== 0) ? c.string.decode(state) : null,
+      httpLink: (version >= 3 && (flags & 2) !== 0) ? c.string.decode(state) : null,
+      buffer: (version >= 3 && (flags & 4) !== 0) ? c.buffer.decode(state) : null,
+      mimetype: (version >= 3 && (flags & 8) !== 0) ? c.string.decode(state) : null,
+      maxWidth: (version >= 3 && (flags & 16) !== 0) ? c.uint.decode(state) : 0,
+      maxHeight: (version >= 3 && (flags & 32) !== 0) ? c.uint.decode(state) : 0,
+      maxBytes: (version >= 3 && (flags & 64) !== 0) ? c.uint.decode(state) : 0,
+      timestamp: (version >= 3 && (flags & 128) !== 0) ? c.uint.decode(state) : 0,
+      percent: (version >= 3 && (flags & 256) !== 0) ? c.uint.decode(state) : 0,
+      animated: (version >= 3 && (flags & 512) !== 0),
+      frameCount: (version >= 3 && (flags & 1024) !== 0) ? c.uint.decode(state) : 0,
+      format: (version >= 3 && (flags & 2048) !== 0) ? c.string.decode(state) : null,
+      encoding: (version >= 3 && (flags & 4096) !== 0) ? c.string.decode(state) : null
+    }
+  }
+}
+
+// @media/create-video-preview-response.metadata
+const encoding13_0 = encoding2_0
+// @media/create-video-preview-response.preview
+const encoding13_1 = encoding4_1
+
+// @media/create-video-preview-response
+const encoding13 = {
+  preencode(state, m) {
+    encoding13_0.preencode(state, m.metadata)
+    encoding13_1.preencode(state, m.preview)
+  },
+  encode(state, m) {
+    encoding13_0.encode(state, m.metadata)
+    encoding13_1.encode(state, m.preview)
+  },
+  decode(state) {
+    const r0 = encoding13_0.decode(state)
+    const r1 = encoding13_1.decode(state)
+
+    return {
+      metadata: r0,
+      preview: r1
     }
   }
 }
@@ -487,9 +611,9 @@ function getEncoding(name) {
       return encoding1
     case '@media/file':
       return encoding2
-    case '@media/create-preview-request':
+    case '@media/create-image-preview-request':
       return encoding3
-    case '@media/create-preview-response':
+    case '@media/create-image-preview-response':
       return encoding4
     case '@media/decode-image-request':
       return encoding5
@@ -505,6 +629,10 @@ function getEncoding(name) {
       return encoding10
     case '@media/transcode-response':
       return encoding11
+    case '@media/create-video-preview-request':
+      return encoding12
+    case '@media/create-video-preview-response':
+      return encoding13
     default:
       throw new Error('Encoder not found ' + name)
   }

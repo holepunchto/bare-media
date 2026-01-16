@@ -6,14 +6,16 @@ import { c, RPC, RPCStream, RPCRequestStream } from 'hrpc/runtime'
 import { getEncoding } from './messages.js'
 
 const methods = new Map([
-  ['@media/create-preview', 0],
-  [0, '@media/create-preview'],
+  ['@media/create-image-preview', 0],
+  [0, '@media/create-image-preview'],
   ['@media/decode-image', 1],
   [1, '@media/decode-image'],
   ['@media/crop-image', 2],
   [2, '@media/crop-image'],
   ['@media/transcode', 3],
-  [3, '@media/transcode']
+  [3, '@media/transcode'],
+  ['@media/create-video-preview', 4],
+  [4, '@media/create-video-preview']
 ])
 
 class HRPC {
@@ -21,16 +23,18 @@ class HRPC {
     this._stream = stream
     this._handlers = []
     this._requestEncodings = new Map([
-      ['@media/create-preview', getEncoding('@media/create-preview-request')],
+      ['@media/create-image-preview', getEncoding('@media/create-image-preview-request')],
       ['@media/decode-image', getEncoding('@media/decode-image-request')],
       ['@media/crop-image', getEncoding('@media/crop-image-request')],
-      ['@media/transcode', getEncoding('@media/transcode-request')]
+      ['@media/transcode', getEncoding('@media/transcode-request')],
+      ['@media/create-video-preview', getEncoding('@media/create-video-preview-request')]
     ])
     this._responseEncodings = new Map([
-      ['@media/create-preview', getEncoding('@media/create-preview-response')],
+      ['@media/create-image-preview', getEncoding('@media/create-image-preview-response')],
       ['@media/decode-image', getEncoding('@media/decode-image-response')],
       ['@media/crop-image', getEncoding('@media/crop-image-response')],
-      ['@media/transcode', getEncoding('@media/transcode-response')]
+      ['@media/transcode', getEncoding('@media/transcode-response')],
+      ['@media/create-video-preview', getEncoding('@media/create-video-preview-response')]
     ])
     this._rpc = new RPC(stream, async (req) => {
       const command = methods.get(req.command)
@@ -128,8 +132,8 @@ class HRPC {
     }
   }
 
-  async createPreview(args) {
-    return this._call('@media/create-preview', args)
+  async createImagePreview(args) {
+    return this._call('@media/create-image-preview', args)
   }
 
   async decodeImage(args) {
@@ -144,8 +148,12 @@ class HRPC {
     return this._callSync('@media/transcode', args)
   }
 
-  onCreatePreview(responseFn) {
-    this._handlers['@media/create-preview'] = responseFn
+  async createVideoPreview(args) {
+    return this._call('@media/create-video-preview', args)
+  }
+
+  onCreateImagePreview(responseFn) {
+    this._handlers['@media/create-image-preview'] = responseFn
   }
 
   onDecodeImage(responseFn) {
@@ -160,12 +168,19 @@ class HRPC {
     this._handlers['@media/transcode'] = responseFn
   }
 
+  onCreateVideoPreview(responseFn) {
+    this._handlers['@media/create-video-preview'] = responseFn
+  }
+
   _requestIsStream(command) {
-    return [].includes(command)
+    return [
+    ].includes(command)
   }
 
   _responseIsStream(command) {
-    return ['@media/transcode'].includes(command)
+    return [
+      '@media/transcode'
+    ].includes(command)
   }
 
   // prettier-ignore-start
