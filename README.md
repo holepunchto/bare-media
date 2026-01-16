@@ -32,7 +32,7 @@ const frames = video(path).extractFrames({ frameNum })
 Each method can also be used independently:
 
 ```js
-const rgba1 = image.decode(buffer, { maxFrames })
+const rgba1 = await image.decode(buffer, { maxFrames })
 const rgba2 = video.extractFrames(fd, { frameNum })
 ```
 
@@ -59,7 +59,7 @@ Encodes an image to a specific format
 
 ### crop()
 
-Encodes an image to a specific format
+Crop an image
 
 | Parameter     | Type   | Description                  |
 | ------------- | ------ | ---------------------------- |
@@ -71,7 +71,7 @@ Encodes an image to a specific format
 
 ### resize()
 
-Encodes an image to a specific format
+Resize an image
 
 | Parameter        | Type   | Description                   |
 | ---------------- | ------ | ----------------------------- |
