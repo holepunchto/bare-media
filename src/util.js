@@ -27,3 +27,12 @@ export function isImage(buffer) {
 export function isVideo(buffer) {
   return detectMimeType(buffer).startsWith('video/')
 }
+
+export function isHttpUrl(value) {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}

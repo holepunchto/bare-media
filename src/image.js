@@ -2,7 +2,7 @@ import fs from 'bare-fs'
 import fetch from 'bare-fetch'
 
 import { importCodec, supportsQuality } from './codecs.js'
-import { detectMimeType, calculateFitDimensions } from './util'
+import { isHttpUrl, detectMimeType, calculateFitDimensions } from './util'
 
 const animatableMimetypes = ['image/gif', 'image/webp']
 
@@ -10,7 +10,7 @@ async function read(input) {
   let buffer
 
   if (typeof input === 'string') {
-    if (input.startsWith('http')) {
+    if (isHttpUrl(input)) {
       const response = await fetch(input)
       buffer = await response.buffer()
     } else {
