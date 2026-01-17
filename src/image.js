@@ -14,13 +14,17 @@ async function read(input) {
       const response = await fetch(input)
       buffer = await response.buffer()
     } else {
-      buffer = fs.readFileSync(input)
+      buffer = await fs.readFile(input)
     }
   } else {
     buffer = input
   }
 
   return buffer
+}
+
+async function save(filename, buffer, opts) {
+  return fs.writeFile(filename, buffer, opts)
 }
 
 async function decode(buffer, opts = {}) {
@@ -46,8 +50,8 @@ async function decode(buffer, opts = {}) {
   return rgba
 }
 
-async function encode(rgba, mimetype, opts = {}) {
-  const { maxBytes, ...codecOpts } = opts
+async function encode(rgba, opts = {}) {
+  const { mimetype, maxBytes, ...codecOpts } = opts
 
   let encoded = await _encodeRGBA(rgba, mimetype, codecOpts)
 
@@ -196,7 +200,7 @@ class ImagePipeline {
     this.input = input
     this.steps = []
 
-    const methods = ['decode', 'resize', 'crop', 'slice']
+    const methods = ['decode', 'resize', 'crop', 'slice', 'encode']
     for (let method of methods) {
       this[method] = (opts) => {
         this.steps.push({ op: method, opts })
@@ -205,12 +209,7 @@ class ImagePipeline {
     }
   }
 
-  async encode(opts) {
-    const buffer = await this.resolve()
-    return encode(buffer, opts)
-  }
-
-  async resolve() {
+  async buffer() {
     let buffer = await read(this.input)
 
     for (const step of this.steps) {
@@ -229,9 +228,18 @@ class ImagePipeline {
       if (step.op === 'slice') {
         buffer = slice(buffer, step.opts)
       }
+
+      if (step.op === 'encode') {
+        buffer = await encode(buffer, step.opts)
+      }
     }
 
     return buffer
+  }
+
+  async save(filename, opts) {
+    const buff = await this.buffer()
+    return save(filename, buff, opts)
   }
 }
 
@@ -240,6 +248,7 @@ function image(input) {
 }
 
 image.read = read
+image.save = save
 image.decode = decode
 image.resize = resize
 image.crop = crop

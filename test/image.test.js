@@ -184,7 +184,7 @@ test('image encode() gif throws (not implemented)', async (t) => {
 
   await t.exception(async () => {
     try {
-      await encode(rgba, 'image/gif')
+      await encode(rgba, { mimetype: 'image/gif' })
     } catch (e) {
       throw new Error('Not implemented')
     }
@@ -199,7 +199,7 @@ test('image encode() heic', async (t) => {
 
   await t.exception(async () => {
     try {
-      await encode(rgba, 'image/heic')
+      await encode(rgba, { mimetype: 'image/heic' })
     } catch (e) {
       throw new Error('Not implemented')
     }
@@ -211,7 +211,7 @@ test('image encode() jpeg', async (t) => {
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  const encoded = await encode(rgba, 'image/jpeg')
+  const encoded = await encode(rgba, { mimetype: 'image/jpeg' })
 
   t.ok(Buffer.isBuffer(encoded))
 })
@@ -221,7 +221,7 @@ test('image encode() png', async (t) => {
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  const encoded = await encode(rgba, 'image/png')
+  const encoded = await encode(rgba, { mimetype: 'image/png' })
 
   t.ok(Buffer.isBuffer(encoded))
 })
@@ -231,7 +231,7 @@ test('image encode() tiff', async (t) => {
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  const encoded = await encode(rgba, 'image/tiff')
+  const encoded = await encode(rgba, { mimetype: 'image/tiff' })
 
   t.ok(Buffer.isBuffer(encoded))
 })
@@ -241,7 +241,7 @@ test('image encode() webp', async (t) => {
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  const encoded = await encode(rgba, 'image/webp')
+  const encoded = await encode(rgba, { mimetype: 'image/webp' })
 
   t.ok(Buffer.isBuffer(encoded))
 })
@@ -251,7 +251,7 @@ test('image encode() with maxBytes (reducing quality)', async (t) => {
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  const encoded = await encode(rgba, 'image/jpeg', { maxBytes: 3000 })
+  const encoded = await encode(rgba, { mimetype: 'image/jpeg', maxBytes: 3000 })
 
   t.ok(Buffer.isBuffer(encoded))
   t.ok(encoded.byteLength < 3000)
@@ -262,7 +262,7 @@ test('image encode() with maxBytes (reducing fps)', async (t) => {
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  const encoded = await encode(rgba, 'image/webp', { maxBytes: 40000 })
+  const encoded = await encode(rgba, { mimetype: 'image/webp', maxBytes: 40000 })
 
   t.ok(Buffer.isBuffer(encoded))
   t.ok(encoded.byteLength < 40000)
@@ -275,7 +275,7 @@ test("image encode() with maxBytes throws if bytes can't fit", async (t) => {
   await t.exception(async () => {
     const buffer = await read(path)
     const rgba = await decode(buffer)
-    const encoded = await encode(rgba, 'image/jpeg', { maxBytes: 10 })
+    const encoded = await encode(rgba, { mimetype: 'image/jpeg', maxBytes: 10 })
   })
 })
 
@@ -409,7 +409,8 @@ test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {
     .decode()
     .crop({ left: 75, top: 15, width: 50, height: 50 })
     .resize({ maxWidth: 32, maxHeight: 32 })
-    .encode('image/webp')
+    .encode({ mimetype: 'image/webp' })
+    .buffer()
 
   t.ok(Buffer.isBuffer(result))
   t.is(result.byteLength, 442)

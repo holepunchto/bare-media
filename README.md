@@ -18,7 +18,8 @@ import { image } from 'bare-media'
 const preview = await image(path)
   .decode({ maxFrames })
   .resize({ maxWidth, maxHeight })
-  .encode('image/webp')
+  .encode({ mimetype: 'image/webp' })
+  .buffer()
 ```
 
 Video:
@@ -32,8 +33,7 @@ const frames = video(path).extractFrames({ frameNum })
 Each method can also be used independently:
 
 ```js
-const rgba1 = await image.decode(buffer, { maxFrames })
-const rgba2 = video.extractFrames(fd, { frameNum })
+const rgba = await image.decode(buffer, { maxFrames })
 ```
 
 ## Image API
@@ -54,8 +54,9 @@ Encodes an image to a specific format
 | Parameter       | Type   | Description                                                                         |
 | --------------- | ------ | ----------------------------------------------------------------------------------- |
 | `buffer`        | string | The rgba image                                                                      |
-| `mimetype`      | string | The mimetype of the output image                                                    |
+| `opts.mimetype` | string | The mimetype of the output image                                                    |
 | `opts.maxBytes` | number | Max bytes for the encoded image (reduces quality or fps in case of animated images) |
+| `opts...`       | any    | Additional encoder-specific options                                                 |
 
 ### crop()
 
