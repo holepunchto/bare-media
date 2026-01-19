@@ -18,7 +18,7 @@
     "b4a": "^1.6.7",
     "bare-bmp": "^1.0.0",
     "bare-fetch": "^2.4.1",
-    "bare-ffmpeg": "^1.0.0",
+    "bare-ffmpeg": "^1.1.0",
     "bare-fs": "^4.1.5",
     "bare-gif": "^1.1.2",
     "bare-heif": "^1.0.5",
