@@ -26,7 +26,13 @@ export class WorkerClient extends ReadyResource {
   }
 
   #attachMethods() {
-    const methods = ['createImagePreview', 'decodeImage', 'cropImage', 'createVideoPreview', 'transcode']
+    const methods = [
+      'createImagePreview',
+      'decodeImage',
+      'cropImage',
+      'createVideoPreview',
+      'transcode'
+    ]
 
     for (const method of methods) {
       this[method] = async (...args) => {

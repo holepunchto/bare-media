@@ -173,14 +173,11 @@ class HRPC {
   }
 
   _requestIsStream(command) {
-    return [
-    ].includes(command)
+    return [].includes(command)
   }
 
   _responseIsStream(command) {
-    return [
-      '@media/transcode'
-    ].includes(command)
+    return ['@media/transcode'].includes(command)
   }
 
   // prettier-ignore-start
