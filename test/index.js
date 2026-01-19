@@ -580,7 +580,7 @@ test('util calculateFitDimensions()', async (t) => {
   }
 })
 
-test('media.transcode() - streaming response (unit test)', async (t) => {
+test('media.transcode() - webm to mp4 (unit test)', async (t) => {
   const path = './test/fixtures/sample.webm'
   const outputParameters = {
     format: 'mp4',
@@ -613,6 +613,43 @@ test('media.transcode() - streaming response (unit test)', async (t) => {
   // Check for MP4 header (e.g., ftyp box)
   const header = b4a.toString(totalOutputBuffer.subarray(4, 8)) // 'ftyp' is usually at byte 4
   t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
+})
+
+test('media.transcode() - mp4 to webm (unit test)', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const outputParameters = {
+    format: 'webm',
+    width: 1280,
+    height: 720
+  }
+
+  const mockStream = {
+    data: {
+      path,
+      outputParameters
+    },
+    chunks: [],
+    write(chunk) {
+      this.chunks.push(chunk)
+    },
+    end() {
+      this.ended = true
+    }
+  }
+
+  await media.transcode(mockStream)
+
+  t.ok(mockStream.chunks.length > 0, 'Received some chunks')
+  t.ok(mockStream.ended, 'Stream was ended')
+
+  const totalOutputBuffer = b4a.concat(mockStream.chunks.map((c) => c.buffer))
+  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+
+  // Check for WebM/EBML header (0x1A45DFA3 is the EBML header element ID)
+  t.is(totalOutputBuffer[0], 0x1a, 'Output starts with EBML header byte 0')
+  t.is(totalOutputBuffer[1], 0x45, 'Output starts with EBML header byte 1')
+  t.is(totalOutputBuffer[2], 0xdf, 'Output starts with EBML header byte 2')
+  t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
 })
 
 // Video preview tests

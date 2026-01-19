@@ -186,19 +186,24 @@ export async function transcode(stream) {
     } else if (codecType === constants.mediaTypes.AUDIO) {
       outputStream.codecParameters.type = constants.mediaTypes.AUDIO
 
+      let targetSampleRate = decoderContext.sampleRate
+
       // Select audio codec based on output format
       if (outputFormatName === 'webm') {
         outputStream.codecParameters.id = constants.codecs.OPUS
         outputStream.codecParameters.format = constants.sampleFormats.FLTP
+        // Opus only supports specific sample rates: 48000, 24000, 16000, 12000, 8000
+        // Use 48000 Hz as default for best quality
+        targetSampleRate = 48000
       } else {
         // Default to AAC for mp4, matroska, etc.
         outputStream.codecParameters.id = constants.codecs.AAC
         outputStream.codecParameters.format = constants.sampleFormats.FLTP
       }
 
-      outputStream.codecParameters.sampleRate = decoderContext.sampleRate
+      outputStream.codecParameters.sampleRate = targetSampleRate
       outputStream.codecParameters.channelLayout = decoderContext.channelLayout
-      outputStream.timeBase = new Rational(1, decoderContext.sampleRate)
+      outputStream.timeBase = new Rational(1, targetSampleRate)
     }
 
     const encoder = outputStream.encoder()
