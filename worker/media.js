@@ -1,6 +1,13 @@
 import b4a from 'b4a'
-import ffmpeg from 'bare-ffmpeg'
-import { IOContext, InputFormatContext, Packet, Frame, Scaler, Image, constants } from 'bare-ffmpeg'
+import ffmpeg, {
+  IOContext,
+  InputFormatContext,
+  Packet,
+  Frame,
+  Scaler,
+  Image,
+  constants
+} from 'bare-ffmpeg'
 
 import {
   importCodec,
