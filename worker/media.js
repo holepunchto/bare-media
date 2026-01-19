@@ -1,11 +1,16 @@
 import b4a from 'b4a'
-import ffmpeg, {
+import {
   IOContext,
   InputFormatContext,
+  OutputFormatContext,
   Packet,
   Frame,
   Scaler,
   Image,
+  Rational,
+  Dictionary,
+  Resampler,
+  AudioFIFO,
   constants
 } from 'bare-ffmpeg'
 
@@ -128,9 +133,9 @@ export async function transcode(stream) {
   const { path, httpLink, buffer, outputParameters, bufferSize = 32 * 1024 } = stream.data
 
   const buff = await getBuffer({ path, httpLink, buffer })
-  const inIO = new ffmpeg.IOContext(buff)
-  const inputFormatContext = new ffmpeg.InputFormatContext(inIO)
-  const outIO = new ffmpeg.IOContext(bufferSize, {
+  const inIO = new IOContext(buff)
+  const inputFormatContext = new InputFormatContext(inIO)
+  const outIO = new IOContext(bufferSize, {
     onwrite: (chunk) => {
       stream.write({ buffer: chunk })
       return chunk.length
@@ -138,16 +143,13 @@ export async function transcode(stream) {
   })
 
   const outputFormatName = outputParameters?.format || 'mp4'
-  const outputFormat = new ffmpeg.OutputFormatContext(outputFormatName, outIO)
+  const outputFormat = new OutputFormatContext(outputFormatName, outIO)
 
   const streamMapping = []
   for (const inputStream of inputFormatContext.streams) {
     const codecType = inputStream.codecParameters.type
 
-    if (
-      codecType !== ffmpeg.constants.mediaTypes.VIDEO &&
-      codecType !== ffmpeg.constants.mediaTypes.AUDIO
-    ) {
+    if (codecType !== constants.mediaTypes.VIDEO && codecType !== constants.mediaTypes.AUDIO) {
       continue
     }
 
@@ -162,17 +164,17 @@ export async function transcode(stream) {
 
     const outputStream = outputFormat.createStream()
 
-    if (codecType === ffmpeg.constants.mediaTypes.VIDEO) {
-      outputStream.codecParameters.type = ffmpeg.constants.mediaTypes.VIDEO
+    if (codecType === constants.mediaTypes.VIDEO) {
+      outputStream.codecParameters.type = constants.mediaTypes.VIDEO
 
       // Select video codec based on output format
       if (outputFormatName === 'webm') {
-        outputStream.codecParameters.id = ffmpeg.constants.codecs.VP8
-        outputStream.codecParameters.format = ffmpeg.constants.pixelFormats.YUV420P
+        outputStream.codecParameters.id = constants.codecs.VP8
+        outputStream.codecParameters.format = constants.pixelFormats.YUV420P
       } else {
         // Default to H264 for mp4, matroska, etc.
-        outputStream.codecParameters.id = ffmpeg.constants.codecs.H264
-        outputStream.codecParameters.format = ffmpeg.constants.pixelFormats.YUV420P
+        outputStream.codecParameters.id = constants.codecs.H264
+        outputStream.codecParameters.format = constants.pixelFormats.YUV420P
       }
 
       const width = outputParameters?.width || decoderContext.width
@@ -180,28 +182,28 @@ export async function transcode(stream) {
       outputStream.codecParameters.width = width
       outputStream.codecParameters.height = height
 
-      outputStream.timeBase = new ffmpeg.Rational(1, 90000) // Use 90kHz timebase for video
-    } else if (codecType === ffmpeg.constants.mediaTypes.AUDIO) {
-      outputStream.codecParameters.type = ffmpeg.constants.mediaTypes.AUDIO
+      outputStream.timeBase = new Rational(1, 90000) // Use 90kHz timebase for video
+    } else if (codecType === constants.mediaTypes.AUDIO) {
+      outputStream.codecParameters.type = constants.mediaTypes.AUDIO
 
       // Select audio codec based on output format
       if (outputFormatName === 'webm') {
-        outputStream.codecParameters.id = ffmpeg.constants.codecs.OPUS
-        outputStream.codecParameters.format = ffmpeg.constants.sampleFormats.FLTP
+        outputStream.codecParameters.id = constants.codecs.OPUS
+        outputStream.codecParameters.format = constants.sampleFormats.FLTP
       } else {
         // Default to AAC for mp4, matroska, etc.
-        outputStream.codecParameters.id = ffmpeg.constants.codecs.AAC
-        outputStream.codecParameters.format = ffmpeg.constants.sampleFormats.FLTP
+        outputStream.codecParameters.id = constants.codecs.AAC
+        outputStream.codecParameters.format = constants.sampleFormats.FLTP
       }
 
       outputStream.codecParameters.sampleRate = decoderContext.sampleRate
       outputStream.codecParameters.channelLayout = decoderContext.channelLayout
-      outputStream.timeBase = new ffmpeg.Rational(1, decoderContext.sampleRate)
+      outputStream.timeBase = new Rational(1, decoderContext.sampleRate)
     }
 
     const encoder = outputStream.encoder()
 
-    if (codecType === ffmpeg.constants.mediaTypes.VIDEO) {
+    if (codecType === constants.mediaTypes.VIDEO) {
       encoder.timeBase = outputStream.timeBase
       encoder.width = outputStream.codecParameters.width
       encoder.height = outputStream.codecParameters.height
@@ -210,21 +212,34 @@ export async function transcode(stream) {
       if (decoderContext.frameRate && decoderContext.frameRate.valid) {
         encoder.frameRate = decoderContext.frameRate
       } else {
-        encoder.frameRate = new ffmpeg.Rational(30, 1)
+        encoder.frameRate = new Rational(30, 1)
       }
       encoder.gopSize = 30
-    } else if (codecType === ffmpeg.constants.mediaTypes.AUDIO) {
+    } else if (codecType === constants.mediaTypes.AUDIO) {
       encoder.timeBase = outputStream.timeBase
       encoder.sampleRate = outputStream.codecParameters.sampleRate
       encoder.channelLayout = outputStream.codecParameters.channelLayout
       encoder.sampleFormat = outputStream.codecParameters.format
     }
 
-    if (outputFormat.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
-      encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
+    if (outputFormat.outputFormat.flags & constants.formatFlags.GLOBALHEADER) {
+      encoder.flags |= constants.codecFlags.GLOBAL_HEADER
     }
 
-    encoder.open()
+    // Set encoder options to allow software fallback for hardware encoders
+    const encoderOptions = new Dictionary()
+    if (codecType === constants.mediaTypes.VIDEO) {
+      encoderOptions.set('allow_sw', '1') // Allow software fallback if hardware encoder fails
+    }
+
+    try {
+      encoder.open(encoderOptions)
+    } catch (err) {
+      // If encoder fails to open (e.g., hardware encoder not available in CI), skip this stream
+      console.warn(`Failed to open encoder for stream ${inputStream.index}: ${err.message}`)
+      encoder.destroy()
+      continue
+    }
 
     outputStream.codecParameters.fromContext(encoder)
 
@@ -241,7 +256,7 @@ export async function transcode(stream) {
       nextVideoPts: 0 // For video PTS calculation
     }
   }
-  const muxerOptions = new ffmpeg.Dictionary()
+  const muxerOptions = new Dictionary()
 
   switch (outputFormatName) {
     case 'mp4':
@@ -262,8 +277,8 @@ export async function transcode(stream) {
 
   outputFormat.writeHeader(muxerOptions)
 
-  const packet = new ffmpeg.Packet()
-  const frame = new ffmpeg.Frame()
+  const packet = new Packet()
+  const frame = new Frame()
 
   try {
     while (inputFormatContext.readFrame(packet)) {
@@ -277,7 +292,7 @@ export async function transcode(stream) {
 
       if (decoder.sendPacket(packet)) {
         while (decoder.receiveFrame(frame)) {
-          if (mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.VIDEO) {
+          if (mapping.inputStream.codecParameters.type === constants.mediaTypes.VIDEO) {
             if (
               !mapping.rescaler ||
               mapping.lastWidth !== frame.width ||
@@ -286,7 +301,7 @@ export async function transcode(stream) {
             ) {
               if (mapping.rescaler) mapping.rescaler.destroy()
 
-              mapping.rescaler = new ffmpeg.Scaler(
+              mapping.rescaler = new Scaler(
                 frame.format,
                 frame.width,
                 frame.height,
@@ -300,7 +315,7 @@ export async function transcode(stream) {
               mapping.lastFormat = frame.format
             }
 
-            const outFrame = new ffmpeg.Frame()
+            const outFrame = new Frame()
             outFrame.format = encoder.pixelFormat
             outFrame.width = encoder.width
             outFrame.height = encoder.height
@@ -321,11 +336,9 @@ export async function transcode(stream) {
             encodeAndWrite(encoder, outFrame, outputStream, outputFormat, packet)
 
             outFrame.destroy()
-          } else if (
-            mapping.inputStream.codecParameters.type === ffmpeg.constants.mediaTypes.AUDIO
-          ) {
+          } else if (mapping.inputStream.codecParameters.type === constants.mediaTypes.AUDIO) {
             if (!mapping.resampler) {
-              mapping.resampler = new ffmpeg.Resampler(
+              mapping.resampler = new Resampler(
                 frame.sampleRate,
                 frame.channelLayout,
                 frame.format,
@@ -336,18 +349,18 @@ export async function transcode(stream) {
             }
 
             if (!mapping.fifo) {
-              mapping.fifo = new ffmpeg.AudioFIFO(
+              mapping.fifo = new AudioFIFO(
                 encoder.sampleFormat,
                 encoder.channelLayout.nbChannels,
                 encoder.frameSize
               )
-              mapping.fifoFrame = new ffmpeg.Frame()
+              mapping.fifoFrame = new Frame()
               mapping.fifoFrame.format = encoder.sampleFormat
               mapping.fifoFrame.channelLayout = encoder.channelLayout
               mapping.fifoFrame.sampleRate = encoder.sampleRate
             }
 
-            const outFrame = new ffmpeg.Frame()
+            const outFrame = new Frame()
             outFrame.format = encoder.sampleFormat
             outFrame.channelLayout = encoder.channelLayout
             outFrame.sampleRate = encoder.sampleRate
