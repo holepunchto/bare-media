@@ -687,6 +687,68 @@ test('media.transcode() - mkv to mp4 (unit test)', async (t) => {
   t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
 })
 
+test('media.transcode() - mp4 to matroska (unit test)', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const outputParameters = {
+    format: 'matroska',
+    width: 320,
+    height: 240
+  }
+
+  const mockStream = {
+    data: {
+      path,
+      outputParameters
+    },
+    chunks: [],
+    write(chunk) {
+      this.chunks.push(chunk)
+    },
+    end() {
+      this.ended = true
+    }
+  }
+
+  await media.transcode(mockStream)
+
+  t.ok(mockStream.chunks.length > 0, 'Received some chunks')
+  t.ok(mockStream.ended, 'Stream was ended')
+
+  const totalOutputBuffer = b4a.concat(mockStream.chunks.map((c) => c.buffer))
+  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+
+  // Check for Matroska/EBML header (same as WebM)
+  t.is(totalOutputBuffer[0], 0x1a, 'Output starts with EBML header byte 0')
+  t.is(totalOutputBuffer[1], 0x45, 'Output starts with EBML header byte 1')
+  t.is(totalOutputBuffer[2], 0xdf, 'Output starts with EBML header byte 2')
+  t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
+})
+
+test('media.transcode() - throws error for unsupported format', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const outputParameters = {
+    format: 'avi' // Unsupported format
+  }
+
+  const mockStream = {
+    data: {
+      path,
+      outputParameters
+    },
+    chunks: [],
+    write(chunk) {
+      this.chunks.push(chunk)
+    },
+    end() {
+      this.ended = true
+    }
+  }
+
+  await t.exception(async () => {
+    await media.transcode(mockStream)
+  }, /Unsupported.*output format/)
+})
+
 // Video preview tests
 
 test('media.createVideoPreview() single frame of .mp4', async (t) => {

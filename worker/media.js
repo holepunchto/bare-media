@@ -168,13 +168,19 @@ export async function transcode(stream) {
       outputStream.codecParameters.type = constants.mediaTypes.VIDEO
 
       // Select video codec based on output format
-      if (outputFormatName === 'webm') {
-        outputStream.codecParameters.id = constants.codecs.VP8
-        outputStream.codecParameters.format = constants.pixelFormats.YUV420P
-      } else {
-        // Default to H264 for mp4, matroska, etc.
-        outputStream.codecParameters.id = constants.codecs.H264
-        outputStream.codecParameters.format = constants.pixelFormats.YUV420P
+      switch (outputFormatName) {
+        case 'webm':
+          outputStream.codecParameters.id = constants.codecs.VP8
+          outputStream.codecParameters.format = constants.pixelFormats.YUV420P
+          break
+        case 'mp4':
+        case 'matroska':
+        case 'mkv':
+          outputStream.codecParameters.id = constants.codecs.H264
+          outputStream.codecParameters.format = constants.pixelFormats.YUV420P
+          break
+        default:
+          throw new Error(`Unsupported video output format: ${outputFormatName}`)
       }
 
       const width = outputParameters?.width || decoderContext.width
@@ -182,23 +188,28 @@ export async function transcode(stream) {
       outputStream.codecParameters.width = width
       outputStream.codecParameters.height = height
 
-      outputStream.timeBase = new Rational(1, 90000) // Use 90kHz timebase for video
+      outputStream.timeBase = new Rational(1, 90000)
     } else if (codecType === constants.mediaTypes.AUDIO) {
       outputStream.codecParameters.type = constants.mediaTypes.AUDIO
 
       let targetSampleRate = decoderContext.sampleRate
 
       // Select audio codec based on output format
-      if (outputFormatName === 'webm') {
-        outputStream.codecParameters.id = constants.codecs.OPUS
-        outputStream.codecParameters.format = constants.sampleFormats.FLTP
-        // Opus only supports specific sample rates: 48000, 24000, 16000, 12000, 8000
-        // Use 48000 Hz as default for best quality
-        targetSampleRate = 48000
-      } else {
-        // Default to AAC for mp4, matroska, etc.
-        outputStream.codecParameters.id = constants.codecs.AAC
-        outputStream.codecParameters.format = constants.sampleFormats.FLTP
+      switch (outputFormatName) {
+        case 'webm':
+          outputStream.codecParameters.id = constants.codecs.OPUS
+          outputStream.codecParameters.format = constants.sampleFormats.FLTP
+          // Opus only supports: 48000, 24000, 16000, 12000, 8000 Hz
+          targetSampleRate = 48000
+          break
+        case 'mp4':
+        case 'matroska':
+        case 'mkv':
+          outputStream.codecParameters.id = constants.codecs.AAC
+          outputStream.codecParameters.format = constants.sampleFormats.FLTP
+          break
+        default:
+          throw new Error(`Unsupported audio output format: ${outputFormatName}`)
       }
 
       outputStream.codecParameters.sampleRate = targetSampleRate
@@ -231,10 +242,11 @@ export async function transcode(stream) {
       encoder.flags |= constants.codecFlags.GLOBAL_HEADER
     }
 
-    // Set encoder options to allow software fallback for hardware encoders
+    // Set encoder options
     const encoderOptions = new Dictionary()
     if (codecType === constants.mediaTypes.VIDEO) {
-      encoderOptions.set('allow_sw', '1') // Allow software fallback if hardware encoder fails
+      // Allow software fallback if hardware encoder unavailable (e.g., in CI)
+      encoderOptions.set('allow_sw', '1')
     }
 
     try {
@@ -329,13 +341,12 @@ export async function transcode(stream) {
 
             mapping.rescaler.scale(frame, outFrame)
 
-            // Force CFR (Constant Frame Rate) to avoid timestamp issues
+            // Note: Force CFR (Constant Frame Rate) to avoid timestamp issues
             outFrame.pts = mapping.nextVideoPts
 
             const frameDuration =
               (encoder.timeBase.denominator * encoder.frameRate.denominator) /
               (encoder.timeBase.numerator * encoder.frameRate.numerator)
-
             mapping.nextVideoPts += frameDuration
 
             encodeAndWrite(encoder, outFrame, outputStream, outputFormat, packet)
