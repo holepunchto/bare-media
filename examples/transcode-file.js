@@ -68,6 +68,12 @@ async function runTranscodeExamples() {
       height: 240
     })
 
+    await transcodeFile('sample.mp4', 'output-mp4-to-matroska.mkv', {
+      format: 'matroska',
+      width: 320,
+      height: 240
+    })
+
     await transcodeFile('sample.mp4', 'output-mp4-downscaled.mp4', {
       format: 'mp4',
       width: 160,
@@ -79,6 +85,7 @@ async function runTranscodeExamples() {
     console.log('  - output-webm-to-mp4.mp4')
     console.log('  - output-mp4-to-webm.webm')
     console.log('  - output-mkv-to-mp4.mp4')
+    console.log('  - output-mp4-to-matroska.mkv')
     console.log('  - output-mp4-downscaled.mp4')
   } catch (error) {
     console.error('\n=== Transcoding examples failed ===')
