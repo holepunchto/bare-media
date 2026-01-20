@@ -26,7 +26,7 @@ Video:
 ```js
 import { video } from 'bare-media'
 
-const frames = video(path).extractFrames({ frameNum })
+const frames = video(path).extractFrames({ frameIndex })
 ```
 
 Each method can also be used independently:
@@ -98,7 +98,7 @@ Extracts frames from a video in RGBA
 | Parameter       | Type   | Description                    |
 | --------------- | ------ | ------------------------------ |
 | `fd`            | number | File descriptor                |
-| `opts.frameNum` | number | Number of the frame to extract |
+| `opts.frameIndex` | number | Number of the frame to extract |
 
 ## Helpers
 

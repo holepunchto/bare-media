@@ -6,7 +6,7 @@ test('video extractFrames()', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
   const fd = fs.openSync(path, 'r')
-  const rgba = video.extractFrames(fd, { frameNum: 1 })
+  const rgba = video.extractFrames(fd, { frameIndex: 1 })
   fs.closeSync(fd)
 
   t.ok(Buffer.isBuffer(rgba.data))
@@ -17,7 +17,7 @@ test('video extractFrames()', async (t) => {
 test('video pipeline', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
-  const rgba = video(path).extractFrames({ frameNum: 1 })
+  const rgba = video(path).extractFrames({ frameIndex: 1 })
 
   t.ok(Buffer.isBuffer(rgba.data))
   t.is(rgba.width, 320)

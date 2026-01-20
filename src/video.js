@@ -2,7 +2,7 @@ import fs from 'bare-fs'
 import ffmpeg from 'bare-ffmpeg'
 
 function extractFrames(fd, opts = {}) {
-  const { frameNum } = opts
+  const { frameIndex } = opts
 
   const fileSize = fs.fstatSync(fd).size
   let offset = 0
@@ -39,7 +39,7 @@ function extractFrames(fd, opts = {}) {
     if (packet.streamIndex === stream.index) {
       if (decoder.sendPacket(packet)) {
         while (decoder.receiveFrame(frame)) {
-          if (currentFrame === frameNum) {
+          if (currentFrame === frameIndex) {
             // Convert to RGBA
             using scaler = new ffmpeg.Scaler(
               frame.format,
@@ -83,7 +83,7 @@ function extractFrames(fd, opts = {}) {
   decoder.destroy()
 
   if (!result) {
-    throw new Error(`Frame ${frameNum} not found (video only has ${currentFrame} frames)`)
+    throw new Error(`Frame ${frameIndex} not found (video only has ${currentFrame} frames)`)
   }
 
   return result
