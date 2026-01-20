@@ -19,7 +19,6 @@ const preview = await image(path)
   .decode({ maxFrames })
   .resize({ maxWidth, maxHeight })
   .encode({ mimetype: 'image/webp' })
-  .buffer()
 ```
 
 Video:

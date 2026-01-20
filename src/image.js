@@ -209,37 +209,41 @@ class ImagePipeline {
     }
   }
 
-  async buffer() {
-    let buffer = await read(this.input)
+  async then(resolve, reject) {
+    try {
+      let buffer = await read(this.input)
 
-    for (const step of this.steps) {
-      if (step.op === 'decode') {
-        buffer = await decode(buffer, step.opts)
+      for (const step of this.steps) {
+        if (step.op === 'decode') {
+          buffer = await decode(buffer, step.opts)
+        }
+
+        if (step.op === 'resize') {
+          buffer = await resize(buffer, step.opts)
+        }
+
+        if (step.op === 'crop') {
+          buffer = await crop(buffer, step.opts)
+        }
+
+        if (step.op === 'slice') {
+          buffer = slice(buffer, step.opts)
+        }
+
+        if (step.op === 'encode') {
+          buffer = await encode(buffer, step.opts)
+        }
       }
 
-      if (step.op === 'resize') {
-        buffer = await resize(buffer, step.opts)
-      }
-
-      if (step.op === 'crop') {
-        buffer = await crop(buffer, step.opts)
-      }
-
-      if (step.op === 'slice') {
-        buffer = slice(buffer, step.opts)
-      }
-
-      if (step.op === 'encode') {
-        buffer = await encode(buffer, step.opts)
-      }
+      resolve(buffer)
+    } catch (err) {
+      reject(err)
     }
-
-    return buffer
   }
 
   async save(filename, opts) {
-    const buff = await this.buffer()
-    return save(filename, buff, opts)
+    const buffer = await this
+    return save(filename, buffer, opts)
   }
 }
 

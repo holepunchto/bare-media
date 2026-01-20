@@ -411,7 +411,6 @@ test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {
     .crop({ left: 75, top: 15, width: 50, height: 50 })
     .resize({ maxWidth: 32, maxHeight: 32 })
     .encode({ mimetype: 'image/webp' })
-    .buffer()
 
   t.ok(Buffer.isBuffer(result))
   t.is(result.byteLength, 442)
