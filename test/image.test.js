@@ -1,9 +1,10 @@
 import { test } from 'brittle'
 import b4a from 'b4a'
 import fs from 'bare-fs'
+import os from 'bare-os'
 
 import { image } from '..'
-import { makeHttpLink, isAnimatedWebP } from './helpers'
+import { makeHttpLink, isAnimatedWebP, randomFileName } from './helpers'
 
 const { read, decode, encode, crop, resize, slice } = image
 
@@ -414,6 +415,29 @@ test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {
 
   t.ok(Buffer.isBuffer(result))
   t.is(result.byteLength, 442)
+})
+
+test('image pipeline: decode + crop + resize + encode + save jpeg', async (t) => {
+  const path = './test/fixtures/sample.jpg'
+  const bpath = await import('bare-path')
+
+  const outPath = bpath.join(os.tmpdir(), randomFileName('jpg'))
+
+  await image(path)
+    .decode()
+    .crop({ left: 75, top: 15, width: 50, height: 50 })
+    .resize({ maxWidth: 32, maxHeight: 32 })
+    .encode({ mimetype: 'image/webp' })
+    .save(outPath)
+
+  const result = await image.read(outPath)
+
+  t.ok(Buffer.isBuffer(result))
+  t.is(result.byteLength, 442)
+
+  t.teardown(() => {
+    fs.rm(outPath, { force: true })
+  })
 })
 
 test('codecs support flags', async (t) => {

@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "b4a": "^1.7.3",
+    "bare-os": "^3.6.2",
     "brittle": "^3.16.3",
     "corestore": "^7.4.5",
     "hyperblobs": "^2.8.0",
