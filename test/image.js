@@ -2,6 +2,7 @@ import { test } from 'brittle'
 import b4a from 'b4a'
 import fs from 'bare-fs'
 import os from 'bare-os'
+import barePath from 'bare-path'
 
 import { image } from '..'
 import { makeHttpLink, isAnimatedWebP, randomFileName } from './helpers'
@@ -417,9 +418,8 @@ test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {
 
 test('image pipeline: decode + crop + resize + encode + save jpeg', async (t) => {
   const path = './test/fixtures/sample.jpg'
-  const bpath = await import('bare-path')
 
-  const outPath = bpath.join(os.tmpdir(), randomFileName('jpg'))
+  const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
 
   await image(path)
     .decode()
