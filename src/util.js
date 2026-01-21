@@ -3,8 +3,6 @@ import fetch from 'bare-fetch'
 import getMimeType from 'get-mime-type'
 import getFileFormat from 'get-file-format'
 
-export const log = (...args) => console.log('[bare-media]', ...args)
-
 export async function getBuffer({ path, httpLink, buffer }) {
   if (buffer) return buffer
 
@@ -36,5 +34,14 @@ export function calculateFitDimensions(width, height, maxWidth, maxHeight) {
   return {
     width: Math.round(width * ratio),
     height: Math.round(height * ratio)
+  }
+}
+
+export function isHttpUrl(value) {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
   }
 }

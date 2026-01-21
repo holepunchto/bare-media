@@ -51,3 +51,7 @@ export function isAnimatedWebP(buffer) {
 
   return false
 }
+
+export function randomFileName(ext) {
+  return `bare-media-test-${Math.random().toString().slice(2)}.${ext}`
+}

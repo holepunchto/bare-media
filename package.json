@@ -1,10 +1,18 @@
 {
   "name": "bare-media",
-  "version": "1.8.0",
+  "version": "2.0.0",
   "main": "index.js",
   "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./types": "./types.js"
+  },
+  "files": [
+    "src",
+    "index.js",
+    "types.js"
+  ],
   "scripts": {
-    "build:rpc": "cd shared/spec && bare ./build.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run format:check && lunte",
@@ -16,7 +24,6 @@
   "license": "Apache-2.0",
   "description": "",
   "dependencies": {
-    "b4a": "^1.6.7",
     "bare-bmp": "^1.0.0",
     "bare-fetch": "^2.4.1",
     "bare-ffmpeg": "^1.1.0",
@@ -28,30 +35,21 @@
     "bare-png": "^1.0.2",
     "bare-tiff": "^1.0.1",
     "bare-webp": "^1.0.3",
-    "cross-worker": "^2.0.0",
     "get-file-format": "^1.0.1",
-    "get-mime-type": "^2.0.1",
-    "hrpc": "^4.0.0",
-    "hyperschema": "^1.12.3",
-    "ready-resource": "^1.2.0",
-    "uncaughts": "^1.1.1"
+    "get-mime-type": "^2.0.1"
   },
   "devDependencies": {
+    "b4a": "^1.7.3",
+    "bare-os": "^3.6.2",
     "bare-path": "^3.0.0",
     "bare-process": "^4.2.2",
     "brittle": "^3.16.3",
     "corestore": "^7.4.5",
     "hyperblobs": "^2.8.0",
     "hypercore-blob-server": "^1.11.0",
-    "lunte": "^1.3.0",
+    "lunte": "^1.4.0",
     "prettier": "^3.7.4",
     "prettier-config-holepunch": "^2.0.0",
     "test-tmp": "^1.4.0"
-  },
-  "files": [
-    "shared",
-    "worker",
-    "client.js",
-    "index.js"
-  ]
+  }
 }

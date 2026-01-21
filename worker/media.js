@@ -16,13 +16,8 @@ import {
   constants
 } from 'bare-ffmpeg'
 
-import {
-  importCodec,
-  isImageSupported,
-  supportsQuality,
-  isVideoSupported
-} from '../shared/codecs.js'
-import { getBuffer, detectMimeType, calculateFitDimensions } from './util'
+import { importCodec, isImageSupported, supportsQuality, isVideoSupported } from '../src/codecs.js'
+import { getBuffer, detectMimeType, calculateFitDimensions } from '../src/util.js'
 
 const DEFAULT_PREVIEW_FORMAT = 'image/webp'
 const DEFAULT_FRAME_COUNT = 10

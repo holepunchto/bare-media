@@ -4,12 +4,11 @@ import process from 'bare-process'
 
 import b4a from 'b4a'
 
-import { transcode } from '../worker/media.js'
+import { video } from '../index.js'
 
 async function transcodeFile(inputFile, outputFile, outputParameters) {
   const inputFilePath = path.join(process.cwd(), 'test', 'fixtures', inputFile)
   const outputFilePath = path.join(process.cwd(), 'examples', outputFile)
-  const inputBuffer = await fs.readFile(inputFilePath)
 
   const inputStats = await fs.stat(inputFilePath)
   console.log(`\nTranscoding: ${inputFile} -> ${outputFile}`)
@@ -21,22 +20,15 @@ async function transcodeFile(inputFile, outputFile, outputParameters) {
 
   const outputChunks = []
   const startTime = Date.now()
-  const mockStream = {
-    data: {
-      buffer: inputBuffer,
-      outputParameters
-    },
-    write(chunk) {
-      outputChunks.push(chunk.buffer)
-    },
-    end() {
-      const duration = Date.now() - startTime
-      console.log(`  Completed in ${duration}ms`)
-    }
-  }
 
   try {
-    await transcode(mockStream)
+    for await (const chunk of video.transcode({ path: inputFilePath, outputParameters })) {
+      outputChunks.push(chunk.buffer)
+    }
+
+    const duration = Date.now() - startTime
+    console.log(`  Completed in ${duration}ms`)
+
     const finalBuffer = b4a.concat(outputChunks)
     console.log(`  Output size: ${(finalBuffer.byteLength / 1024).toFixed(2)} KB`)
     await fs.writeFile(outputFilePath, finalBuffer)
