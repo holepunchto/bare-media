@@ -7,6 +7,11 @@
     ".": "./index.js",
     "./types": "./types.js"
   },
+  "files": [
+    "src",
+    "index.js",
+    "types.js"
+  ],
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -43,9 +48,5 @@
     "prettier": "^3.7.4",
     "prettier-config-holepunch": "^2.0.0",
     "test-tmp": "^1.4.0"
-  },
-  "files": [
-    "src",
-    "index.js"
-  ]
+  }
 }
