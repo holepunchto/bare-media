@@ -41,10 +41,10 @@ const rgba = await image.decode(buffer, { maxFrames })
 
 Decode an image to RGBA
 
-| Parameter        | Type   | Description                                                |
-| ---------------- | ------ | ---------------------------------------------------------- |
-| `buffer`         | object | The encoded image                                          |
-| `opts.maxFrames` | number | Max number for frames to decode in case of animated images |
+| Parameter        | Type   | Description                                               |
+| ---------------- | ------ | --------------------------------------------------------- |
+| `buffer`         | object | The encoded image                                         |
+| `opts.maxFrames` | number | Max number of frames to decode in case of animated images |
 
 ### encode()
 
@@ -93,19 +93,19 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 
 Read an image from a file path, URL, or buffer.
 
-| Parameter | Type   | Description                                              |
-| --------- | ------ | -------------------------------------------------------- |
-| `input`   | object | File path, http(s) URL, or raw image buffer           |
+| Parameter | Type   | Description                                 |
+| --------- | ------ | ------------------------------------------- |
+| `input`   | object | File path, http(s) URL, or raw image buffer |
 
 ### save()
 
 Write an encoded image buffer to a file.
 
-| Parameter | Type   | Description                                   |
-| --------- | ------ | --------------------------------------------- |
-| `filename`| string | Destination file path                         |
-| `buffer`  | object | Encoded image buffer                          |
-| `opts`    | object | Options passed through to `fs.writeFile`      |
+| Parameter  | Type   | Description                              |
+| ---------- | ------ | ---------------------------------------- |
+| `filename` | string | Destination file path                    |
+| `buffer`   | object | Encoded image buffer                     |
+| `opts`     | object | Options passed through to `fs.writeFile` |
 
 ## Video API
 
