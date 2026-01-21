@@ -20,14 +20,6 @@ export function calculateFitDimensions(width, height, maxWidth, maxHeight) {
   }
 }
 
-export function isImage(buffer) {
-  return detectMimeType(buffer).startsWith('image/')
-}
-
-export function isVideo(buffer) {
-  return detectMimeType(buffer).startsWith('video/')
-}
-
 export function isHttpUrl(value) {
   try {
     const url = new URL(value)
