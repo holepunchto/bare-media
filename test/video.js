@@ -28,14 +28,13 @@ test('video pipeline', async (t) => {
 
 test('video.transcode() - webm to mp4', async (t) => {
   const path = './test/fixtures/sample.webm'
-  const outputParameters = {
+
+  const chunks = []
+  for await (const chunk of video(path).transcode({
     format: 'mp4',
     width: 1280,
     height: 720
-  }
-
-  const chunks = []
-  for await (const chunk of video.transcode({ path, outputParameters })) {
+  })) {
     chunks.push(chunk)
   }
 
@@ -51,14 +50,13 @@ test('video.transcode() - webm to mp4', async (t) => {
 
 test('video.transcode() - mp4 to webm', async (t) => {
   const path = './test/fixtures/sample.mp4'
-  const outputParameters = {
+
+  const chunks = []
+  for await (const chunk of video(path).transcode({
     format: 'webm',
     width: 1280,
     height: 720
-  }
-
-  const chunks = []
-  for await (const chunk of video.transcode({ path, outputParameters })) {
+  })) {
     chunks.push(chunk)
   }
 
@@ -76,14 +74,13 @@ test('video.transcode() - mp4 to webm', async (t) => {
 
 test('video.transcode() - mkv to mp4', async (t) => {
   const path = './test/fixtures/sample.mkv'
-  const outputParameters = {
+
+  const chunks = []
+  for await (const chunk of video(path).transcode({
     format: 'mp4',
     width: 320,
     height: 240
-  }
-
-  const chunks = []
-  for await (const chunk of video.transcode({ path, outputParameters })) {
+  })) {
     chunks.push(chunk)
   }
 
@@ -99,14 +96,13 @@ test('video.transcode() - mkv to mp4', async (t) => {
 
 test('video.transcode() - mp4 to matroska', async (t) => {
   const path = './test/fixtures/sample.mp4'
-  const outputParameters = {
+
+  const chunks = []
+  for await (const chunk of video(path).transcode({
     format: 'matroska',
     width: 320,
     height: 240
-  }
-
-  const chunks = []
-  for await (const chunk of video.transcode({ path, outputParameters })) {
+  })) {
     chunks.push(chunk)
   }
 
@@ -124,12 +120,9 @@ test('video.transcode() - mp4 to matroska', async (t) => {
 
 test('video.transcode() - throws error for unsupported format', async (t) => {
   const path = './test/fixtures/sample.mp4'
-  const outputParameters = {
-    format: 'avi' // Unsupported format
-  }
 
   await t.exception(async () => {
-    for await (const chunk of video.transcode({ path, outputParameters })) {
+    for await (const chunk of video(path).transcode({ format: 'avi' })) {
       // Should throw before yielding
     }
   }, /Unsupported.*output format/)

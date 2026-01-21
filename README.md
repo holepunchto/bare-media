@@ -122,32 +122,41 @@ Extracts frames from a video in RGBA
 
 Transcode a media file to a different format
 
-| Parameter                 | Type   | Description                                                               |
-| ------------------------- | ------ | ------------------------------------------------------------------------- |
-| `path`                    | string | Path to the input file. Either `path`, `httpLink` or `buffer` is required |
-| `httpLink`                | string | Http link to the input file                                               |
-| `buffer`                  | object | Bytes of the input file                                                   |
-| `mimetype`                | string | Media type of the input file. If not provided it will be detected         |
-| `outputParameters`        | object | Output parameters                                                         |
-| `outputParameters.format` | string | Output format name (e.g., `mp4`, `webm`, `matroska`). Default `mp4`       |
-| `outputParameters.width`  | number | Width of the output video                                                 |
-| `outputParameters.height` | number | Height of the output video                                                |
+| Parameter     | Type   | Description                                                         |
+| ------------- | ------ | ------------------------------------------------------------------- |
+| `fd`          | number | File descriptor                                                     |
+| `opts.format` | string | Output format name (e.g., `mp4`, `webm`, `matroska`). Default `mp4` |
+| `opts.width`  | number | Width of the output video                                           |
+| `opts.height` | number | Height of the output video                                          |
 
 **Supported formats**: `mp4` (VP9+Opus), `webm` (VP8+Opus), `matroska`/`mkv` (VP9+Opus)
 
 #### Example
 
 ```javascript
-import { transcode } from 'bare-media'
+import { video } from 'bare-media'
 
-const stream = await transcode({
-  path: 'video.mkv',
-  outputParameters: { format: 'mp4', width: 1280, height: 720 }
-})
-
-for await (const chunk of stream) {
+// Using pipeline
+for await (const chunk of video('input.mkv').transcode({
+  format: 'mp4',
+  width: 1280,
+  height: 720
+})) {
   console.log('Received chunk:', chunk.buffer.length)
 }
+
+// Using standalone function with file descriptor
+import fs from 'bare-fs'
+
+const fd = fs.openSync('input.mkv', 'r')
+for await (const chunk of video.transcode(fd, {
+  format: 'mp4',
+  width: 1280,
+  height: 720
+})) {
+  console.log('Received chunk:', chunk.buffer.length)
+}
+fs.closeSync(fd)
 ```
 
 ## Supported Types

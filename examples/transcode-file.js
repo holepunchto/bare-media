@@ -6,23 +6,23 @@ import b4a from 'b4a'
 
 import { video } from '../index.js'
 
-async function transcodeFile(inputFile, outputFile, outputParameters) {
+async function transcodeFile(inputFile, outputFile, opts) {
   const inputFilePath = path.join(process.cwd(), 'test', 'fixtures', inputFile)
   const outputFilePath = path.join(process.cwd(), 'examples', outputFile)
 
   const inputStats = await fs.stat(inputFilePath)
   console.log(`\nTranscoding: ${inputFile} -> ${outputFile}`)
   console.log(`  Input size: ${(inputStats.size / 1024).toFixed(2)} KB`)
-  console.log(`  Output format: ${outputParameters.format}`)
-  if (outputParameters.width || outputParameters.height) {
-    console.log(`  Resolution: ${outputParameters.width}x${outputParameters.height}`)
+  console.log(`  Output format: ${opts.format}`)
+  if (opts.width || opts.height) {
+    console.log(`  Resolution: ${opts.width}x${opts.height}`)
   }
 
   const outputChunks = []
   const startTime = Date.now()
 
   try {
-    for await (const chunk of video.transcode({ path: inputFilePath, outputParameters })) {
+    for await (const chunk of video(inputFilePath).transcode(opts)) {
       outputChunks.push(chunk.buffer)
     }
 

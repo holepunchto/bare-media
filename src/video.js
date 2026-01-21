@@ -1,7 +1,6 @@
 import fs from 'bare-fs'
 import b4a from 'b4a'
 import ffmpeg from 'bare-ffmpeg'
-import { getBuffer } from './util.js'
 
 function extractFrames(fd, opts = {}) {
   const { frameIndex } = opts
@@ -103,6 +102,23 @@ class VideoPipeline {
     fs.closeSync(fd)
     return result
   }
+
+  async *transcode(opts) {
+    const fd = fs.openSync(this.input, 'r')
+    try {
+      // Adapt user-friendly API to internal format
+      const { format, width, height, bufferSize } = opts
+      const internalOpts = {
+        outputParameters: { format, width, height },
+        bufferSize
+      }
+      for await (const chunk of transcode(fd, internalOpts)) {
+        yield chunk
+      }
+    } finally {
+      fs.closeSync(fd)
+    }
+  }
 }
 
 function video(input) {
@@ -122,13 +138,30 @@ function encodeAndWrite(encoder, frame, outputStream, outputFormat, packet) {
   }
 }
 
-async function* transcode(opts) {
-  const { path, httpLink, buffer, outputParameters, bufferSize = 32 * 1024 } = opts
+async function* transcode(fd, opts = {}) {
+  const { outputParameters = {}, bufferSize = 32 * 1024 } = opts
 
   const chunks = []
-  const buff = await getBuffer({ path, httpLink, buffer })
+  const fileSize = fs.fstatSync(fd).size
+  let offset = 0
 
-  const inIO = new ffmpeg.IOContext(buff)
+  const inIO = new ffmpeg.IOContext(4096, {
+    onread: (buffer, requested) => {
+      const read = fs.readSync(fd, buffer, 0, requested, offset)
+      if (read === 0) return 0
+      offset += read
+      return read
+    },
+    onseek: (o, whence) => {
+      if (whence === ffmpeg.constants.seek.SIZE) return fileSize
+      if (whence === ffmpeg.constants.seek.SET) offset = o
+      else if (whence === ffmpeg.constants.seek.CUR) offset += o
+      else if (whence === ffmpeg.constants.seek.END) offset = fileSize + o
+      else return -1
+      return offset
+    }
+  })
+
   const inputFormatContext = new ffmpeg.InputFormatContext(inIO)
   const outIO = new ffmpeg.IOContext(bufferSize, {
     onwrite: (chunk) => {
@@ -470,6 +503,16 @@ async function* transcode(opts) {
   }
 }
 
-video.transcode = transcode
+// Wrapper for standalone transcode with user-friendly API
+video.transcode = async function* (fd, opts = {}) {
+  const { format, width, height, bufferSize } = opts
+  const internalOpts = {
+    outputParameters: { format, width, height },
+    bufferSize
+  }
+  for await (const chunk of transcode(fd, internalOpts)) {
+    yield chunk
+  }
+}
 
 export { video }
