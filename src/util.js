@@ -1,8 +1,8 @@
 import getMimeType from 'get-mime-type'
 import getFileFormat from 'get-file-format'
 
-export function detectMimeType(buffer, path) {
-  return getMimeType(getFileFormat(buffer)) || getMimeType(path)
+export function detectMimeType(buffer) {
+  return getMimeType(getFileFormat(buffer))
 }
 
 export function calculateFitDimensions(width, height, maxWidth, maxHeight) {

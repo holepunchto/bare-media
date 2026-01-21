@@ -1,6 +1,6 @@
 import { IMAGE } from '../types'
 
-const codecs = {
+export const codecs = {
   [IMAGE.AVIF]: () => import('bare-heif'),
   [IMAGE.GIF]: () => import('bare-gif'),
   [IMAGE.BMP]: () => import('bare-bmp'),
