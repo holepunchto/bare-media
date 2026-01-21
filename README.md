@@ -1,6 +1,6 @@
 # bare-media
 
-A set of media apis for Bare
+A set of media APIs for Bare
 
 ## Install
 
@@ -43,7 +43,7 @@ Decode an image to RGBA
 
 | Parameter        | Type   | Description                                                |
 | ---------------- | ------ | ---------------------------------------------------------- |
-| `buffer`         | string | The encoded image                                          |
+| `buffer`         | object | The encoded image                                          |
 | `opts.maxFrames` | number | Max number for frames to decode in case of animated images |
 
 ### encode()
@@ -52,7 +52,7 @@ Encodes an image to a specific format
 
 | Parameter       | Type   | Description                                                                         |
 | --------------- | ------ | ----------------------------------------------------------------------------------- |
-| `buffer`        | string | The rgba image                                                                      |
+| `buffer`        | object | The rgba image                                                                      |
 | `opts.mimetype` | string | The mimetype of the output image                                                    |
 | `opts.maxBytes` | number | Max bytes for the encoded image (reduces quality or fps in case of animated images) |
 | `opts...`       | any    | Additional encoder-specific options                                                 |
@@ -63,7 +63,7 @@ Crop an image
 
 | Parameter     | Type   | Description                  |
 | ------------- | ------ | ---------------------------- |
-| `buffer`      | string | The rgba image               |
+| `buffer`      | object | The rgba image               |
 | `opts.left`   | number | Offset from left edge        |
 | `opts.top`    | number | Offset from top edge         |
 | `opts.width`  | number | Width of the region to crop  |
@@ -75,7 +75,7 @@ Resize an image
 
 | Parameter        | Type   | Description                   |
 | ---------------- | ------ | ----------------------------- |
-| `buffer`         | string | The rgba image                |
+| `buffer`         | object | The rgba image                |
 | `opts.maxWidth`  | number | Max width of the output rgba  |
 | `opts.maxHeight` | number | Max height of the output rgba |
 
@@ -85,7 +85,7 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 
 | Parameter    | Type   | Description                                                              |
 | ------------ | ------ | ------------------------------------------------------------------------ |
-| `buffer`     | string | The rgba image                                                           |
+| `buffer`     | object | The rgba image                                                           |
 | `opts.start` | number | Frame index at which to start extraction. Default 0.                     |
 | `opts.end`   | number | Frame index at which to end extraction. Defaults to end of the animation |
 
