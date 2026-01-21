@@ -89,6 +89,24 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 | `opts.start` | number | Frame index at which to start extraction. Default 0.                     |
 | `opts.end`   | number | Frame index at which to end extraction. Defaults to end of the animation |
 
+### read()
+
+Read an image from a file path, URL, or buffer.
+
+| Parameter | Type   | Description                                              |
+| --------- | ------ | -------------------------------------------------------- |
+| `input`   | object | File path, http(s) URL, or raw image buffer           |
+
+### save()
+
+Write an encoded image buffer to a file.
+
+| Parameter | Type   | Description                                   |
+| --------- | ------ | --------------------------------------------- |
+| `filename`| string | Destination file path                         |
+| `buffer`  | object | Encoded image buffer                          |
+| `opts`    | object | Options passed through to `fs.writeFile`      |
+
 ## Video API
 
 ### extractFrames()
