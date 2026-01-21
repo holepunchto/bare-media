@@ -53,7 +53,6 @@ test('image decode() bmp', async (t) => {
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  console.log(rgba)
 
   t.ok(Buffer.isBuffer(rgba.data))
   t.is(rgba.width, 2)

@@ -95,9 +95,9 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 
 Extracts frames from a video in RGBA
 
-| Parameter       | Type   | Description                    |
-| --------------- | ------ | ------------------------------ |
-| `fd`            | number | File descriptor                |
+| Parameter         | Type   | Description                    |
+| ----------------- | ------ | ------------------------------ |
+| `fd`              | number | File descriptor                |
 | `opts.frameIndex` | number | Number of the frame to extract |
 
 ## Helpers
