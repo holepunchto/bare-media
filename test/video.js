@@ -1,5 +1,6 @@
 import { test } from 'brittle'
 import fs from 'bare-fs'
+
 import { video } from '..'
 
 test('video extractFrames()', async (t) => {

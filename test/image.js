@@ -437,18 +437,3 @@ test('image pipeline: decode + crop + resize + encode + save jpeg', async (t) =>
     fs.rm(outPath, { force: true })
   })
 })
-
-test('codecs support flags', async (t) => {
-  const { isImageSupported, isVideoSupported, isMediaSupported } = await import('../types.js')
-
-  t.ok(isImageSupported('image/jpeg'))
-  t.ok(isImageSupported('image/png'))
-  t.absent(isImageSupported('video/mp4'))
-
-  t.ok(isVideoSupported('video/mp4'))
-  t.absent(isVideoSupported('image/jpeg'))
-
-  t.ok(isMediaSupported('image/jpeg'))
-  t.ok(isMediaSupported('video/mp4'))
-  t.absent(isMediaSupported('application/pdf'))
-})

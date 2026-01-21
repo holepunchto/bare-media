@@ -11,7 +11,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run format:check && lunte",
-    "test": "brittle-bare test/*.test.js"
+    "test": "brittle-bare test/index.js"
   },
   "keywords": [],
   "author": "Holepunch Inc",
