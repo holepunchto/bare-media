@@ -273,7 +273,7 @@ export async function transcode(stream) {
 
       throw new Error(
         `Failed to open ${codecType === constants.mediaTypes.VIDEO ? 'video' : 'audio'} encoder: ${err.message}\n` +
-        `Stream: ${inputStream.index}, Format: ${outputFormatName}`
+          `Stream: ${inputStream.index}, Format: ${outputFormatName}`
       )
     }
 
