@@ -3,6 +3,10 @@
   "version": "1.8.0",
   "main": "index.js",
   "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./types": "./types.js"
+  },
   "scripts": {
     "format": "prettier --write .",
     "format:check": "prettier --check .",
