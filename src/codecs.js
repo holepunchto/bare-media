@@ -1,6 +1,6 @@
 import { IMAGE } from '../types'
 
-export const codecs = {
+const codecs = {
   [IMAGE.AVIF]: () => import('bare-heif'),
   [IMAGE.GIF]: () => import('bare-gif'),
   [IMAGE.BMP]: () => import('bare-bmp'),
@@ -23,24 +23,4 @@ export async function importCodec(mimetype) {
 
 export function supportsQuality(mimetype) {
   return { 'image/webp': true, 'image/jpeg': true }[mimetype] || false
-}
-
-const videoMimetypes = [
-  'video/mp4',
-  'video/webm',
-  'video/quicktime',
-  'video/x-matroska',
-  'video/x-msvideo'
-]
-
-export function isImageSupported(mimetype) {
-  return mimetype in codecs
-}
-
-export function isVideoSupported(mimetype) {
-  return videoMimetypes.includes(mimetype)
-}
-
-export function isMediaSupported(mimetype) {
-  return isImageSupported(mimetype) || isVideoSupported(mimetype)
 }
