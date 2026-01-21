@@ -11,6 +11,8 @@ import {
   Dictionary,
   Resampler,
   AudioFIFO,
+  Encoder,
+  CodecContext,
   constants
 } from 'bare-ffmpeg'
 
@@ -167,7 +169,6 @@ export async function transcode(stream) {
     if (codecType === constants.mediaTypes.VIDEO) {
       outputStream.codecParameters.type = constants.mediaTypes.VIDEO
 
-      // Select video codec based on output format
       switch (outputFormatName) {
         case 'webm':
           outputStream.codecParameters.id = constants.codecs.VP8
@@ -176,7 +177,7 @@ export async function transcode(stream) {
         case 'mp4':
         case 'matroska':
         case 'mkv':
-          outputStream.codecParameters.id = constants.codecs.H264
+          outputStream.codecParameters.id = constants.codecs.VP9
           outputStream.codecParameters.format = constants.pixelFormats.YUV420P
           break
         default:
@@ -194,19 +195,14 @@ export async function transcode(stream) {
 
       let targetSampleRate = decoderContext.sampleRate
 
-      // Select audio codec based on output format
       switch (outputFormatName) {
         case 'webm':
-          outputStream.codecParameters.id = constants.codecs.OPUS
-          outputStream.codecParameters.format = constants.sampleFormats.FLTP
-          // Opus only supports: 48000, 24000, 16000, 12000, 8000 Hz
-          targetSampleRate = 48000
-          break
         case 'mp4':
         case 'matroska':
         case 'mkv':
-          outputStream.codecParameters.id = constants.codecs.AAC
+          outputStream.codecParameters.id = constants.codecs.OPUS
           outputStream.codecParameters.format = constants.sampleFormats.FLTP
+          targetSampleRate = 48000
           break
         default:
           throw new Error(`Unsupported audio output format: ${outputFormatName}`)
@@ -217,7 +213,27 @@ export async function transcode(stream) {
       outputStream.timeBase = new Rational(1, targetSampleRate)
     }
 
-    const encoder = outputStream.encoder()
+    let encoderName
+    if (codecType === constants.mediaTypes.VIDEO) {
+      switch (outputFormatName) {
+        case 'webm':
+          encoderName = 'libvpx'
+          break
+        case 'mp4':
+        case 'matroska':
+        case 'mkv':
+          encoderName = 'libvpx-vp9'
+          break
+        default:
+          throw new Error(`No encoder configured for video format: ${outputFormatName}`)
+      }
+    } else if (codecType === constants.mediaTypes.AUDIO) {
+      encoderName = 'libopus'
+    }
+
+    const softwareEncoder = new Encoder(encoderName)
+    const encoder = new CodecContext(softwareEncoder)
+    outputStream.codecParameters.toContext(encoder)
 
     if (codecType === constants.mediaTypes.VIDEO) {
       encoder.timeBase = outputStream.timeBase
@@ -242,20 +258,23 @@ export async function transcode(stream) {
       encoder.flags |= constants.codecFlags.GLOBAL_HEADER
     }
 
-    // Set encoder options
     const encoderOptions = new Dictionary()
     if (codecType === constants.mediaTypes.VIDEO) {
-      // Allow software fallback if hardware encoder unavailable (e.g., in CI)
       encoderOptions.set('allow_sw', '1')
     }
 
     try {
       encoder.open(encoderOptions)
     } catch (err) {
-      // If encoder fails to open (e.g., hardware encoder not available in CI), skip this stream
-      console.warn(`Failed to open encoder for stream ${inputStream.index}: ${err.message}`)
       encoder.destroy()
-      continue
+      decoderContext.destroy()
+      inputFormatContext.destroy()
+      outputFormat.destroy()
+
+      throw new Error(
+        `Failed to open ${codecType === constants.mediaTypes.VIDEO ? 'video' : 'audio'} encoder: ${err.message}\n` +
+        `Stream: ${inputStream.index}, Format: ${outputFormatName}`
+      )
     }
 
     outputStream.codecParameters.fromContext(encoder)
@@ -277,19 +296,15 @@ export async function transcode(stream) {
 
   switch (outputFormatName) {
     case 'mp4':
-      // Fragmented MP4 for streaming: allows playback before file is complete
       muxerOptions.set('movflags', 'frag_keyframe+empty_moov+default_base_moof')
       break
     case 'webm':
-      // Live streaming mode for WebM
       muxerOptions.set('live', '1')
       break
     case 'matroska':
     case 'mkv':
-      // Live streaming mode for Matroska
       muxerOptions.set('live', '1')
       break
-    // Other formats (flv, mpegts, etc.) work without special flags
   }
 
   outputFormat.writeHeader(muxerOptions)
@@ -341,7 +356,6 @@ export async function transcode(stream) {
 
             mapping.rescaler.scale(frame, outFrame)
 
-            // Note: Force CFR (Constant Frame Rate) to avoid timestamp issues
             outFrame.pts = mapping.nextVideoPts
 
             const frameDuration =
