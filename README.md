@@ -118,21 +118,15 @@ Extracts frames from a video in RGBA
 | `fd`              | number | File descriptor                |
 | `opts.frameIndex` | number | Number of the frame to extract |
 
-## Helpers
+## Supported Types
 
-The library also exposes helpers to check for supported media types.
+Helpers to check supported media types are exposed in `bare-media/types`:
 
-### isImageSupported(mimetype)
-
-Returns `true` if the mimetype is a supported image format (e.g. `image/jpeg`, `image/png`, `image/webp`, etc).
-
-### isVideoSupported(mimetype)
-
-Returns `true` if the mimetype is a supported video format (e.g. `video/mp4`, `video/webm`, etc).
-
-### isMediaSupported(mimetype)
-
-Returns `true` if the mimetype is either a supported image or video format.
+- `supportedImageMimetypes`: list of supported image mimetypes.
+- `supportedVideoMimetypes`: list of supported video mimetypes.
+- `isImageSupported(mimetype)`: returns `true` if the mimetype is a supported image format.
+- `isVideoSupported(mimetype)`: returns `true` if the mimetype is a supported video format.
+- `isMediaSupported(mimetype)`: returns `true` if the mimetype is either a supported image or video format.
 
 ## License
 
