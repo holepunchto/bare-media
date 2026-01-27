@@ -62,12 +62,36 @@ const MUXER_OPTIONS = {
 }
 
 class TranscodeStreamConfig {
+  static create(inputStream, outputFormat, outputFormatName, outputParameters) {
+    const config = new TranscodeStreamConfig(
+      inputStream,
+      outputFormat,
+      outputFormatName,
+      outputParameters
+    )
+    return config._initialize() ? config : null
+  }
+
   constructor(inputStream, outputFormat, outputFormatName, outputParameters) {
     this.inputStream = inputStream
     this.outputFormat = outputFormat
     this.outputFormatName = outputFormatName
     this.outputParameters = outputParameters
     this.codecType = inputStream.codecParameters.type
+
+    // Mapping properties
+    this.outputStream = null
+    this.decoder = null
+    this.encoder = null
+    this.rescaler = null
+    this.resampler = null
+    this.fifo = null
+    this.fifoFrame = null
+    this.totalSamplesOutput = 0
+    this.nextVideoPts = 0
+    this.lastWidth = null
+    this.lastHeight = null
+    this.lastFormat = null
   }
 
   isVideo() {
@@ -91,28 +115,17 @@ class TranscodeStreamConfig {
     return config
   }
 
-  create() {
-    const decoder = this._createDecoder()
-    if (!decoder) return null
+  _initialize() {
+    this.decoder = this._createDecoder()
+    if (!this.decoder) return false
 
-    const outputStream = this.outputFormat.createStream()
-    this._configureOutputStream(outputStream, decoder)
+    this.outputStream = this.outputFormat.createStream()
+    this._configureOutputStream(this.outputStream, this.decoder)
 
-    const encoder = this._createEncoder(outputStream, decoder)
-    outputStream.codecParameters.fromContext(encoder)
+    this.encoder = this._createEncoder(this.outputStream, this.decoder)
+    this.outputStream.codecParameters.fromContext(this.encoder)
 
-    return {
-      inputStream: this.inputStream,
-      outputStream,
-      decoder,
-      encoder,
-      rescaler: null,
-      resampler: null,
-      fifo: null,
-      fifoFrame: null,
-      totalSamplesOutput: 0,
-      nextVideoPts: 0
-    }
+    return true
   }
 
   _createDecoder() {
@@ -397,14 +410,13 @@ class Transcoder {
         continue
       }
 
-      const config = new TranscodeStreamConfig(
+      const mapping = TranscodeStreamConfig.create(
         inputStream,
         this.outputFormat,
         this.outputFormatName,
         this.outputParameters
       )
 
-      const mapping = config.create()
       if (mapping) {
         this.streamMapping[inputStream.index] = mapping
       }
@@ -440,9 +452,9 @@ class Transcoder {
 
         if (decoder.sendPacket(packet)) {
           while (decoder.receiveFrame(frame)) {
-            if (mapping.inputStream.codecParameters.type === VIDEO) {
+            if (mapping.isVideo()) {
               this.videoProcessor.process(frame, mapping, packet)
-            } else if (mapping.inputStream.codecParameters.type === AUDIO) {
+            } else if (mapping.isAudio()) {
               this.audioProcessor.process(frame, mapping, packet)
             }
           }
