@@ -105,20 +105,20 @@ formatRegistry.register('mkv', {
 })
 
 class TranscodeStreamConfig {
-  static create(inputStream, outputFormat, outputFormatName, outputParameters) {
+  static create(inputStream, outputFormatContext, containerFormat, outputParameters) {
     const config = new TranscodeStreamConfig(
       inputStream,
-      outputFormat,
-      outputFormatName,
+      outputFormatContext,
+      containerFormat,
       outputParameters
     )
     return config.#initialize() ? config : null
   }
 
-  constructor(inputStream, outputFormat, outputFormatName, outputParameters) {
+  constructor(inputStream, outputFormatContext, containerFormat, outputParameters) {
     this.inputStream = inputStream
-    this.outputFormat = outputFormat
-    this.outputFormatName = outputFormatName
+    this.outputFormatContext = outputFormatContext
+    this.containerFormat = containerFormat
     this.outputParameters = outputParameters
     this.codecType = inputStream.codecParameters.type
 
@@ -130,7 +130,7 @@ class TranscodeStreamConfig {
     this.resampler = null
     this.fifo = null
     this.fifoFrame = null
-    this.totalSamplesOutput = 0
+    this.samplesWritten = 0
     this.nextVideoPts = 0
     this.lastWidth = null
     this.lastHeight = null
@@ -147,15 +147,15 @@ class TranscodeStreamConfig {
 
   getConfig() {
     return this.isVideo()
-      ? formatRegistry.getVideoConfig(this.outputFormatName)
-      : formatRegistry.getAudioConfig(this.outputFormatName)
+      ? formatRegistry.getVideoConfig(this.containerFormat)
+      : formatRegistry.getAudioConfig(this.containerFormat)
   }
 
   #initialize() {
     this.decoder = this.#createDecoder()
     if (!this.decoder) return false
 
-    this.outputStream = this.outputFormat.createStream()
+    this.outputStream = this.outputFormatContext.createStream()
     this.#configureOutputStream(this.outputStream, this.decoder)
 
     this.encoder = this.#createEncoder(this.outputStream, this.decoder)
@@ -205,7 +205,7 @@ class TranscodeStreamConfig {
       this.#configureAudioEncoder(encoder, outputStream)
     }
 
-    if (this.outputFormat.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
+    if (this.outputFormatContext.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
       encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
     }
 
@@ -347,8 +347,8 @@ class AudioFrameProcessor {
 
       mapping.fifo.read(mapping.fifoFrame, frameSize)
 
-      mapping.fifoFrame.pts = mapping.totalSamplesOutput
-      mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
+      mapping.fifoFrame.pts = mapping.samplesWritten
+      mapping.samplesWritten += mapping.fifoFrame.nbSamples
 
       this.transcoder._encodeAndWrite(encoder, mapping.fifoFrame, outputStream, packet)
     }
@@ -360,8 +360,8 @@ class AudioFrameProcessor {
       mapping.fifoFrame.nbSamples = remaining
       mapping.fifoFrame.alloc()
       mapping.fifo.read(mapping.fifoFrame, remaining)
-      mapping.fifoFrame.pts = mapping.totalSamplesOutput
-      mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
+      mapping.fifoFrame.pts = mapping.samplesWritten
+      mapping.samplesWritten += mapping.fifoFrame.nbSamples
       this.transcoder._encodeAndWrite(
         mapping.encoder,
         mapping.fifoFrame,
@@ -380,9 +380,9 @@ class Transcoder {
 
     this.chunks = []
     this.inputFormatContext = null
-    this.outputFormat = null
-    this.streamMapping = []
-    this.outputFormatName = null
+    this.outputFormatContext = null
+    this.configs = []
+    this.containerFormat = null
 
     this.videoProcessor = new VideoFrameProcessor(this)
     this.audioProcessor = new AudioFrameProcessor(this)
@@ -434,13 +434,13 @@ class Transcoder {
       }
     })
 
-    this.outputFormatName = this.outputParameters?.format || 'mp4'
+    this.containerFormat = this.outputParameters?.format || 'mp4'
 
-    if (!formatRegistry.hasFormat(this.outputFormatName)) {
-      throw new Error(`Unsupported output format: ${this.outputFormatName}`)
+    if (!formatRegistry.hasFormat(this.containerFormat)) {
+      throw new Error(`Unsupported output format: ${this.containerFormat}`)
     }
 
-    this.outputFormat = new ffmpeg.OutputFormatContext(this.outputFormatName, outIO)
+    this.outputFormatContext = new ffmpeg.OutputFormatContext(this.containerFormat, outIO)
   }
 
   #discoverAndMapStreams() {
@@ -453,26 +453,26 @@ class Transcoder {
 
       const mapping = TranscodeStreamConfig.create(
         inputStream,
-        this.outputFormat,
-        this.outputFormatName,
+        this.outputFormatContext,
+        this.containerFormat,
         this.outputParameters
       )
 
       if (mapping) {
-        this.streamMapping[inputStream.index] = mapping
+        this.configs[inputStream.index] = mapping
       }
     }
   }
 
   #configureOutput() {
     const muxerOptions = new ffmpeg.Dictionary()
-    const options = formatRegistry.getMuxerOptions(this.outputFormatName)
+    const options = formatRegistry.getMuxerOptions(this.containerFormat)
 
     for (const [key, value] of Object.entries(options)) {
       muxerOptions.set(key, value)
     }
 
-    this.outputFormat.writeHeader(muxerOptions)
+    this.outputFormatContext.writeHeader(muxerOptions)
   }
 
   #processFrames() {
@@ -481,7 +481,7 @@ class Transcoder {
 
     try {
       while (this.inputFormatContext.readFrame(packet)) {
-        const mapping = this.streamMapping[packet.streamIndex]
+        const mapping = this.configs[packet.streamIndex]
         if (!mapping) {
           packet.unref()
           continue
@@ -510,22 +510,22 @@ class Transcoder {
     const packet = new ffmpeg.Packet()
 
     try {
-      for (const index in this.streamMapping) {
-        const mapping = this.streamMapping[index]
+      for (const index in this.configs) {
+        const mapping = this.configs[index]
         this.audioProcessor.flush(mapping, packet)
 
         this._encodeAndWrite(mapping.encoder, null, mapping.outputStream, packet)
       }
 
-      this.outputFormat.writeTrailer()
+      this.outputFormatContext.writeTrailer()
     } finally {
       packet.destroy()
     }
   }
 
   #cleanup() {
-    for (const index in this.streamMapping) {
-      const m = this.streamMapping[index]
+    for (const index in this.configs) {
+      const m = this.configs[index]
       m.decoder.destroy()
       m.encoder.destroy()
       if (m.rescaler) m.rescaler.destroy()
@@ -535,7 +535,7 @@ class Transcoder {
     }
 
     if (this.inputFormatContext) this.inputFormatContext.destroy()
-    if (this.outputFormat) this.outputFormat.destroy()
+    if (this.outputFormatContext) this.outputFormatContext.destroy()
   }
 
   _encodeAndWrite(encoder, frame, outputStream, packet) {
@@ -543,7 +543,7 @@ class Transcoder {
       while (encoder.receivePacket(packet)) {
         packet.streamIndex = outputStream.index
         packet.rescaleTimestamps(encoder.timeBase, outputStream.timeBase)
-        this.outputFormat.writeFrame(packet)
+        this.outputFormatContext.writeFrame(packet)
         packet.unref()
       }
     }
