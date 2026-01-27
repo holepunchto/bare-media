@@ -69,7 +69,7 @@ class TranscodeStreamConfig {
       outputFormatName,
       outputParameters
     )
-    return config._initialize() ? config : null
+    return config.#initialize() ? config : null
   }
 
   constructor(inputStream, outputFormat, outputFormatName, outputParameters) {
@@ -115,20 +115,20 @@ class TranscodeStreamConfig {
     return config
   }
 
-  _initialize() {
-    this.decoder = this._createDecoder()
+  #initialize() {
+    this.decoder = this.#createDecoder()
     if (!this.decoder) return false
 
     this.outputStream = this.outputFormat.createStream()
-    this._configureOutputStream(this.outputStream, this.decoder)
+    this.#configureOutputStream(this.outputStream, this.decoder)
 
-    this.encoder = this._createEncoder(this.outputStream, this.decoder)
+    this.encoder = this.#createEncoder(this.outputStream, this.decoder)
     this.outputStream.codecParameters.fromContext(this.encoder)
 
     return true
   }
 
-  _createDecoder() {
+  #createDecoder() {
     const decoderContext = this.inputStream.decoder()
     try {
       decoderContext.open()
@@ -140,7 +140,7 @@ class TranscodeStreamConfig {
     }
   }
 
-  _configureOutputStream(outputStream, decoder) {
+  #configureOutputStream(outputStream, decoder) {
     const config = this.getConfig()
 
     outputStream.codecParameters.type = this.codecType
@@ -158,15 +158,15 @@ class TranscodeStreamConfig {
     }
   }
 
-  _createEncoder(outputStream, decoder) {
+  #createEncoder(outputStream, decoder) {
     const config = this.getConfig()
     const encoder = new ffmpeg.CodecContext(new ffmpeg.Encoder(config.encoder))
     outputStream.codecParameters.toContext(encoder)
 
     if (this.isVideo()) {
-      this._configureVideoEncoder(encoder, outputStream, decoder)
+      this.#configureVideoEncoder(encoder, outputStream, decoder)
     } else {
-      this._configureAudioEncoder(encoder, outputStream)
+      this.#configureAudioEncoder(encoder, outputStream)
     }
 
     if (this.outputFormat.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
@@ -182,7 +182,7 @@ class TranscodeStreamConfig {
     return encoder
   }
 
-  _configureVideoEncoder(encoder, outputStream, decoder) {
+  #configureVideoEncoder(encoder, outputStream, decoder) {
     encoder.timeBase = outputStream.timeBase
     encoder.width = outputStream.codecParameters.width
     encoder.height = outputStream.codecParameters.height
@@ -196,7 +196,7 @@ class TranscodeStreamConfig {
     encoder.gopSize = 30
   }
 
-  _configureAudioEncoder(encoder, outputStream) {
+  #configureAudioEncoder(encoder, outputStream) {
     encoder.timeBase = outputStream.timeBase
     encoder.sampleRate = outputStream.codecParameters.sampleRate
     encoder.channelLayout = outputStream.codecParameters.channelLayout
@@ -354,13 +354,13 @@ class Transcoder {
 
   async *transcode() {
     try {
-      this._setupIOContexts()
-      this._discoverAndMapStreams()
-      this._configureOutput()
-      this._processFrames()
-      this._finalize()
+      this.#setupIOContexts()
+      this.#discoverAndMapStreams()
+      this.#configureOutput()
+      this.#processFrames()
+      this.#finalize()
     } finally {
-      this._cleanup()
+      this.#cleanup()
     }
 
     for (const chunk of this.chunks) {
@@ -368,7 +368,7 @@ class Transcoder {
     }
   }
 
-  _setupIOContexts() {
+  #setupIOContexts() {
     const fileSize = fs.fstatSync(this.fd).size
     let offset = 0
 
@@ -402,7 +402,7 @@ class Transcoder {
     this.outputFormat = new ffmpeg.OutputFormatContext(this.outputFormatName, outIO)
   }
 
-  _discoverAndMapStreams() {
+  #discoverAndMapStreams() {
     for (const inputStream of this.inputFormatContext.streams) {
       const codecType = inputStream.codecParameters.type
 
@@ -423,7 +423,7 @@ class Transcoder {
     }
   }
 
-  _configureOutput() {
+  #configureOutput() {
     const muxerOptions = new ffmpeg.Dictionary()
     const options = MUXER_OPTIONS[this.outputFormatName]
 
@@ -436,7 +436,7 @@ class Transcoder {
     this.outputFormat.writeHeader(muxerOptions)
   }
 
-  _processFrames() {
+  #processFrames() {
     const packet = new ffmpeg.Packet()
     const frame = new ffmpeg.Frame()
 
@@ -467,7 +467,7 @@ class Transcoder {
     }
   }
 
-  _finalize() {
+  #finalize() {
     const packet = new ffmpeg.Packet()
 
     try {
@@ -484,7 +484,7 @@ class Transcoder {
     }
   }
 
-  _cleanup() {
+  #cleanup() {
     for (const index in this.streamMapping) {
       const m = this.streamMapping[index]
       m.decoder.destroy()
