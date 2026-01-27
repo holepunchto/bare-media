@@ -43,7 +43,6 @@ class FormatRegistry {
 
 const formatRegistry = new FormatRegistry()
 
-// Register default formats
 formatRegistry.register('webm', {
   video: {
     id: ffmpeg.constants.codecs.VP8,
@@ -122,7 +121,6 @@ class TranscodeStreamConfig {
     this.outputParameters = outputParameters
     this.codecType = inputStream.codecParameters.type
 
-    // Mapping properties
     this.outputStream = null
     this.decoder = null
     this.encoder = null
@@ -248,7 +246,6 @@ class VideoFrameProcessor {
   process(frame, config, packet) {
     const { encoder, outputStream } = config
 
-    // Lazy initialize or recreate scaler if frame properties changed
     if (
       !config.rescaler ||
       config.lastWidth !== frame.width ||
@@ -300,7 +297,6 @@ class AudioFrameProcessor {
   process(frame, config, packet) {
     const { encoder, outputStream } = config
 
-    // Lazy initialize resampler
     if (!config.resampler) {
       config.resampler = new ffmpeg.Resampler(
         frame.sampleRate,
@@ -312,7 +308,6 @@ class AudioFrameProcessor {
       )
     }
 
-    // Lazy initialize FIFO buffer
     if (!config.fifo) {
       config.fifo = new ffmpeg.AudioFIFO(
         encoder.sampleFormat,
@@ -334,8 +329,8 @@ class AudioFrameProcessor {
     outFrame.nbSamples = outSamples
     outFrame.alloc()
 
-    const converted = config.resampler.convert(frame, outFrame)
-    outFrame.nbSamples = converted
+    const convertedSamples = config.resampler.convert(frame, outFrame)
+    outFrame.nbSamples = convertedSamples
 
     config.fifo.write(outFrame)
     outFrame.destroy()
@@ -386,7 +381,7 @@ class Transcoder {
   async *transcode() {
     try {
       this.#setupIOContexts()
-      this.#discoverAndMapStreams()
+      this.#discoverAndConfigureStreams()
       this.#configureOutput()
       this.#processFrames()
       this.#finalize()
@@ -438,7 +433,7 @@ class Transcoder {
     this.outputFormatContext = new ffmpeg.OutputFormatContext(this.containerFormat, outIO)
   }
 
-  #discoverAndMapStreams() {
+  #discoverAndConfigureStreams() {
     for (const inputStream of this.inputFormatContext.streams) {
       const codecType = inputStream.codecParameters.type
 
@@ -520,13 +515,13 @@ class Transcoder {
 
   #cleanup() {
     for (const index in this.configs) {
-      const m = this.configs[index]
-      m.decoder.destroy()
-      m.encoder.destroy()
-      if (m.rescaler) m.rescaler.destroy()
-      if (m.resampler) m.resampler.destroy()
-      if (m.fifo) m.fifo.destroy()
-      if (m.fifoFrame) m.fifoFrame.destroy()
+      const config = this.configs[index]
+      config.decoder.destroy()
+      config.encoder.destroy()
+      if (config.rescaler) config.rescaler.destroy()
+      if (config.resampler) config.resampler.destroy()
+      if (config.fifo) config.fifo.destroy()
+      if (config.fifoFrame) config.fifoFrame.destroy()
     }
 
     if (this.inputFormatContext) this.inputFormatContext.destroy()
