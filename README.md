@@ -115,8 +115,33 @@ Extracts frames from a video in RGBA
 
 | Parameter         | Type   | Description                    |
 | ----------------- | ------ | ------------------------------ |
-| `fd`              | number | File descriptor                |
 | `opts.frameIndex` | number | Number of the frame to extract |
+
+### transcode()
+
+Transcode a media file to a different format
+
+| Parameter     | Type   | Description                                                         |
+| ------------- | ------ | ------------------------------------------------------------------- |
+| `opts.format` | string | Output format name (e.g., `mp4`, `webm`, `matroska`). Default `mp4` |
+| `opts.width`  | number | Width of the output video                                           |
+| `opts.height` | number | Height of the output video                                          |
+
+**Supported formats**: `mp4` (VP9+Opus), `webm` (VP8+Opus), `matroska`/`mkv` (VP9+Opus)
+
+#### Example
+
+```javascript
+import { video } from 'bare-media'
+
+for await (const chunk of video('input.mkv').transcode({
+  format: 'mp4',
+  width: 1280,
+  height: 720
+})) {
+  console.log('Received chunk:', chunk.buffer.length)
+}
+```
 
 ## Supported Types
 
