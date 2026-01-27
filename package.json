@@ -1,6 +1,7 @@
 {
   "name": "bare-media",
   "version": "2.0.0",
+  "description": "A set of media APIs for Bare",
   "main": "index.js",
   "type": "module",
   "exports": {
@@ -22,7 +23,14 @@
   "keywords": [],
   "author": "Holepunch Inc",
   "license": "Apache-2.0",
-  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/holepunchto/bare-media.git"
+  },
+  "bugs": {
+    "url": "https://github.com/holepunchto/bare-media/issues"
+  },
+  "homepage": "https://github.com/holepunchto/bare-media#readme",
   "dependencies": {
     "bare-bmp": "^1.0.0",
     "bare-fetch": "^2.4.1",
