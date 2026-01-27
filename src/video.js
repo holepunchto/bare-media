@@ -503,16 +503,4 @@ async function* transcode(fd, opts = {}) {
   }
 }
 
-// Wrapper for standalone transcode with user-friendly API
-video.transcode = async function* (fd, opts = {}) {
-  const { format, width, height, bufferSize } = opts
-  const internalOpts = {
-    outputParameters: { format, width, height },
-    bufferSize
-  }
-  for await (const chunk of transcode(fd, internalOpts)) {
-    yield chunk
-  }
-}
-
 export { video }
