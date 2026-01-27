@@ -191,6 +191,138 @@ class TranscodeStreamConfig {
   }
 }
 
+class VideoFrameProcessor {
+  constructor(transcoder) {
+    this.transcoder = transcoder
+  }
+
+  process(frame, mapping, packet) {
+    const { encoder, outputStream } = mapping
+
+    // Lazy initialize or recreate scaler if frame properties changed
+    if (
+      !mapping.rescaler ||
+      mapping.lastWidth !== frame.width ||
+      mapping.lastHeight !== frame.height ||
+      mapping.lastFormat !== frame.format
+    ) {
+      if (mapping.rescaler) mapping.rescaler.destroy()
+
+      mapping.rescaler = new ffmpeg.Scaler(
+        frame.format,
+        frame.width,
+        frame.height,
+        encoder.pixelFormat,
+        encoder.width,
+        encoder.height
+      )
+
+      mapping.lastWidth = frame.width
+      mapping.lastHeight = frame.height
+      mapping.lastFormat = frame.format
+    }
+
+    const outFrame = new ffmpeg.Frame()
+    outFrame.format = encoder.pixelFormat
+    outFrame.width = encoder.width
+    outFrame.height = encoder.height
+    outFrame.alloc()
+    outFrame.copyProperties(frame)
+
+    mapping.rescaler.scale(frame, outFrame)
+
+    outFrame.pts = mapping.nextVideoPts
+    const frameDuration =
+      (encoder.timeBase.denominator * encoder.frameRate.denominator) /
+      (encoder.timeBase.numerator * encoder.frameRate.numerator)
+    mapping.nextVideoPts += frameDuration
+
+    this.transcoder._encodeAndWrite(encoder, outFrame, outputStream, packet)
+
+    outFrame.destroy()
+  }
+}
+
+class AudioFrameProcessor {
+  constructor(transcoder) {
+    this.transcoder = transcoder
+  }
+
+  process(frame, mapping, packet) {
+    const { encoder, outputStream } = mapping
+
+    // Lazy initialize resampler
+    if (!mapping.resampler) {
+      mapping.resampler = new ffmpeg.Resampler(
+        frame.sampleRate,
+        frame.channelLayout,
+        frame.format,
+        encoder.sampleRate,
+        encoder.channelLayout,
+        encoder.sampleFormat
+      )
+    }
+
+    // Lazy initialize FIFO buffer
+    if (!mapping.fifo) {
+      mapping.fifo = new ffmpeg.AudioFIFO(
+        encoder.sampleFormat,
+        encoder.channelLayout.nbChannels,
+        encoder.frameSize
+      )
+      mapping.fifoFrame = new ffmpeg.Frame()
+      mapping.fifoFrame.format = encoder.sampleFormat
+      mapping.fifoFrame.channelLayout = encoder.channelLayout
+      mapping.fifoFrame.sampleRate = encoder.sampleRate
+    }
+
+    const outFrame = new ffmpeg.Frame()
+    outFrame.format = encoder.sampleFormat
+    outFrame.channelLayout = encoder.channelLayout
+    outFrame.sampleRate = encoder.sampleRate
+
+    const outSamples = Math.ceil((frame.nbSamples * encoder.sampleRate) / frame.sampleRate) + 32
+    outFrame.nbSamples = outSamples
+    outFrame.alloc()
+
+    const converted = mapping.resampler.convert(frame, outFrame)
+    outFrame.nbSamples = converted
+
+    mapping.fifo.write(outFrame)
+    outFrame.destroy()
+
+    const frameSize = encoder.frameSize
+    while (mapping.fifo.size >= frameSize) {
+      mapping.fifoFrame.nbSamples = frameSize
+      mapping.fifoFrame.alloc()
+
+      mapping.fifo.read(mapping.fifoFrame, frameSize)
+
+      mapping.fifoFrame.pts = mapping.totalSamplesOutput
+      mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
+
+      this.transcoder._encodeAndWrite(encoder, mapping.fifoFrame, outputStream, packet)
+    }
+  }
+
+  flush(mapping, packet) {
+    if (mapping.fifo && mapping.fifo.size > 0) {
+      const remaining = mapping.fifo.size
+      mapping.fifoFrame.nbSamples = remaining
+      mapping.fifoFrame.alloc()
+      mapping.fifo.read(mapping.fifoFrame, remaining)
+      mapping.fifoFrame.pts = mapping.totalSamplesOutput
+      mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
+      this.transcoder._encodeAndWrite(
+        mapping.encoder,
+        mapping.fifoFrame,
+        mapping.outputStream,
+        packet
+      )
+    }
+  }
+}
+
 class Transcoder {
   constructor(fd, opts = {}) {
     this.fd = fd
@@ -202,6 +334,9 @@ class Transcoder {
     this.outputFormat = null
     this.streamMapping = []
     this.outputFormatName = null
+
+    this.videoProcessor = new VideoFrameProcessor(this)
+    this.audioProcessor = new AudioFrameProcessor(this)
   }
 
   async *transcode() {
@@ -306,9 +441,9 @@ class Transcoder {
         if (decoder.sendPacket(packet)) {
           while (decoder.receiveFrame(frame)) {
             if (mapping.inputStream.codecParameters.type === VIDEO) {
-              this._processVideoFrame(frame, mapping, packet)
+              this.videoProcessor.process(frame, mapping, packet)
             } else if (mapping.inputStream.codecParameters.type === AUDIO) {
-              this._processAudioFrame(frame, mapping, packet)
+              this.audioProcessor.process(frame, mapping, packet)
             }
           }
         }
@@ -326,7 +461,7 @@ class Transcoder {
     try {
       for (const index in this.streamMapping) {
         const mapping = this.streamMapping[index]
-        this._flushAudioFIFO(mapping, packet)
+        this.audioProcessor.flush(mapping, packet)
 
         this._encodeAndWrite(mapping.encoder, null, mapping.outputStream, packet)
       }
@@ -360,118 +495,6 @@ class Transcoder {
         this.outputFormat.writeFrame(packet)
         packet.unref()
       }
-    }
-  }
-
-  _processVideoFrame(frame, mapping, packet) {
-    const { encoder, outputStream } = mapping
-
-    if (
-      !mapping.rescaler ||
-      mapping.lastWidth !== frame.width ||
-      mapping.lastHeight !== frame.height ||
-      mapping.lastFormat !== frame.format
-    ) {
-      if (mapping.rescaler) mapping.rescaler.destroy()
-
-      mapping.rescaler = new ffmpeg.Scaler(
-        frame.format,
-        frame.width,
-        frame.height,
-        encoder.pixelFormat,
-        encoder.width,
-        encoder.height
-      )
-
-      mapping.lastWidth = frame.width
-      mapping.lastHeight = frame.height
-      mapping.lastFormat = frame.format
-    }
-
-    const outFrame = new ffmpeg.Frame()
-    outFrame.format = encoder.pixelFormat
-    outFrame.width = encoder.width
-    outFrame.height = encoder.height
-    outFrame.alloc()
-    outFrame.copyProperties(frame)
-
-    mapping.rescaler.scale(frame, outFrame)
-
-    outFrame.pts = mapping.nextVideoPts
-    const frameDuration =
-      (encoder.timeBase.denominator * encoder.frameRate.denominator) /
-      (encoder.timeBase.numerator * encoder.frameRate.numerator)
-    mapping.nextVideoPts += frameDuration
-
-    this._encodeAndWrite(encoder, outFrame, outputStream, packet)
-
-    outFrame.destroy()
-  }
-
-  _processAudioFrame(frame, mapping, packet) {
-    const { encoder, outputStream } = mapping
-
-    if (!mapping.resampler) {
-      mapping.resampler = new ffmpeg.Resampler(
-        frame.sampleRate,
-        frame.channelLayout,
-        frame.format,
-        encoder.sampleRate,
-        encoder.channelLayout,
-        encoder.sampleFormat
-      )
-    }
-
-    if (!mapping.fifo) {
-      mapping.fifo = new ffmpeg.AudioFIFO(
-        encoder.sampleFormat,
-        encoder.channelLayout.nbChannels,
-        encoder.frameSize
-      )
-      mapping.fifoFrame = new ffmpeg.Frame()
-      mapping.fifoFrame.format = encoder.sampleFormat
-      mapping.fifoFrame.channelLayout = encoder.channelLayout
-      mapping.fifoFrame.sampleRate = encoder.sampleRate
-    }
-
-    const outFrame = new ffmpeg.Frame()
-    outFrame.format = encoder.sampleFormat
-    outFrame.channelLayout = encoder.channelLayout
-    outFrame.sampleRate = encoder.sampleRate
-
-    const outSamples = Math.ceil((frame.nbSamples * encoder.sampleRate) / frame.sampleRate) + 32
-    outFrame.nbSamples = outSamples
-    outFrame.alloc()
-
-    const converted = mapping.resampler.convert(frame, outFrame)
-    outFrame.nbSamples = converted
-
-    mapping.fifo.write(outFrame)
-    outFrame.destroy()
-
-    const frameSize = encoder.frameSize
-    while (mapping.fifo.size >= frameSize) {
-      mapping.fifoFrame.nbSamples = frameSize
-      mapping.fifoFrame.alloc()
-
-      mapping.fifo.read(mapping.fifoFrame, frameSize)
-
-      mapping.fifoFrame.pts = mapping.totalSamplesOutput
-      mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
-
-      this._encodeAndWrite(encoder, mapping.fifoFrame, outputStream, packet)
-    }
-  }
-
-  _flushAudioFIFO(mapping, packet) {
-    if (mapping.fifo && mapping.fifo.size > 0) {
-      const remaining = mapping.fifo.size
-      mapping.fifoFrame.nbSamples = remaining
-      mapping.fifoFrame.alloc()
-      mapping.fifo.read(mapping.fifoFrame, remaining)
-      mapping.fifoFrame.pts = mapping.totalSamplesOutput
-      mapping.totalSamplesOutput += mapping.fifoFrame.nbSamples
-      this._encodeAndWrite(mapping.encoder, mapping.fifoFrame, mapping.outputStream, packet)
     }
   }
 }
