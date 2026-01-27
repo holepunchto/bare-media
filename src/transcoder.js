@@ -207,10 +207,9 @@ class TranscodeStreamConfig {
       encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
     }
 
-    const encoderOptions = new ffmpeg.Dictionary()
-    if (this.isVideo()) {
-      encoderOptions.set('allow_sw', '1')
-    }
+    const encoderOptions = this.isVideo()
+      ? ffmpeg.Dictionary.from({ allow_sw: '1' })
+      : new ffmpeg.Dictionary()
 
     encoder.open(encoderOptions)
     return encoder
@@ -455,12 +454,8 @@ class Transcoder {
   }
 
   #configureOutput() {
-    const muxerOptions = new ffmpeg.Dictionary()
     const options = formatRegistry.getMuxerOptions(this.containerFormat)
-
-    for (const [key, value] of Object.entries(options)) {
-      muxerOptions.set(key, value)
-    }
+    const muxerOptions = ffmpeg.Dictionary.from(options)
 
     this.outputFormatContext.writeHeader(muxerOptions)
   }
