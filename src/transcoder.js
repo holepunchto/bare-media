@@ -245,19 +245,19 @@ class VideoFrameProcessor {
     this.transcoder = transcoder
   }
 
-  process(frame, mapping, packet) {
-    const { encoder, outputStream } = mapping
+  process(frame, config, packet) {
+    const { encoder, outputStream } = config
 
     // Lazy initialize or recreate scaler if frame properties changed
     if (
-      !mapping.rescaler ||
-      mapping.lastWidth !== frame.width ||
-      mapping.lastHeight !== frame.height ||
-      mapping.lastFormat !== frame.format
+      !config.rescaler ||
+      config.lastWidth !== frame.width ||
+      config.lastHeight !== frame.height ||
+      config.lastFormat !== frame.format
     ) {
-      if (mapping.rescaler) mapping.rescaler.destroy()
+      if (config.rescaler) config.rescaler.destroy()
 
-      mapping.rescaler = new ffmpeg.Scaler(
+      config.rescaler = new ffmpeg.Scaler(
         frame.format,
         frame.width,
         frame.height,
@@ -266,9 +266,9 @@ class VideoFrameProcessor {
         encoder.height
       )
 
-      mapping.lastWidth = frame.width
-      mapping.lastHeight = frame.height
-      mapping.lastFormat = frame.format
+      config.lastWidth = frame.width
+      config.lastHeight = frame.height
+      config.lastFormat = frame.format
     }
 
     const outFrame = new ffmpeg.Frame()
@@ -278,13 +278,13 @@ class VideoFrameProcessor {
     outFrame.alloc()
     outFrame.copyProperties(frame)
 
-    mapping.rescaler.scale(frame, outFrame)
+    config.rescaler.scale(frame, outFrame)
 
-    outFrame.pts = mapping.nextVideoPts
+    outFrame.pts = config.nextVideoPts
     const frameDuration =
       (encoder.timeBase.denominator * encoder.frameRate.denominator) /
       (encoder.timeBase.numerator * encoder.frameRate.numerator)
-    mapping.nextVideoPts += frameDuration
+    config.nextVideoPts += frameDuration
 
     this.transcoder._encodeAndWrite(encoder, outFrame, outputStream, packet)
 
@@ -297,12 +297,12 @@ class AudioFrameProcessor {
     this.transcoder = transcoder
   }
 
-  process(frame, mapping, packet) {
-    const { encoder, outputStream } = mapping
+  process(frame, config, packet) {
+    const { encoder, outputStream } = config
 
     // Lazy initialize resampler
-    if (!mapping.resampler) {
-      mapping.resampler = new ffmpeg.Resampler(
+    if (!config.resampler) {
+      config.resampler = new ffmpeg.Resampler(
         frame.sampleRate,
         frame.channelLayout,
         frame.format,
@@ -313,16 +313,16 @@ class AudioFrameProcessor {
     }
 
     // Lazy initialize FIFO buffer
-    if (!mapping.fifo) {
-      mapping.fifo = new ffmpeg.AudioFIFO(
+    if (!config.fifo) {
+      config.fifo = new ffmpeg.AudioFIFO(
         encoder.sampleFormat,
         encoder.channelLayout.nbChannels,
         encoder.frameSize
       )
-      mapping.fifoFrame = new ffmpeg.Frame()
-      mapping.fifoFrame.format = encoder.sampleFormat
-      mapping.fifoFrame.channelLayout = encoder.channelLayout
-      mapping.fifoFrame.sampleRate = encoder.sampleRate
+      config.fifoFrame = new ffmpeg.Frame()
+      config.fifoFrame.format = encoder.sampleFormat
+      config.fifoFrame.channelLayout = encoder.channelLayout
+      config.fifoFrame.sampleRate = encoder.sampleRate
     }
 
     const outFrame = new ffmpeg.Frame()
@@ -334,40 +334,35 @@ class AudioFrameProcessor {
     outFrame.nbSamples = outSamples
     outFrame.alloc()
 
-    const converted = mapping.resampler.convert(frame, outFrame)
+    const converted = config.resampler.convert(frame, outFrame)
     outFrame.nbSamples = converted
 
-    mapping.fifo.write(outFrame)
+    config.fifo.write(outFrame)
     outFrame.destroy()
 
     const frameSize = encoder.frameSize
-    while (mapping.fifo.size >= frameSize) {
-      mapping.fifoFrame.nbSamples = frameSize
-      mapping.fifoFrame.alloc()
+    while (config.fifo.size >= frameSize) {
+      config.fifoFrame.nbSamples = frameSize
+      config.fifoFrame.alloc()
 
-      mapping.fifo.read(mapping.fifoFrame, frameSize)
+      config.fifo.read(config.fifoFrame, frameSize)
 
-      mapping.fifoFrame.pts = mapping.samplesWritten
-      mapping.samplesWritten += mapping.fifoFrame.nbSamples
+      config.fifoFrame.pts = config.samplesWritten
+      config.samplesWritten += config.fifoFrame.nbSamples
 
-      this.transcoder._encodeAndWrite(encoder, mapping.fifoFrame, outputStream, packet)
+      this.transcoder._encodeAndWrite(encoder, config.fifoFrame, outputStream, packet)
     }
   }
 
-  flush(mapping, packet) {
-    if (mapping.fifo && mapping.fifo.size > 0) {
-      const remaining = mapping.fifo.size
-      mapping.fifoFrame.nbSamples = remaining
-      mapping.fifoFrame.alloc()
-      mapping.fifo.read(mapping.fifoFrame, remaining)
-      mapping.fifoFrame.pts = mapping.samplesWritten
-      mapping.samplesWritten += mapping.fifoFrame.nbSamples
-      this.transcoder._encodeAndWrite(
-        mapping.encoder,
-        mapping.fifoFrame,
-        mapping.outputStream,
-        packet
-      )
+  flush(config, packet) {
+    if (config.fifo && config.fifo.size > 0) {
+      const remaining = config.fifo.size
+      config.fifoFrame.nbSamples = remaining
+      config.fifoFrame.alloc()
+      config.fifo.read(config.fifoFrame, remaining)
+      config.fifoFrame.pts = config.samplesWritten
+      config.samplesWritten += config.fifoFrame.nbSamples
+      this.transcoder._encodeAndWrite(config.encoder, config.fifoFrame, config.outputStream, packet)
     }
   }
 }
@@ -451,15 +446,15 @@ class Transcoder {
         continue
       }
 
-      const mapping = TranscodeStreamConfig.create(
+      const config = TranscodeStreamConfig.create(
         inputStream,
         this.outputFormatContext,
         this.containerFormat,
         this.outputParameters
       )
 
-      if (mapping) {
-        this.configs[inputStream.index] = mapping
+      if (config) {
+        this.configs[inputStream.index] = config
       }
     }
   }
@@ -481,20 +476,20 @@ class Transcoder {
 
     try {
       while (this.inputFormatContext.readFrame(packet)) {
-        const mapping = this.configs[packet.streamIndex]
-        if (!mapping) {
+        const config = this.configs[packet.streamIndex]
+        if (!config) {
           packet.unref()
           continue
         }
 
-        const { decoder } = mapping
+        const { decoder } = config
 
         if (decoder.sendPacket(packet)) {
           while (decoder.receiveFrame(frame)) {
-            if (mapping.isVideo()) {
-              this.videoProcessor.process(frame, mapping, packet)
-            } else if (mapping.isAudio()) {
-              this.audioProcessor.process(frame, mapping, packet)
+            if (config.isVideo()) {
+              this.videoProcessor.process(frame, config, packet)
+            } else if (config.isAudio()) {
+              this.audioProcessor.process(frame, config, packet)
             }
           }
         }
@@ -511,10 +506,10 @@ class Transcoder {
 
     try {
       for (const index in this.configs) {
-        const mapping = this.configs[index]
-        this.audioProcessor.flush(mapping, packet)
+        const config = this.configs[index]
+        this.audioProcessor.flush(config, packet)
 
-        this._encodeAndWrite(mapping.encoder, null, mapping.outputStream, packet)
+        this._encodeAndWrite(config.encoder, null, config.outputStream, packet)
       }
 
       this.outputFormatContext.writeTrailer()
