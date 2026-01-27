@@ -4,62 +4,105 @@ import ffmpeg from 'bare-ffmpeg'
 
 const { VIDEO, AUDIO } = ffmpeg.constants.mediaTypes
 
-const VIDEO_CODEC_CONFIG = {
-  webm: {
+class FormatRegistry {
+  #formats = new Map()
+
+  register(formatName, config) {
+    this.#formats.set(formatName, {
+      video: config.video,
+      audio: config.audio,
+      muxer: config.muxer || {}
+    })
+  }
+
+  getVideoConfig(formatName) {
+    const format = this.#formats.get(formatName)
+    if (!format?.video) {
+      throw new Error(`Unsupported video output format: ${formatName}`)
+    }
+    return format.video
+  }
+
+  getAudioConfig(formatName) {
+    const format = this.#formats.get(formatName)
+    if (!format?.audio) {
+      throw new Error(`Unsupported audio output format: ${formatName}`)
+    }
+    return format.audio
+  }
+
+  getMuxerOptions(formatName) {
+    const format = this.#formats.get(formatName)
+    return format?.muxer || {}
+  }
+
+  hasFormat(formatName) {
+    return this.#formats.has(formatName)
+  }
+}
+
+const formatRegistry = new FormatRegistry()
+
+// Register default formats
+formatRegistry.register('webm', {
+  video: {
     id: ffmpeg.constants.codecs.VP8,
     format: ffmpeg.constants.pixelFormats.YUV420P,
     encoder: 'libvpx'
   },
-  mp4: {
-    id: ffmpeg.constants.codecs.VP9,
-    format: ffmpeg.constants.pixelFormats.YUV420P,
-    encoder: 'libvpx-vp9'
+  audio: {
+    id: ffmpeg.constants.codecs.OPUS,
+    format: ffmpeg.constants.sampleFormats.FLTP,
+    sampleRate: 48000,
+    encoder: 'libopus'
   },
-  matroska: {
-    id: ffmpeg.constants.codecs.VP9,
-    format: ffmpeg.constants.pixelFormats.YUV420P,
-    encoder: 'libvpx-vp9'
-  },
-  mkv: {
-    id: ffmpeg.constants.codecs.VP9,
-    format: ffmpeg.constants.pixelFormats.YUV420P,
-    encoder: 'libvpx-vp9'
-  }
-}
+  muxer: { live: '1' }
+})
 
-const AUDIO_CODEC_CONFIG = {
-  webm: {
+formatRegistry.register('mp4', {
+  video: {
+    id: ffmpeg.constants.codecs.VP9,
+    format: ffmpeg.constants.pixelFormats.YUV420P,
+    encoder: 'libvpx-vp9'
+  },
+  audio: {
     id: ffmpeg.constants.codecs.OPUS,
     format: ffmpeg.constants.sampleFormats.FLTP,
     sampleRate: 48000,
     encoder: 'libopus'
   },
-  mp4: {
-    id: ffmpeg.constants.codecs.OPUS,
-    format: ffmpeg.constants.sampleFormats.FLTP,
-    sampleRate: 48000,
-    encoder: 'libopus'
-  },
-  matroska: {
-    id: ffmpeg.constants.codecs.OPUS,
-    format: ffmpeg.constants.sampleFormats.FLTP,
-    sampleRate: 48000,
-    encoder: 'libopus'
-  },
-  mkv: {
-    id: ffmpeg.constants.codecs.OPUS,
-    format: ffmpeg.constants.sampleFormats.FLTP,
-    sampleRate: 48000,
-    encoder: 'libopus'
-  }
-}
+  muxer: { movflags: 'frag_keyframe+empty_moov+default_base_moof' }
+})
 
-const MUXER_OPTIONS = {
-  mp4: { movflags: 'frag_keyframe+empty_moov+default_base_moof' },
-  webm: { live: '1' },
-  matroska: { live: '1' },
-  mkv: { live: '1' }
-}
+formatRegistry.register('matroska', {
+  video: {
+    id: ffmpeg.constants.codecs.VP9,
+    format: ffmpeg.constants.pixelFormats.YUV420P,
+    encoder: 'libvpx-vp9'
+  },
+  audio: {
+    id: ffmpeg.constants.codecs.OPUS,
+    format: ffmpeg.constants.sampleFormats.FLTP,
+    sampleRate: 48000,
+    encoder: 'libopus'
+  },
+  muxer: { live: '1' }
+})
+
+formatRegistry.register('mkv', {
+  video: {
+    id: ffmpeg.constants.codecs.VP9,
+    format: ffmpeg.constants.pixelFormats.YUV420P,
+    encoder: 'libvpx-vp9'
+  },
+  audio: {
+    id: ffmpeg.constants.codecs.OPUS,
+    format: ffmpeg.constants.sampleFormats.FLTP,
+    sampleRate: 48000,
+    encoder: 'libopus'
+  },
+  muxer: { live: '1' }
+})
 
 class TranscodeStreamConfig {
   static create(inputStream, outputFormat, outputFormatName, outputParameters) {
@@ -103,16 +146,9 @@ class TranscodeStreamConfig {
   }
 
   getConfig() {
-    const config = this.isVideo()
-      ? VIDEO_CODEC_CONFIG[this.outputFormatName]
-      : AUDIO_CODEC_CONFIG[this.outputFormatName]
-
-    if (!config) {
-      throw new Error(
-        `Unsupported ${this.isVideo() ? 'video' : 'audio'} output format: ${this.outputFormatName}`
-      )
-    }
-    return config
+    return this.isVideo()
+      ? formatRegistry.getVideoConfig(this.outputFormatName)
+      : formatRegistry.getAudioConfig(this.outputFormatName)
   }
 
   #initialize() {
@@ -399,6 +435,11 @@ class Transcoder {
     })
 
     this.outputFormatName = this.outputParameters?.format || 'mp4'
+
+    if (!formatRegistry.hasFormat(this.outputFormatName)) {
+      throw new Error(`Unsupported output format: ${this.outputFormatName}`)
+    }
+
     this.outputFormat = new ffmpeg.OutputFormatContext(this.outputFormatName, outIO)
   }
 
@@ -425,12 +466,10 @@ class Transcoder {
 
   #configureOutput() {
     const muxerOptions = new ffmpeg.Dictionary()
-    const options = MUXER_OPTIONS[this.outputFormatName]
+    const options = formatRegistry.getMuxerOptions(this.outputFormatName)
 
-    if (options) {
-      for (const [key, value] of Object.entries(options)) {
-        muxerOptions.set(key, value)
-      }
+    for (const [key, value] of Object.entries(options)) {
+      muxerOptions.set(key, value)
     }
 
     this.outputFormat.writeHeader(muxerOptions)
