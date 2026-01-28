@@ -2,8 +2,8 @@ import { IMAGE } from '../types'
 
 export const codecs = {
   [IMAGE.AVIF]: () => import('bare-heif'),
-  [IMAGE.GIF]: () => import('bare-gif'),
   [IMAGE.BMP]: () => import('bare-bmp'),
+  [IMAGE.GIF]: () => import('bare-gif'),
   [IMAGE.HEIC]: () => import('bare-heif'),
   [IMAGE.HEIF]: () => import('bare-heif'),
   [IMAGE.JPEG]: () => import('bare-jpeg'),
@@ -11,7 +11,9 @@ export const codecs = {
   [IMAGE.PNG]: () => import('bare-png'),
   [IMAGE.TIF]: () => import('bare-tiff'),
   [IMAGE.TIFF]: () => import('bare-tiff'),
+  [IMAGE.VND_MS_ICON]: () => import('bare-ico'),
   [IMAGE.WEBP]: () => import('bare-webp'),
+  [IMAGE.X_ICON]: () => import('bare-ico'),
   [IMAGE.X_MS_BMP]: () => import('bare-bmp')
 }
 

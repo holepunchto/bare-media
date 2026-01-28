@@ -60,6 +60,17 @@ test('image decode() bmp', async (t) => {
   t.is(rgba.height, 2)
 })
 
+test('image decode() ico', async (t) => {
+  const path = './test/fixtures/sample.ico'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.is(rgba.width, 256)
+  t.is(rgba.height, 256)
+})
+
 test('image decode() gif', async (t) => {
   const path = './test/fixtures/sample.gif'
 
