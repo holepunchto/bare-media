@@ -9,6 +9,7 @@ export const codecs = {
   [IMAGE.JPEG]: () => import('bare-jpeg'),
   [IMAGE.JPG]: () => import('bare-jpeg'),
   [IMAGE.PNG]: () => import('bare-png'),
+  [IMAGE.SVG_XML]: () => import('bare-svg'),
   [IMAGE.TIF]: () => import('bare-tiff'),
   [IMAGE.TIFF]: () => import('bare-tiff'),
   [IMAGE.VND_MS_ICON]: () => import('bare-ico'),
