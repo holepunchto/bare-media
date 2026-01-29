@@ -7,6 +7,7 @@ export const IMAGE = {
   JPEG: 'image/jpeg',
   JPG: 'image/jpg',
   PNG: 'image/png',
+  SVG_XML: 'image/svg+xml',
   TIF: 'image/tif',
   TIFF: 'image/tiff',
   VND_MS_ICON: 'image/vnd.microsoft.icon',
