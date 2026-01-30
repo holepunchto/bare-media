@@ -1,7 +1,7 @@
 export const IMAGE = {
   AVIF: 'image/avif',
-  GIF: 'image/gif',
   BMP: 'image/bmp',
+  GIF: 'image/gif',
   HEIC: 'image/heic',
   HEIF: 'image/heif',
   JPEG: 'image/jpeg',
@@ -9,8 +9,10 @@ export const IMAGE = {
   PNG: 'image/png',
   TIF: 'image/tif',
   TIFF: 'image/tiff',
+  VND_MS_ICON: 'image/vnd.microsoft.icon',
   WEBP: 'image/webp',
-  X_MS_BMP: 'image/bmp'
+  X_ICON: 'image/x-icon',
+  X_MS_BMP: 'image/x-ms-bmp'
 }
 
 export const supportedImageMimetypes = Object.values(IMAGE)
