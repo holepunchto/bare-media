@@ -96,9 +96,16 @@ class VideoPipeline {
   }
 
   extractFrames(opts) {
-    const fd = fs.openSync(this.input, 'r')
-    const result = extractFrames(fd, opts)
-    fs.closeSync(fd)
+    let fd
+    let result
+
+    try {
+      fd = fs.openSync(this.input, 'r')
+      result = extractFrames(fd, opts)
+    } finally {
+      fs.closeSync(fd)
+    }
+
     return result
   }
 }
