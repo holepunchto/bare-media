@@ -1,6 +1,6 @@
 import fs from 'bare-fs'
 import ffmpeg from 'bare-ffmpeg'
-import { Transcoder } from './utils/transcoder.js'
+import { Transcoder } from './transcoder.js'
 
 function extractFrames(fd, opts = {}) {
   const { frameIndex } = opts
