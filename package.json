@@ -44,7 +44,7 @@
     "bare-svg": "^1.0.1",
     "bare-tiff": "^1.0.1",
     "bare-webp": "^1.0.3",
-    "get-file-format": "^1.0.4",
+    "get-file-format": "^1.1.0",
     "get-mime-type": "^2.0.1"
   },
   "devDependencies": {
