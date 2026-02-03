@@ -90,6 +90,18 @@ function extractFrames(fd, opts = {}) {
   return result
 }
 
+async function* transcode(fd, opts = {}) {
+  const transcoder = new Transcoder(fd, {
+    outputParameters: {
+      format: opts.format,
+      width: opts.width,
+      height: opts.height
+    },
+    bufferSize: opts.bufferSize
+  })
+  yield* transcoder.transcode()
+}
+
 class VideoPipeline {
   constructor(input) {
     this.input = input
@@ -106,15 +118,7 @@ class VideoPipeline {
   async *transcode(opts) {
     const fd = fs.openSync(this.input, 'r')
     try {
-      const transcoder = new Transcoder(fd, {
-        outputParameters: {
-          format: opts.format,
-          width: opts.width,
-          height: opts.height
-        },
-        bufferSize: opts.bufferSize
-      })
-      yield* transcoder.transcode()
+      yield* transcode(fd, opts)
     } finally {
       fs.closeSync(fd)
     }
@@ -126,5 +130,6 @@ function video(input) {
 }
 
 video.extractFrames = extractFrames
+video.transcode = transcode
 
 export { video }
