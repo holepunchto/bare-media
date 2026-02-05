@@ -119,6 +119,8 @@ Extracts frames from a video in RGBA
 
 ### transcode()
 
+![experimental](./docs/badge-experimental.svg)
+
 Transcode a media file to a different format
 
 | Parameter     | Type   | Description                                                         |
