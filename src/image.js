@@ -114,6 +114,15 @@ async function crop(rgba, opts = {}) {
     throw new Error('Crop rectangle out of bounds')
   }
 
+  if (
+    !Number.isInteger(left) ||
+    !Number.isInteger(top) ||
+    !Number.isInteger(width) ||
+    !Number.isInteger(height)
+  ) {
+    throw new Error('Crop rectangle coordinates must be integers')
+  }
+
   const data = Buffer.alloc(width * height * 4)
 
   for (let y = 0; y < height; y++) {
