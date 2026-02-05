@@ -359,6 +359,46 @@ test('image crop() throws if the rectangle is out of bounds', async (t) => {
   })
 })
 
+test('image crop() throws if the rectangle coordinates are not integers', async (t) => {
+  const path = './test/fixtures/sample.jpg'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+
+  await t.exception(async () => {
+    await crop(rgba, {
+      left: -10,
+      top: 10,
+      width: 50,
+      height: 50
+    })
+  })
+  await t.exception(async () => {
+    await crop(rgba, {
+      left: 10,
+      top: -10,
+      width: 50,
+      height: 50
+    })
+  })
+  await t.exception(async () => {
+    await crop(rgba, {
+      left: 10,
+      top: 10,
+      width: -50,
+      height: 50
+    })
+  })
+  await t.exception(async () => {
+    await crop(rgba, {
+      left: 10,
+      top: 10,
+      width: 50,
+      height: -50
+    })
+  })
+})
+
 test('image resize()', async (t) => {
   const path = './test/fixtures/sample.jpg'
 
