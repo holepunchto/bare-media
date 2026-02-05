@@ -119,7 +119,8 @@ Extracts frames from a video in RGBA
 
 ### transcode()
 
-![experimental](./docs/badge-experimental.svg)
+> [!IMPORTANT]
+> This feature is experimental. The API is subject to change and may break at any time.
 
 Transcode a media file to a different format
 
