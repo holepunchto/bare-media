@@ -1,5 +1,6 @@
 import fs from 'bare-fs'
 import ffmpeg from 'bare-ffmpeg'
+import { Transcoder } from './transcoder.js'
 
 function extractFrames(fd, opts = {}) {
   const { frameIndex } = opts
@@ -89,6 +90,18 @@ function extractFrames(fd, opts = {}) {
   return result
 }
 
+async function* transcode(fd, opts = {}) {
+  const transcoder = new Transcoder(fd, {
+    outputParameters: {
+      format: opts.format,
+      width: opts.width,
+      height: opts.height
+    },
+    bufferSize: opts.bufferSize
+  })
+  yield* transcoder.transcode()
+}
+
 class VideoPipeline {
   constructor(input) {
     this.input = input
@@ -108,6 +121,15 @@ class VideoPipeline {
 
     return result
   }
+
+  async *transcode(opts) {
+    const fd = fs.openSync(this.input, 'r')
+    try {
+      yield* transcode(fd, opts)
+    } finally {
+      fs.closeSync(fd)
+    }
+  }
 }
 
 function video(input) {
@@ -115,5 +137,6 @@ function video(input) {
 }
 
 video.extractFrames = extractFrames
+video.transcode = transcode
 
 export { video }
