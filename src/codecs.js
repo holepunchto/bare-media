@@ -21,7 +21,21 @@ export const codecs = {
 export async function importCodec(mimetype) {
   const codecImport = codecs[mimetype]
   if (!codecImport) throw new Error(`Unsupported file type: No codec available for ${mimetype}`)
-  return await codecImport()
+  try {
+    return await codecImport()
+  } catch (err) {
+    console.log(err)
+    throw new Error(`Failed to import codec for ${mimetype}`, { cause: err })
+  }
+}
+
+export async function importFFmpeg() {
+  try {
+    return await import('bare-ffmpeg')
+  } catch (err) {
+    console.log(err)
+    throw new Error('Failed to import bare-ffmpeg', { cause: err })
+  }
 }
 
 export function supportsQuality(mimetype) {
