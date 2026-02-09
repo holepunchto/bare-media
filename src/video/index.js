@@ -1,12 +1,13 @@
 import fs from 'bare-fs'
-import ffmpeg from 'bare-ffmpeg'
-import { Transcoder } from './transcoder.js'
+import { importFFmpeg } from '../codecs'
 
-function extractFrames(fd, opts = {}) {
+async function extractFrames(fd, opts = {}) {
   const { frameIndex } = opts
 
   const fileSize = fs.fstatSync(fd).size
   let offset = 0
+
+  const ffmpeg = await importFFmpeg()
 
   const io = new ffmpeg.IOContext(4096, {
     onread: (buffer, requested) => {
@@ -91,6 +92,8 @@ function extractFrames(fd, opts = {}) {
 }
 
 async function* transcode(fd, opts = {}) {
+  const { Transcoder } = await import('./transcoder.js')
+
   const transcoder = new Transcoder(fd, {
     outputParameters: {
       format: opts.format,
@@ -108,13 +111,13 @@ class VideoPipeline {
     this.steps = []
   }
 
-  extractFrames(opts) {
+  async extractFrames(opts) {
     let fd
     let result
 
     try {
       fd = fs.openSync(this.input, 'r')
-      result = extractFrames(fd, opts)
+      result = await extractFrames(fd, opts)
     } finally {
       fs.closeSync(fd)
     }
