@@ -382,14 +382,10 @@ class Transcoder {
       this.#setupIOContexts()
       this.#discoverAndConfigureStreams()
       this.#configureOutput()
-      this.#processFrames()
-      this.#finalize()
+      yield* this.#processFrames()
+      yield* this.#finalize()
     } finally {
       this.#cleanup()
-    }
-
-    for (const chunk of this.chunks) {
-      yield { buffer: chunk }
     }
   }
 
@@ -460,7 +456,14 @@ class Transcoder {
     this.outputFormatContext.writeHeader(muxerOptions)
   }
 
-  #processFrames() {
+  *#drainChunks() {
+    for (const chunk of this.chunks) {
+      yield { buffer: chunk }
+    }
+    this.chunks = []
+  }
+
+  *#processFrames() {
     const packet = new ffmpeg.Packet()
     const frame = new ffmpeg.Frame()
 
@@ -484,6 +487,7 @@ class Transcoder {
           }
         }
         packet.unref()
+        yield* this.#drainChunks()
       }
     } finally {
       packet.destroy()
@@ -491,7 +495,7 @@ class Transcoder {
     }
   }
 
-  #finalize() {
+  *#finalize() {
     const packet = new ffmpeg.Packet()
 
     try {
@@ -503,6 +507,7 @@ class Transcoder {
       }
 
       this.outputFormatContext.writeTrailer()
+      yield* this.#drainChunks()
     } finally {
       packet.destroy()
     }
