@@ -32,8 +32,8 @@ test('video.transcode() - webm to mp4', async (t) => {
   const chunks = []
   for await (const chunk of video(path).transcode({
     format: 'mp4',
-    width: 1280,
-    height: 720
+    width: 320,
+    height: 240
   })) {
     chunks.push(chunk)
   }
@@ -54,8 +54,8 @@ test('video.transcode() - mp4 to webm', async (t) => {
   const chunks = []
   for await (const chunk of video(path).transcode({
     format: 'webm',
-    width: 1280,
-    height: 720
+    width: 320,
+    height: 240
   })) {
     chunks.push(chunk)
   }
