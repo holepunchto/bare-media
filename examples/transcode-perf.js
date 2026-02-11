@@ -1,6 +1,7 @@
 import { promises as fs } from 'bare-fs'
 import path from 'bare-path'
 import process from 'bare-process'
+import performance from 'bare-performance'
 
 import b4a from 'b4a'
 
@@ -19,22 +20,32 @@ async function transcodeFile(inputFile, outputFile, opts) {
   }
 
   const outputChunks = []
-  const startTime = Date.now()
+  const chunkTimes = []
+  const startTime = performance.now()
+  let lastYield = startTime
 
   try {
     for await (const chunk of video(inputFilePath).transcode(opts)) {
+      const now = performance.now()
+      chunkTimes.push(now - lastYield)
+      lastYield = now
       outputChunks.push(chunk.buffer)
     }
 
-    const duration = Date.now() - startTime
-    console.log(`  Completed in ${duration}ms`)
+    const duration = performance.now() - startTime
 
     const finalBuffer = b4a.concat(outputChunks)
-    console.log(`  Output size: ${(finalBuffer.byteLength / 1024).toFixed(2)} KB`)
     await fs.writeFile(outputFilePath, finalBuffer)
-    console.log(`  ✓ Saved to ${outputFilePath}`)
+
+    console.log(`  Chunks:          ${outputChunks.length}`)
+    console.log(`  Output size:     ${(finalBuffer.byteLength / 1024).toFixed(2)} KB`)
+    console.log(`  Total time:      ${duration.toFixed(0)} ms`)
+    console.log(`  Time to 1st:     ${chunkTimes[0].toFixed(0)} ms`)
+    console.log(`  Avg per chunk:   ${(duration / outputChunks.length).toFixed(1)} ms`)
+    console.log(`  Chunk times:     [${chunkTimes.map((t) => t.toFixed(0)).join(', ')}] ms`)
+    console.log(`  Saved to ${outputFilePath}`)
   } catch (error) {
-    console.error(`  ✗ Transcoding failed: ${error.message}`)
+    console.error(`  Transcoding failed: ${error.message}`)
     throw error
   }
 }
@@ -46,8 +57,8 @@ async function runTranscodeExamples() {
   try {
     await transcodeFile('sample.webm', 'output-webm-to-mp4.mp4', {
       format: 'mp4',
-      width: 1280,
-      height: 720
+      width: 320,
+      height: 240
     })
 
     await transcodeFile('sample.mp4', 'output-mp4-to-webm.webm', {

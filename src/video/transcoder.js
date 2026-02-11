@@ -208,7 +208,7 @@ class TranscodeStreamConfig {
     }
 
     const encoderOptions = this.isVideo()
-      ? ffmpeg.Dictionary.from({ allow_sw: '1' })
+      ? ffmpeg.Dictionary.from({ allow_sw: '1', deadline: 'realtime', speed: '8' })
       : new ffmpeg.Dictionary()
 
     encoder.open(encoderOptions)
