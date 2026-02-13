@@ -7,7 +7,7 @@ import barePath from 'bare-path'
 import { image } from '..'
 import { makeHttpLink, isAnimatedWebP, randomFileName, makeRGBA, pixelAt } from './helpers'
 
-const { read, decode, encode, crop, resize, slice, orientate, rotate, flip } = image
+const { read, decode, encode, crop, resize, slice, rotate, flip } = image
 
 test('image read() path', async (t) => {
   const path = './test/fixtures/sample.jpg'
