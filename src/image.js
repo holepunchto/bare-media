@@ -257,9 +257,9 @@ function _orientate(input, rgba) {
 }
 
 function _transform(rgba, opts) {
-  const { rotate = 0, flipX = false, flipY = false } = opts || {}
+  const { rotate = 0, flipX = false, flipY = false } = opts
 
-  if (!flipX && !flipY && rotate === 0) return rgba
+  if (rotate === 0 && !flipX && !flipY) return rgba
 
   const transformFrame = (frame) => {
     const srcWidth = frame.width
