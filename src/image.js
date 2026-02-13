@@ -207,7 +207,7 @@ function rotate(rgba, opts = {}) {
   return _transform(rgba, { rotate: deg })
 }
 
-function flip(rgba, opts) {
+function flip(rgba, opts = {}) {
   const { x = true, y } = opts
 
   if (typeof x !== 'boolean' && typeof y !== 'boolean') {
