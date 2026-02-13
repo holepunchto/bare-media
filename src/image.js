@@ -339,7 +339,7 @@ class ImagePipeline {
     this.input = input
     this.steps = []
 
-    const methods = ['decode', 'resize', 'crop', 'slice', 'encode']
+    const methods = ['decode', 'resize', 'crop', 'slice', 'rotate', 'flip', 'encode']
     for (let method of methods) {
       this[method] = (opts) => {
         this.steps.push({ op: method, opts })
