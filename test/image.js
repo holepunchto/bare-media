@@ -5,9 +5,9 @@ import os from 'bare-os'
 import barePath from 'bare-path'
 
 import { image } from '..'
-import { makeHttpLink, isAnimatedWebP, randomFileName } from './helpers'
+import { makeHttpLink, isAnimatedWebP, randomFileName, makeRGBA, pixelAt } from './helpers'
 
-const { read, decode, encode, crop, resize, slice } = image
+const { read, decode, encode, crop, resize, slice, orientate, rotate, flip } = image
 
 test('image read() path', async (t) => {
   const path = './test/fixtures/sample.jpg'
@@ -197,6 +197,22 @@ test('image decode() webp with maxFrames', async (t) => {
   t.is(rgba.loops, 0)
   t.is(rgba.width, 476)
   t.is(rgba.height, 280)
+})
+
+test('image decode() jpg with orientate', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const rgbaO = await decode(buffer, { orientate: true })
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.is(rgba.width, 120)
+  t.is(rgba.height, 150)
+
+  t.ok(Buffer.isBuffer(rgbaO.data))
+  t.is(rgbaO.width, 150)
+  t.is(rgbaO.height, 120)
 })
 
 test('image encode() gif throws (not implemented)', async (t) => {
@@ -463,6 +479,56 @@ test('image slice() throws if start > end', async (t) => {
       end: 2
     })
   })
+})
+
+test('image rotate()', (t) => {
+  const rgba = makeRGBA()
+
+  const rotated90 = rotate(rgba, { deg: 90 })
+  const rotated180 = rotate(rgba, { deg: 180 })
+  const rotated270 = rotate(rgba, { deg: 270 })
+
+  t.alike(pixelAt(rotated90, 0, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(rotated90, 1, 0), [255, 0, 0, 255])
+  t.alike(pixelAt(rotated90, 0, 1), [255, 255, 0, 255])
+  t.alike(pixelAt(rotated90, 1, 1), [0, 255, 0, 255])
+
+  t.alike(pixelAt(rotated180, 0, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(rotated180, 1, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(rotated180, 0, 1), [0, 255, 0, 255])
+  t.alike(pixelAt(rotated180, 1, 1), [255, 0, 0, 255])
+
+  t.alike(pixelAt(rotated270, 0, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(rotated270, 1, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(rotated270, 0, 1), [255, 0, 0, 255])
+  t.alike(pixelAt(rotated270, 1, 1), [0, 0, 255, 255])
+
+  t.exception(() => rotate(rgba, { deg: 123 }))
+})
+
+test('image flip()', (t) => {
+  const rgba = makeRGBA()
+
+  const flippedX = flip(rgba, { x: true })
+  const flippedY = flip(rgba, { x: false, y: true })
+  const flippedXY = flip(rgba, { x: true, y: true })
+
+  t.alike(pixelAt(flippedX, 0, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(flippedX, 1, 0), [255, 0, 0, 255])
+  t.alike(pixelAt(flippedX, 0, 1), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedX, 1, 1), [0, 0, 255, 255])
+
+  t.alike(pixelAt(flippedY, 0, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(flippedY, 1, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedY, 0, 1), [255, 0, 0, 255])
+  t.alike(pixelAt(flippedY, 1, 1), [0, 255, 0, 255])
+
+  t.alike(pixelAt(flippedXY, 0, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedXY, 1, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(flippedXY, 0, 1), [0, 255, 0, 255])
+  t.alike(pixelAt(flippedXY, 1, 1), [255, 0, 0, 255])
+
+  t.exception(() => flip(rgba, { x: 'not-bool' }))
 })
 
 test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {
