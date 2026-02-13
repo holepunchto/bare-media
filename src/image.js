@@ -1,6 +1,8 @@
 import fs from 'bare-fs'
 import fetch from 'bare-fetch'
+import exif from 'bare-exif'
 
+import { EXIF } from '../types.js'
 import { importCodec, supportsQuality } from './codecs.js'
 import { isHttpUrl, detectMimeType, calculateFitDimensions } from './util'
 
@@ -191,6 +193,53 @@ function slice(rgba, opts = {}) {
   return rgba
 }
 
+function orientate(rgba) {
+  const exifData = new exif.Data(rgba)
+  const orientation = exifData.entry(exif.constants.tags.ORIENTATION)
+
+  let opts
+
+  switch (orientation.read()) {
+    case EXIF.ORIENTATION.NORMAL: break
+    case EXIF.ORIENTATION.MIRROR_HORIZONTAL: opts = { rotate: 0, flipX: true }; break
+    case EXIF.ORIENTATION.ROTATE_180: opts = { rotate: 180 }; break
+    case EXIF.ORIENTATION.MIRROR_VERTICAL: opts = { rotate: 0, flipY: true }; break
+    case EXIF.ORIENTATION.TRANSPOSE: opts = { rotate: 90, flipX: true }; break
+    case EXIF.ORIENTATION.ROTATE_90: opts = { rotate: 90 }; break
+    case EXIF.ORIENTATION.TRANSVERSE: opts = { rotate: 270, flipX: true }; break
+    case EXIF.ORIENTATION.ROTATE_270: opts = { rotate: 270 }; break
+    default: break
+  }
+
+  if (!opts) return rgba
+
+  return _transform(rgba, opts)
+}
+
+function rotate(rgba, opts = {}) {
+  const { deg } = opts
+
+  if (deg !== 0 || deg !== 90 || deg !== 180 || deg !== 270) {
+    throw new Error('rotate(): deg can only be [0, 90, 180, 270]')
+  }
+
+  return _transform(rgba, { rotate: deg })
+}
+
+function flip(rgba, opts) {
+  const { x = true, y } = opts
+
+  if (typeof x !== 'boolean' && typeof y !== 'boolean') {
+    throw new Error('flip(): needs axis x or y to be a boolean')
+  }
+
+  return _transform(rgba, { flipX: x, flipY, y })
+}
+
+function _transform(rgba, opts) {
+
+}
+
 async function _encodeRGBA(rgba, mimetype, opts) {
   const codec = await importCodec(mimetype)
 
@@ -263,6 +312,9 @@ function image(input) {
 image.read = read
 image.save = save
 image.decode = decode
+image.orientate = orientate
+image.rotate = rotate
+image.flip = flip
 image.resize = resize
 image.crop = crop
 image.slice = slice
