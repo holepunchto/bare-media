@@ -41,10 +41,11 @@ const rgba = await image.decode(buffer, { maxFrames })
 
 Decode an image to RGBA
 
-| Parameter        | Type   | Description                                               |
-| ---------------- | ------ | --------------------------------------------------------- |
-| `buffer`         | object | The encoded image                                         |
-| `opts.maxFrames` | number | Max number of frames to decode in case of animated images |
+| Parameter        | Type    | Description                                               |
+| ---------------- | ------- | --------------------------------------------------------- |
+| `buffer`         | object  | The encoded image                                         |
+| `opts.maxFrames` | number  | Max number of frames to decode in case of animated images |
+| `opts.orientate` | boolean | Apply EXIF orientation                                    |
 
 ### encode()
 
@@ -88,6 +89,25 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 | `buffer`     | object | The rgba image                                                           |
 | `opts.start` | number | Frame index at which to start extraction. Default 0.                     |
 | `opts.end`   | number | Frame index at which to end extraction. Defaults to end of the animation |
+
+### rotate()
+
+Rotate an image in 90-degree multiples.
+
+| Parameter  | Type   | Description                                 |
+| ---------- | ------ | ------------------------------------------- |
+| `buffer`   | object | The rgba image                              |
+| `opts.deg` | number | Rotation in degrees: `90`, `180`, or `270`. |
+
+### flip()
+
+Flip an image on the X or Y axis.
+
+| Parameter | Type    | Description                       |
+| --------- | ------- | --------------------------------- |
+| `buffer`  | object  | The rgba image                    |
+| `opts.x`  | boolean | Flip horizontally. Default `true` |
+| `opts.y`  | boolean | Flip vertically                   |
 
 ### read()
 

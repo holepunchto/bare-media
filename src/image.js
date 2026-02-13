@@ -1,6 +1,8 @@
 import fs from 'bare-fs'
 import fetch from 'bare-fetch'
+import exif from 'bare-exif'
 
+import { EXIF } from '../types.js'
 import { importCodec, supportsQuality } from './codecs.js'
 import { isHttpUrl, detectMimeType, calculateFitDimensions } from './util'
 
@@ -28,7 +30,7 @@ async function save(filename, buffer, opts) {
 }
 
 async function decode(buffer, opts = {}) {
-  const { maxFrames = 0 } = opts
+  const { maxFrames = 0, orientate = false } = opts
 
   let rgba
 
@@ -45,6 +47,10 @@ async function decode(buffer, opts = {}) {
     rgba = { width, height, loops, frames: data }
   } else {
     rgba = codec.decode(buffer)
+  }
+
+  if (orientate) {
+    rgba = _orientate(buffer, rgba)
   }
 
   return rgba
@@ -191,6 +197,130 @@ function slice(rgba, opts = {}) {
   return rgba
 }
 
+function rotate(rgba, opts = {}) {
+  const { deg } = opts
+
+  if (![0, 90, 180, 270].includes(deg)) {
+    throw new Error('rotate(): deg can only be [0, 90, 180, 270]')
+  }
+
+  return _transform(rgba, { rotate: deg })
+}
+
+function flip(rgba, opts = {}) {
+  const { x = true, y } = opts
+
+  if (typeof x !== 'boolean' && typeof y !== 'boolean') {
+    throw new Error('flip(): needs axis x or y to be a boolean')
+  }
+
+  return _transform(rgba, { flipX: x, flipY: y })
+}
+
+function _orientate(input, rgba) {
+  const exifData = new exif.Data(input)
+  const orientation = exifData.entry(exif.constants.tags.ORIENTATION)
+
+  let opts
+
+  switch (orientation.read()) {
+    case EXIF.ORIENTATION.NORMAL:
+      break
+    case EXIF.ORIENTATION.MIRROR_HORIZONTAL:
+      opts = { flipX: true }
+      break
+    case EXIF.ORIENTATION.ROTATE_180:
+      opts = { rotate: 180 }
+      break
+    case EXIF.ORIENTATION.MIRROR_VERTICAL:
+      opts = { flipY: true }
+      break
+    case EXIF.ORIENTATION.TRANSPOSE:
+      opts = { rotate: 90, flipX: true }
+      break
+    case EXIF.ORIENTATION.ROTATE_90:
+      opts = { rotate: 90 }
+      break
+    case EXIF.ORIENTATION.TRANSVERSE:
+      opts = { rotate: 270, flipX: true }
+      break
+    case EXIF.ORIENTATION.ROTATE_270:
+      opts = { rotate: 270 }
+      break
+    default:
+      break
+  }
+
+  if (!opts) return rgba
+
+  return _transform(rgba, opts)
+}
+
+function _transform(rgba, opts) {
+  const { rotate = 0, flipX = false, flipY = false } = opts
+
+  if (rotate === 0 && !flipX && !flipY) return rgba
+
+  const transformFrame = (frame) => {
+    const srcWidth = frame.width
+    const srcHeight = frame.height
+    const dstWidth = rotate === 90 || rotate === 270 ? srcHeight : srcWidth
+    const dstHeight = rotate === 90 || rotate === 270 ? srcWidth : srcHeight
+    const data = Buffer.alloc(dstWidth * dstHeight * 4)
+
+    for (let y = 0; y < srcHeight; y++) {
+      for (let x = 0; x < srcWidth; x++) {
+        const transformedX = flipX ? srcWidth - 1 - x : x
+        const transformedY = flipY ? srcHeight - 1 - y : y
+
+        let dstX
+        let dstY
+
+        switch (rotate) {
+          case 90:
+            dstX = srcHeight - 1 - transformedY
+            dstY = transformedX
+            break
+          case 180:
+            dstX = srcWidth - 1 - transformedX
+            dstY = srcHeight - 1 - transformedY
+            break
+          case 270:
+            dstX = transformedY
+            dstY = srcWidth - 1 - transformedX
+            break
+          default:
+            dstX = transformedX
+            dstY = transformedY
+            break
+        }
+
+        const srcIndex = (y * srcWidth + x) * 4
+        const dstIndex = (dstY * dstWidth + dstX) * 4
+
+        data[dstIndex] = frame.data[srcIndex]
+        data[dstIndex + 1] = frame.data[srcIndex + 1]
+        data[dstIndex + 2] = frame.data[srcIndex + 2]
+        data[dstIndex + 3] = frame.data[srcIndex + 3]
+      }
+    }
+
+    return { ...frame, width: dstWidth, height: dstHeight, data }
+  }
+
+  if (Array.isArray(rgba.frames)) {
+    const frames = rgba.frames.map(transformFrame)
+    return {
+      ...rgba,
+      width: frames[0].width,
+      height: frames[0].height,
+      frames
+    }
+  }
+
+  return transformFrame(rgba)
+}
+
 async function _encodeRGBA(rgba, mimetype, opts) {
   const codec = await importCodec(mimetype)
 
@@ -209,7 +339,7 @@ class ImagePipeline {
     this.input = input
     this.steps = []
 
-    const methods = ['decode', 'resize', 'crop', 'slice', 'encode']
+    const methods = ['decode', 'resize', 'crop', 'slice', 'rotate', 'flip', 'encode']
     for (let method of methods) {
       this[method] = (opts) => {
         this.steps.push({ op: method, opts })
@@ -239,6 +369,14 @@ class ImagePipeline {
           buffer = slice(buffer, step.opts)
         }
 
+        if (step.op === 'rotate') {
+          buffer = await rotate(buffer, step.opts)
+        }
+
+        if (step.op === 'flip') {
+          buffer = await flip(buffer, step.opts)
+        }
+
         if (step.op === 'encode') {
           buffer = await encode(buffer, step.opts)
         }
@@ -263,6 +401,8 @@ function image(input) {
 image.read = read
 image.save = save
 image.decode = decode
+image.rotate = rotate
+image.flip = flip
 image.resize = resize
 image.crop = crop
 image.slice = slice
