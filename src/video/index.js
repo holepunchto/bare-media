@@ -102,6 +102,7 @@ async function* transcode(fd, opts = {}) {
     },
     bufferSize: opts.bufferSize
   })
+
   yield* transcoder.transcode()
 }
 
@@ -139,7 +140,13 @@ function video(input) {
   return new VideoPipeline(input)
 }
 
+async function getFormatRegistry() {
+  const { formatRegistry } = await import('./transcoder.js')
+  return formatRegistry
+}
+
 video.extractFrames = extractFrames
 video.transcode = transcode
+video.getFormatRegistry = getFormatRegistry
 
 export { video }
