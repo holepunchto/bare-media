@@ -205,6 +205,98 @@ test('video.transcode() - stopping early cleans up resources', async (t) => {
   t.is(header, 'ftyp', 'Full transcode after early stop produces valid MP4')
 })
 
+test('video.getFormatRegistry() - has built-in formats', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.ok(registry.hasFormat('webm'), 'webm is registered')
+  t.ok(registry.hasFormat('mp4'), 'mp4 is registered')
+  t.ok(registry.hasFormat('matroska'), 'matroska is registered')
+  t.ok(registry.hasFormat('mkv'), 'mkv is registered')
+  t.absent(registry.hasFormat('avi'), 'avi is not registered')
+})
+
+test('video.getFormatRegistry() - getVideoConfig returns codec info', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  const webmVideo = registry.getVideoConfig('webm')
+  t.ok(webmVideo.id !== undefined, 'webm video has codec id')
+  t.ok(webmVideo.format !== undefined, 'webm video has pixel format')
+  t.is(webmVideo.encoder, 'libvpx', 'webm video encoder is libvpx')
+})
+
+test('video.getFormatRegistry() - getAudioConfig returns codec info', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  const webmAudio = registry.getAudioConfig('webm')
+  t.ok(webmAudio.id !== undefined, 'webm audio has codec id')
+  t.is(webmAudio.sampleRate, 48000, 'webm audio sample rate is 48000')
+  t.is(webmAudio.encoder, 'libopus', 'webm audio encoder is libopus')
+})
+
+test('video.getFormatRegistry() - getMuxerOptions returns muxer config', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  const webmMuxer = registry.getMuxerOptions('webm')
+  t.is(webmMuxer.live, '1', 'webm muxer has live option')
+
+  const mp4Muxer = registry.getMuxerOptions('mp4')
+  t.ok(mp4Muxer.movflags, 'mp4 muxer has movflags')
+})
+
+test('video.getFormatRegistry() - getMuxerOptions returns empty object for unknown format', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  const unknownMuxer = registry.getMuxerOptions('unknown')
+  t.alike(unknownMuxer, {}, 'unknown format returns empty muxer options')
+})
+
+test('video.getFormatRegistry() - getVideoConfig throws for unsupported format', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.exception(() => registry.getVideoConfig('avi'), /Unsupported video output format/)
+})
+
+test('video.getFormatRegistry() - getAudioConfig throws for unsupported format', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.exception(() => registry.getAudioConfig('avi'), /Unsupported audio output format/)
+})
+
+test('video.getFormatRegistry() - register custom format', async (t) => {
+  const ffmpeg = (await import('bare-ffmpeg')).default
+  const registry = await video.getFormatRegistry()
+
+  registry.register('mp4-ios', {
+    video: {
+      id: ffmpeg.constants.codecs.H264,
+      format: ffmpeg.constants.pixelFormats.YUV420P,
+      encoder: 'h264_videotoolbox'
+    },
+    audio: {
+      id: ffmpeg.constants.codecs.AAC,
+      format: ffmpeg.constants.sampleFormats.FLTP,
+      sampleRate: 48000,
+      encoder: 'aac'
+    },
+    muxer: {
+      movflags: 'frag_keyframe+empty_moov+default_base_moof'
+    }
+  })
+
+  t.ok(registry.hasFormat('mp4-ios'), 'mp4-ios format is registered')
+  t.is(registry.getVideoConfig('mp4-ios').encoder, 'h264_videotoolbox')
+  t.is(registry.getAudioConfig('mp4-ios').encoder, 'aac')
+  t.is(registry.getAudioConfig('mp4-ios').sampleRate, 48000)
+  t.ok(registry.getMuxerOptions('mp4-ios').movflags, 'mp4-ios has movflags')
+})
+
+test('video.getFormatRegistry() - returns same instance', async (t) => {
+  const registry1 = await video.getFormatRegistry()
+  const registry2 = await video.getFormatRegistry()
+
+  t.is(registry1, registry2, 'Same registry instance is returned')
+})
+
 test('video.transcode() - throws error for unsupported format', async (t) => {
   const path = './test/fixtures/sample.mp4'
 

@@ -540,4 +540,4 @@ class Transcoder {
   }
 }
 
-export { Transcoder }
+export { Transcoder, formatRegistry }
