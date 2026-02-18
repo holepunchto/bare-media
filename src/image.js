@@ -30,7 +30,7 @@ async function save(filename, buffer, opts) {
 }
 
 async function decode(buffer, opts = {}) {
-  const { maxFrames = 0, orientate = false } = opts
+  const { maxFrames = 0 } = opts
 
   let rgba
 
@@ -47,10 +47,6 @@ async function decode(buffer, opts = {}) {
     rgba = { width, height, loops, frames: data }
   } else {
     rgba = codec.decode(buffer)
-  }
-
-  if (orientate) {
-    rgba = _orientate(buffer, rgba)
   }
 
   return rgba
@@ -217,7 +213,7 @@ function flip(rgba, opts = {}) {
   return _transform(rgba, { flipX: x, flipY: y })
 }
 
-function _orientate(input, rgba) {
+function orientate(rgba, input) {
   const exifData = new exif.Data(input)
   const orientation = exifData.entry(exif.constants.tags.ORIENTATION)
 
@@ -339,7 +335,7 @@ class ImagePipeline {
     this.input = input
     this.steps = []
 
-    const methods = ['decode', 'resize', 'crop', 'slice', 'rotate', 'flip', 'encode']
+    const methods = ['decode', 'resize', 'crop', 'slice', 'orientate', 'rotate', 'flip', 'encode']
     for (let method of methods) {
       this[method] = (opts) => {
         this.steps.push({ op: method, opts })
@@ -350,7 +346,9 @@ class ImagePipeline {
 
   async then(resolve, reject) {
     try {
-      let buffer = await read(this.input)
+      const inputBuffer = await read(this.input)
+
+      let buffer = inputBuffer
 
       for (const step of this.steps) {
         if (step.op === 'decode') {
@@ -367,6 +365,10 @@ class ImagePipeline {
 
         if (step.op === 'slice') {
           buffer = slice(buffer, step.opts)
+        }
+
+        if (step.op === 'orientate') {
+          buffer = await orientate(buffer, inputBuffer)
         }
 
         if (step.op === 'rotate') {
@@ -401,6 +403,7 @@ function image(input) {
 image.read = read
 image.save = save
 image.decode = decode
+image.orientate = orientate
 image.rotate = rotate
 image.flip = flip
 image.resize = resize

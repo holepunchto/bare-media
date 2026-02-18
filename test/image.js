@@ -7,7 +7,7 @@ import barePath from 'bare-path'
 import { image } from '..'
 import { makeHttpLink, isAnimatedWebP, randomFileName, makeRGBA, pixelAt } from './helpers'
 
-const { read, decode, encode, crop, resize, slice, rotate, flip } = image
+const { read, decode, encode, crop, resize, slice, orientate, rotate, flip } = image
 
 test('image read() path', async (t) => {
   const path = './test/fixtures/sample.jpg'
@@ -197,22 +197,6 @@ test('image decode() webp with maxFrames', async (t) => {
   t.is(rgba.loops, 0)
   t.is(rgba.width, 476)
   t.is(rgba.height, 280)
-})
-
-test('image decode() jpg with orientate', async (t) => {
-  const path = './test/fixtures/exif-orientation.jpg'
-
-  const buffer = await read(path)
-  const rgba = await decode(buffer)
-  const rgbaO = await decode(buffer, { orientate: true })
-
-  t.ok(Buffer.isBuffer(rgba.data))
-  t.is(rgba.width, 120)
-  t.is(rgba.height, 150)
-
-  t.ok(Buffer.isBuffer(rgbaO.data))
-  t.is(rgbaO.width, 150)
-  t.is(rgbaO.height, 120)
 })
 
 test('image encode() gif throws (not implemented)', async (t) => {
@@ -479,6 +463,22 @@ test('image slice() throws if start > end', async (t) => {
       end: 2
     })
   })
+})
+
+test('image orientate()', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const rgbaO = await orientate(rgba, buffer)
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.is(rgba.width, 120)
+  t.is(rgba.height, 150)
+
+  t.ok(Buffer.isBuffer(rgbaO.data))
+  t.is(rgbaO.width, 150)
+  t.is(rgbaO.height, 120)
 })
 
 test('image rotate()', (t) => {
