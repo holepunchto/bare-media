@@ -89,6 +89,34 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 | `opts.start` | number | Frame index at which to start extraction. Default 0.                     |
 | `opts.end`   | number | Frame index at which to end extraction. Defaults to end of the animation |
 
+### orientate()
+
+Apply EXIF orientation.
+
+| Parameter | Type   | Description                                        |
+| --------- | ------ | -------------------------------------------------- |
+| `buffer`  | object | The rgba image                                     |
+| `input`   | object | The input image to where extract the exif metadata |
+
+### rotate()
+
+Rotate an image in 90-degree multiples.
+
+| Parameter  | Type   | Description                                 |
+| ---------- | ------ | ------------------------------------------- |
+| `buffer`   | object | The rgba image                              |
+| `opts.deg` | number | Rotation in degrees: `90`, `180`, or `270`. |
+
+### flip()
+
+Flip an image on the X or Y axis.
+
+| Parameter | Type    | Description                       |
+| --------- | ------- | --------------------------------- |
+| `buffer`  | object  | The rgba image                    |
+| `opts.x`  | boolean | Flip horizontally. Default `true` |
+| `opts.y`  | boolean | Flip vertically                   |
+
 ### read()
 
 Read an image from a file path, URL, or buffer.
