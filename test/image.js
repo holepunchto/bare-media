@@ -5,7 +5,14 @@ import os from 'bare-os'
 import barePath from 'bare-path'
 
 import { image } from '..'
-import { makeHttpLink, isAnimatedWebP, randomFileName, makeRGBA, pixelAt } from './helpers'
+import {
+  makeHttpLink,
+  isAnimatedWebP,
+  randomFileName,
+  makeRGBA,
+  makeAnimatedRGBA,
+  pixelAt
+} from './helpers'
 
 const { read, decode, encode, crop, resize, slice, orientate, rotate, flip } = image
 
@@ -577,6 +584,27 @@ test('image orientate() unknown exif values do nothing (and do not throw)', (t) 
   t.is(exif9.width, rgba.width)
   t.is(exif9.height, rgba.height)
   t.alike(exif9.data, rgba.data)
+})
+
+test('image orientate() animated', (t) => {
+  const animated = makeAnimatedRGBA()
+
+  const transformed = orientate(animated, { exif: 6 })
+
+  t.ok(Array.isArray(transformed.frames))
+  t.is(transformed.frames.length, 2)
+  t.is(transformed.loops, animated.loops)
+  t.is(transformed.width, 2)
+  t.is(transformed.height, 2)
+  t.is(transformed.frames[0].timestamp, 10)
+  t.is(transformed.frames[1].timestamp, 20)
+
+  for (const frame of transformed.frames) {
+    t.alike(pixelAt(frame, 0, 0), [0, 0, 255, 255])
+    t.alike(pixelAt(frame, 1, 0), [255, 0, 0, 255])
+    t.alike(pixelAt(frame, 0, 1), [255, 255, 0, 255])
+    t.alike(pixelAt(frame, 1, 1), [0, 255, 0, 255])
+  }
 })
 
 test('image orientate() in pipeline', async (t) => {

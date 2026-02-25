@@ -64,6 +64,20 @@ export function makeRGBA() {
   }
 }
 
+export function makeAnimatedRGBA() {
+  const makeFrame = (timestamp) => {
+    const rgba = makeRGBA()
+    return { ...rgba, data: Buffer.from(rgba.data), timestamp }
+  }
+
+  return {
+    width: 2,
+    height: 2,
+    loops: 1,
+    frames: [makeFrame(10), makeFrame(20)]
+  }
+}
+
 export function pixelAt(rgba, x, y) {
   const i = (y * rgba.width + x) * 4
   return [rgba.data[i], rgba.data[i + 1], rgba.data[i + 2], rgba.data[i + 3]]
