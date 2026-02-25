@@ -96,19 +96,23 @@ Apply EXIF orientation.
 | Parameter   | Type   | Description                                          |
 | ----------- | ------ | ---------------------------------------------------- |
 | `buffer`    | object | The rgba image                                       |
-| `opts.file` | object | Optional. Input image used to extract EXIF metadata. |
-| `opts.exif` | object | Optional. EXIF orientation value.                    |
+| `opts.file` | Buffer | Optional. Input image used to extract EXIF metadata. |
+| `opts.exif` | number | Optional. EXIF orientation value.                    |
 
-> At least one of `opts.file` or `opts.exif` is required.
+At least one of `opts.file` or `opts.exif` is required. In a pipeline, `orientate()` can be called without options:
+
+```js
+const rgba = await image(path).decode().orientate()
+```
 
 ### rotate()
 
 Rotate an image in 90-degree multiples.
 
-| Parameter  | Type   | Description                                 |
-| ---------- | ------ | ------------------------------------------- |
-| `buffer`   | object | The rgba image                              |
-| `opts.deg` | number | Rotation in degrees: `90`, `180`, or `270`. |
+| Parameter  | Type   | Description                                                    |
+| ---------- | ------ | -------------------------------------------------------------- |
+| `buffer`   | object | The rgba image                                                 |
+| `opts.deg` | number | Rotation in degrees. Allowed values: [`0`, `90`, `180`, `270`] |
 
 ### flip()
 
