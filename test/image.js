@@ -564,6 +564,21 @@ test('image orientate() EXIF values 1..8', (t) => {
   }
 })
 
+test('image orientate() unknown exif values do nothing (and do not throw)', (t) => {
+  const rgba = makeRGBA()
+
+  const exif0 = orientate(rgba, { exif: 0 })
+  const exif9 = orientate(rgba, { exif: 9 })
+
+  t.is(exif0.width, rgba.width)
+  t.is(exif0.height, rgba.height)
+  t.alike(exif0.data, rgba.data)
+
+  t.is(exif9.width, rgba.width)
+  t.is(exif9.height, rgba.height)
+  t.alike(exif9.data, rgba.data)
+})
+
 test('image orientate() in pipeline', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
 

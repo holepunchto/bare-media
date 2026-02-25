@@ -222,7 +222,7 @@ function orientate(rgba, opts = {}) {
     if (entry) {
       orientation = entry.read()
     }
-  } else if (opts.exif) {
+  } else if (opts.exif !== undefined) {
     orientation = opts.exif
   } else {
     throw new Error('orientate(): needs either "file" or "exif"')
