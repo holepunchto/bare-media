@@ -481,6 +481,19 @@ test('image orientate() reading EXIF metadata', async (t) => {
   t.is(rgbaO.height, 120)
 })
 
+test('image orientate() without EXIF orientation', async (t) => {
+  const path = './test/fixtures/sample.jpg'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const rgbaO = await orientate(rgba, { file: buffer })
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.ok(Buffer.isBuffer(rgbaO.data))
+  t.is(rgba.width, rgbaO.width)
+  t.is(rgba.height, rgbaO.height)
+})
+
 test('image orientate() passing a EXIF value', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
 

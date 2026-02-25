@@ -219,7 +219,9 @@ function orientate(rgba, opts = {}) {
   if (opts.file) {
     const exifData = new exif.Data(opts.file)
     const entry = exifData.entry(exif.constants.tags.ORIENTATION)
-    orientation = entry.read()
+    if (entry) {
+      orientation = entry.read()
+    }
   } else if (opts.exif) {
     orientation = opts.exif
   } else {
