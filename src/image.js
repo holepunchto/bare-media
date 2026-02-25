@@ -213,43 +213,52 @@ function flip(rgba, opts = {}) {
   return _transform(rgba, { flipX: x, flipY: y })
 }
 
-function orientate(rgba, input) {
-  const exifData = new exif.Data(input)
-  const orientation = exifData.entry(exif.constants.tags.ORIENTATION)
+function orientate(rgba, opts = {}) {
+  let orientation
 
-  let opts
+  if (opts.file) {
+    const exifData = new exif.Data(opts.file)
+    const entry = exifData.entry(exif.constants.tags.ORIENTATION)
+    orientation = entry.read()
+  } else if (opts.orientation) {
+    orientation = opts.orientation
+  } else {
+    throw new Error('orientate(): needs either "file" or "orientation"')
+  }
 
-  switch (orientation.read()) {
+  let transformOpts
+
+  switch (orientation) {
     case EXIF.ORIENTATION.NORMAL:
       break
     case EXIF.ORIENTATION.MIRROR_HORIZONTAL:
-      opts = { flipX: true }
+      transformOpts = { flipX: true }
       break
     case EXIF.ORIENTATION.ROTATE_180:
-      opts = { rotate: 180 }
+      transformOpts = { rotate: 180 }
       break
     case EXIF.ORIENTATION.MIRROR_VERTICAL:
-      opts = { flipY: true }
+      transformOpts = { flipY: true }
       break
     case EXIF.ORIENTATION.TRANSPOSE:
-      opts = { rotate: 90, flipX: true }
+      transformOpts = { rotate: 90, flipX: true }
       break
     case EXIF.ORIENTATION.ROTATE_90:
-      opts = { rotate: 90 }
+      transformOpts = { rotate: 90 }
       break
     case EXIF.ORIENTATION.TRANSVERSE:
-      opts = { rotate: 270, flipX: true }
+      transformOpts = { rotate: 270, flipX: true }
       break
     case EXIF.ORIENTATION.ROTATE_270:
-      opts = { rotate: 270 }
+      transformOpts = { rotate: 270 }
       break
     default:
       break
   }
 
-  if (!opts) return rgba
+  if (!transformOpts) return rgba
 
-  return _transform(rgba, opts)
+  return _transform(rgba, transformOpts)
 }
 
 function _transform(rgba, opts) {
@@ -368,7 +377,7 @@ class ImagePipeline {
         }
 
         if (step.op === 'orientate') {
-          buffer = await orientate(buffer, inputBuffer)
+          buffer = await orientate(buffer, step.opts || { file: inputBuffer })
         }
 
         if (step.op === 'rotate') {

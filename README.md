@@ -93,10 +93,11 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 
 Apply EXIF orientation.
 
-| Parameter | Type   | Description                                        |
-| --------- | ------ | -------------------------------------------------- |
-| `buffer`  | object | The rgba image                                     |
-| `input`   | object | The input image to where extract the exif metadata |
+| Parameter          | Type   | Description                                                  |
+| ------------------ | ------ | ------------------------------------------------------------ |
+| `buffer`           | object | The rgba image                                               |
+| `opts.file`        | object | The input image to where extract the exif metadata. Optional |
+| `opts.orientation` | object | The exif orientation value. Optional                         |
 
 ### rotate()
 

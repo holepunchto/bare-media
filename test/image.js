@@ -465,12 +465,43 @@ test('image slice() throws if start > end', async (t) => {
   })
 })
 
-test('image orientate()', async (t) => {
+test('image orientate() reading EXIF metadata', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  const rgbaO = await orientate(rgba, buffer)
+  const rgbaO = await orientate(rgba, { file: buffer })
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.is(rgba.width, 120)
+  t.is(rgba.height, 150)
+
+  t.ok(Buffer.isBuffer(rgbaO.data))
+  t.is(rgbaO.width, 150)
+  t.is(rgbaO.height, 120)
+})
+
+test('image orientate() passing a EXIF value', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const rgbaO = await orientate(rgba, { orientation: 6 })
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.is(rgba.width, 120)
+  t.is(rgba.height, 150)
+
+  t.ok(Buffer.isBuffer(rgbaO.data))
+  t.is(rgbaO.width, 150)
+  t.is(rgbaO.height, 120)
+})
+
+test('image orientate() in pipeline', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const rgba = await image(path).decode()
+  const rgbaO = await image(path).decode().orientate()
 
   t.ok(Buffer.isBuffer(rgba.data))
   t.is(rgba.width, 120)
