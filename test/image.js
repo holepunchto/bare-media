@@ -656,9 +656,15 @@ test('image rotate()', (t) => {
 test('image flip()', (t) => {
   const rgba = makeRGBA()
 
+  const flipped = flip(rgba)
   const flippedH = flip(rgba, { h: true })
   const flippedV = flip(rgba, { h: false, v: true })
   const flippedHV = flip(rgba, { h: true, v: true })
+
+  t.alike(pixelAt(flipped, 0, 0), pixelAt(flippedH, 0, 0))
+  t.alike(pixelAt(flipped, 1, 0), pixelAt(flippedH, 1, 0))
+  t.alike(pixelAt(flipped, 0, 1), pixelAt(flippedH, 0, 1))
+  t.alike(pixelAt(flipped, 1, 1), pixelAt(flippedH, 1, 1))
 
   t.alike(pixelAt(flippedH, 0, 0), [0, 255, 0, 255])
   t.alike(pixelAt(flippedH, 1, 0), [255, 0, 0, 255])
