@@ -625,9 +625,15 @@ test('image orientate() in pipeline', async (t) => {
 test('image rotate()', (t) => {
   const rgba = makeRGBA()
 
+  const rotated0 = rotate(rgba, { deg: 0 })
   const rotated90 = rotate(rgba, { deg: 90 })
   const rotated180 = rotate(rgba, { deg: 180 })
   const rotated270 = rotate(rgba, { deg: 270 })
+
+  t.alike(pixelAt(rotated0, 0, 0), [255, 0, 0, 255])
+  t.alike(pixelAt(rotated0, 1, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(rotated0, 0, 1), [0, 0, 255, 255])
+  t.alike(pixelAt(rotated0, 1, 1), [255, 255, 0, 255])
 
   t.alike(pixelAt(rotated90, 0, 0), [0, 0, 255, 255])
   t.alike(pixelAt(rotated90, 1, 0), [255, 0, 0, 255])
