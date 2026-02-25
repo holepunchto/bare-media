@@ -553,26 +553,26 @@ test('image rotate()', (t) => {
 test('image flip()', (t) => {
   const rgba = makeRGBA()
 
-  const flippedX = flip(rgba, { x: true })
-  const flippedY = flip(rgba, { x: false, y: true })
-  const flippedXY = flip(rgba, { x: true, y: true })
+  const flippedH = flip(rgba, { h: true })
+  const flippedV = flip(rgba, { h: false, v: true })
+  const flippedHV = flip(rgba, { h: true, v: true })
 
-  t.alike(pixelAt(flippedX, 0, 0), [0, 255, 0, 255])
-  t.alike(pixelAt(flippedX, 1, 0), [255, 0, 0, 255])
-  t.alike(pixelAt(flippedX, 0, 1), [255, 255, 0, 255])
-  t.alike(pixelAt(flippedX, 1, 1), [0, 0, 255, 255])
+  t.alike(pixelAt(flippedH, 0, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(flippedH, 1, 0), [255, 0, 0, 255])
+  t.alike(pixelAt(flippedH, 0, 1), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedH, 1, 1), [0, 0, 255, 255])
 
-  t.alike(pixelAt(flippedY, 0, 0), [0, 0, 255, 255])
-  t.alike(pixelAt(flippedY, 1, 0), [255, 255, 0, 255])
-  t.alike(pixelAt(flippedY, 0, 1), [255, 0, 0, 255])
-  t.alike(pixelAt(flippedY, 1, 1), [0, 255, 0, 255])
+  t.alike(pixelAt(flippedV, 0, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(flippedV, 1, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedV, 0, 1), [255, 0, 0, 255])
+  t.alike(pixelAt(flippedV, 1, 1), [0, 255, 0, 255])
 
-  t.alike(pixelAt(flippedXY, 0, 0), [255, 255, 0, 255])
-  t.alike(pixelAt(flippedXY, 1, 0), [0, 0, 255, 255])
-  t.alike(pixelAt(flippedXY, 0, 1), [0, 255, 0, 255])
-  t.alike(pixelAt(flippedXY, 1, 1), [255, 0, 0, 255])
+  t.alike(pixelAt(flippedHV, 0, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedHV, 1, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(flippedHV, 0, 1), [0, 255, 0, 255])
+  t.alike(pixelAt(flippedHV, 1, 1), [255, 0, 0, 255])
 
-  t.exception(() => flip(rgba, { x: 'not-bool' }))
+  t.exception(() => flip(rgba, { h: 'not-bool' }))
 })
 
 test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {

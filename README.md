@@ -112,13 +112,13 @@ Rotate an image in 90-degree multiples.
 
 ### flip()
 
-Flip an image on the X or Y axis.
+Flip an image horizontally or vertically.
 
 | Parameter | Type    | Description                                 |
 | --------- | ------- | ------------------------------------------- |
 | `buffer`  | object  | The rgba image                              |
-| `opts.x`  | boolean | Optional. Flip horizontally. Default `true` |
-| `opts.y`  | boolean | Optional. Flip vertically                   |
+| `opts.h`  | boolean | Optional. Flip horizontally. Default `true` |
+| `opts.v`  | boolean | Optional. Flip vertically                   |
 
 ### read()
 

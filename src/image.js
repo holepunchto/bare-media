@@ -204,13 +204,13 @@ function rotate(rgba, opts = {}) {
 }
 
 function flip(rgba, opts = {}) {
-  const { x = true, y } = opts
+  const { h = true, v } = opts
 
-  if (typeof x !== 'boolean' && typeof y !== 'boolean') {
-    throw new Error('flip(): needs axis x or y to be a boolean')
+  if (typeof h !== 'boolean' && typeof v !== 'boolean') {
+    throw new Error('flip(): needs axis h or v to be a boolean')
   }
 
-  return _transform(rgba, { flipX: x, flipY: y })
+  return _transform(rgba, { flipH: h, flipV: v })
 }
 
 function orientate(rgba, opts = {}) {
@@ -234,22 +234,22 @@ function orientate(rgba, opts = {}) {
     case EXIF.ORIENTATION.NORMAL:
       break
     case EXIF.ORIENTATION.MIRROR_HORIZONTAL:
-      transformOpts = { flipX: true }
+      transformOpts = { flipH: true }
       break
     case EXIF.ORIENTATION.ROTATE_180:
       transformOpts = { rotate: 180 }
       break
     case EXIF.ORIENTATION.MIRROR_VERTICAL:
-      transformOpts = { flipY: true }
+      transformOpts = { flipV: true }
       break
     case EXIF.ORIENTATION.TRANSPOSE:
-      transformOpts = { rotate: 270, flipX: true }
+      transformOpts = { rotate: 270, flipH: true }
       break
     case EXIF.ORIENTATION.ROTATE_90:
       transformOpts = { rotate: 90 }
       break
     case EXIF.ORIENTATION.TRANSVERSE:
-      transformOpts = { rotate: 90, flipX: true }
+      transformOpts = { rotate: 90, flipH: true }
       break
     case EXIF.ORIENTATION.ROTATE_270:
       transformOpts = { rotate: 270 }
@@ -264,9 +264,9 @@ function orientate(rgba, opts = {}) {
 }
 
 function _transform(rgba, opts) {
-  const { rotate = 0, flipX = false, flipY = false } = opts
+  const { rotate = 0, flipH = false, flipV = false } = opts
 
-  if (rotate === 0 && !flipX && !flipY) return rgba
+  if (rotate === 0 && !flipH && !flipV) return rgba
 
   const transformFrame = (frame) => {
     const srcWidth = frame.width
@@ -277,8 +277,8 @@ function _transform(rgba, opts) {
 
     for (let y = 0; y < srcHeight; y++) {
       for (let x = 0; x < srcWidth; x++) {
-        const transformedX = flipX ? srcWidth - 1 - x : x
-        const transformedY = flipY ? srcHeight - 1 - y : y
+        const transformedX = flipH ? srcWidth - 1 - x : x
+        const transformedY = flipV ? srcHeight - 1 - y : y
 
         let dstX
         let dstY
