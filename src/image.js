@@ -243,13 +243,13 @@ function orientate(rgba, opts = {}) {
       transformOpts = { flipY: true }
       break
     case EXIF.ORIENTATION.TRANSPOSE:
-      transformOpts = { rotate: 90, flipX: true }
+      transformOpts = { rotate: 270, flipX: true }
       break
     case EXIF.ORIENTATION.ROTATE_90:
       transformOpts = { rotate: 90 }
       break
     case EXIF.ORIENTATION.TRANSVERSE:
-      transformOpts = { rotate: 270, flipX: true }
+      transformOpts = { rotate: 90, flipX: true }
       break
     case EXIF.ORIENTATION.ROTATE_270:
       transformOpts = { rotate: 270 }
