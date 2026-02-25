@@ -489,7 +489,7 @@ test('image orientate() reading EXIF metadata', async (t) => {
 })
 
 test('image orientate() without EXIF orientation', async (t) => {
-  const path = './test/fixtures/sample.jpg'
+  const path = './test/fixtures/exif-empty.jpg'
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
