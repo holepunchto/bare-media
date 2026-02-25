@@ -486,7 +486,7 @@ test('image orientate() passing a EXIF value', async (t) => {
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
-  const rgbaO = await orientate(rgba, { orientation: 6 })
+  const rgbaO = await orientate(rgba, { exif: 6 })
 
   t.ok(Buffer.isBuffer(rgba.data))
   t.is(rgba.width, 120)

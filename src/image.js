@@ -220,10 +220,10 @@ function orientate(rgba, opts = {}) {
     const exifData = new exif.Data(opts.file)
     const entry = exifData.entry(exif.constants.tags.ORIENTATION)
     orientation = entry.read()
-  } else if (opts.orientation) {
-    orientation = opts.orientation
+  } else if (opts.exif) {
+    orientation = opts.exif
   } else {
-    throw new Error('orientate(): needs either "file" or "orientation"')
+    throw new Error('orientate(): needs either "file" or "exif"')
   }
 
   let transformOpts
