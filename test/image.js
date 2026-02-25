@@ -494,20 +494,74 @@ test('image orientate() without EXIF orientation', async (t) => {
   t.is(rgba.height, rgbaO.height)
 })
 
-test('image orientate() passing a EXIF value', async (t) => {
-  const path = './test/fixtures/exif-orientation.jpg'
+test('image orientate() EXIF values 1..8', (t) => {
+  const rgba = makeRGBA()
 
-  const buffer = await read(path)
-  const rgba = await decode(buffer)
-  const rgbaO = await orientate(rgba, { exif: 6 })
+  const expected = {
+    1: [
+      [255, 0, 0, 255],
+      [0, 255, 0, 255],
+      [0, 0, 255, 255],
+      [255, 255, 0, 255]
+    ],
+    2: [
+      [0, 255, 0, 255],
+      [255, 0, 0, 255],
+      [255, 255, 0, 255],
+      [0, 0, 255, 255]
+    ],
+    3: [
+      [255, 255, 0, 255],
+      [0, 0, 255, 255],
+      [0, 255, 0, 255],
+      [255, 0, 0, 255]
+    ],
+    4: [
+      [0, 0, 255, 255],
+      [255, 255, 0, 255],
+      [255, 0, 0, 255],
+      [0, 255, 0, 255]
+    ],
+    5: [
+      [255, 0, 0, 255],
+      [0, 0, 255, 255],
+      [0, 255, 0, 255],
+      [255, 255, 0, 255]
+    ],
+    6: [
+      [0, 0, 255, 255],
+      [255, 0, 0, 255],
+      [255, 255, 0, 255],
+      [0, 255, 0, 255]
+    ],
+    7: [
+      [255, 255, 0, 255],
+      [0, 255, 0, 255],
+      [0, 0, 255, 255],
+      [255, 0, 0, 255]
+    ],
+    8: [
+      [0, 255, 0, 255],
+      [255, 255, 0, 255],
+      [255, 0, 0, 255],
+      [0, 0, 255, 255]
+    ]
+  }
 
-  t.ok(Buffer.isBuffer(rgba.data))
-  t.is(rgba.width, 120)
-  t.is(rgba.height, 150)
+  for (let exif = 1; exif <= 8; exif++) {
+    const transformed = orientate(rgba, { exif })
 
-  t.ok(Buffer.isBuffer(rgbaO.data))
-  t.is(rgbaO.width, 150)
-  t.is(rgbaO.height, 120)
+    t.alike(
+      [
+        pixelAt(transformed, 0, 0),
+        pixelAt(transformed, 1, 0),
+        pixelAt(transformed, 0, 1),
+        pixelAt(transformed, 1, 1)
+      ],
+      expected[exif],
+      `exif orientation ${exif}`
+    )
+  }
 })
 
 test('image orientate() in pipeline', async (t) => {
