@@ -1,6 +1,5 @@
 import fs from 'bare-fs'
 import fetch from 'bare-fetch'
-import exif from 'bare-exif'
 
 import { EXIF } from '../types.js'
 import { importCodec, supportsQuality } from './codecs.js'
@@ -213,14 +212,19 @@ function flip(rgba, opts = {}) {
   return _transform(rgba, { flipH: h, flipV: v })
 }
 
-function orientate(rgba, opts = {}) {
+async function orientate(rgba, opts = {}) {
   let orientation
 
   if (opts.file) {
-    const exifData = new exif.Data(opts.file)
-    const entry = exifData.entry(exif.constants.tags.ORIENTATION)
-    if (entry) {
-      orientation = entry.read()
+    try {
+      const exif = await import('bare-exif')
+      const exifData = new exif.Data(opts.file)
+      const entry = exifData.entry(exif.constants.tags.ORIENTATION)
+      if (entry) {
+        orientation = entry.read()
+      }
+    } catch (err) {
+      console.error('orientate(): Could not get EXIF data', err)
     }
   } else if (opts.exif !== undefined) {
     orientation = opts.exif

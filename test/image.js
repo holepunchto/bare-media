@@ -501,7 +501,7 @@ test('image orientate() without EXIF orientation', async (t) => {
   t.is(rgba.height, rgbaO.height)
 })
 
-test('image orientate() EXIF values 1..8', (t) => {
+test('image orientate() EXIF values 1..8', async (t) => {
   const rgba = makeRGBA()
 
   const expected = {
@@ -556,7 +556,7 @@ test('image orientate() EXIF values 1..8', (t) => {
   }
 
   for (let exif = 1; exif <= 8; exif++) {
-    const transformed = orientate(rgba, { exif })
+    const transformed = await orientate(rgba, { exif })
 
     t.alike(
       [
@@ -571,11 +571,11 @@ test('image orientate() EXIF values 1..8', (t) => {
   }
 })
 
-test('image orientate() unknown exif values do nothing (and do not throw)', (t) => {
+test('image orientate() unknown exif values do nothing (and do not throw)', async (t) => {
   const rgba = makeRGBA()
 
-  const exif0 = orientate(rgba, { exif: 0 })
-  const exif9 = orientate(rgba, { exif: 9 })
+  const exif0 = await orientate(rgba, { exif: 0 })
+  const exif9 = await orientate(rgba, { exif: 9 })
 
   t.is(exif0.width, rgba.width)
   t.is(exif0.height, rgba.height)
@@ -586,10 +586,10 @@ test('image orientate() unknown exif values do nothing (and do not throw)', (t) 
   t.alike(exif9.data, rgba.data)
 })
 
-test('image orientate() animated', (t) => {
+test('image orientate() animated', async (t) => {
   const animated = makeAnimatedRGBA()
 
-  const transformed = orientate(animated, { exif: 6 })
+  const transformed = await orientate(animated, { exif: 6 })
 
   t.ok(Array.isArray(transformed.frames))
   t.is(transformed.frames.length, 2)
