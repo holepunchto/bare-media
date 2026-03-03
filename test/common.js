@@ -1,6 +1,7 @@
 import { test } from 'brittle'
 
-import { calculateFitDimensions, detectMimeType } from '../src/util'
+import { detectMimeType } from '../src/codecs'
+import { calculateFitDimensions } from '../src/util'
 
 // util
 
