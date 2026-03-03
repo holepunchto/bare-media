@@ -1,3 +1,6 @@
+import getMimeType from 'get-mime-type'
+import getFileFormat from 'get-file-format'
+
 import { IMAGE } from '../types'
 
 export const codecs = {
@@ -40,4 +43,8 @@ export async function importFFmpeg() {
 
 export function supportsQuality(mimetype) {
   return { 'image/webp': true, 'image/jpeg': true }[mimetype] || false
+}
+
+export function detectMimeType(buffer) {
+  return getMimeType(getFileFormat(buffer))
 }
