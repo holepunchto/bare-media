@@ -361,9 +361,14 @@ class ImagePipeline {
 
   async then(resolve, reject) {
     try {
-      const inputBuffer = await read(this.input)
+      let buffer = await read(this.input)
 
-      let buffer = inputBuffer
+      let inputBuffer
+
+      // Keep input bytes only if orientate() needs it
+      if (this.steps.some((step) => step.op === 'orientate' && !step.opts)) {
+        inputBuffer = buffer
+      }
 
       for (const step of this.steps) {
         if (step.op === 'decode') {
