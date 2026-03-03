@@ -89,6 +89,41 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 | `opts.start` | number | Frame index at which to start extraction. Default 0.                     |
 | `opts.end`   | number | Frame index at which to end extraction. Defaults to end of the animation |
 
+### orientate()
+
+Apply EXIF orientation.
+
+| Parameter   | Type   | Description                                          |
+| ----------- | ------ | ---------------------------------------------------- |
+| `buffer`    | object | The rgba image                                       |
+| `opts.file` | Buffer | Optional. Input image used to extract EXIF metadata. |
+| `opts.exif` | number | Optional. EXIF orientation value.                    |
+
+At least one of `opts.file` or `opts.exif` is required. In a pipeline, `orientate()` can be called without options:
+
+```js
+const rgba = await image(path).decode().orientate()
+```
+
+### rotate()
+
+Rotate an image in 90-degree multiples.
+
+| Parameter  | Type   | Description                                                    |
+| ---------- | ------ | -------------------------------------------------------------- |
+| `buffer`   | object | The rgba image                                                 |
+| `opts.deg` | number | Rotation in degrees. Allowed values: [`0`, `90`, `180`, `270`] |
+
+### flip()
+
+Flip an image horizontally or vertically.
+
+| Parameter | Type    | Description                                 |
+| --------- | ------- | ------------------------------------------- |
+| `buffer`  | object  | The rgba image                              |
+| `opts.h`  | boolean | Optional. Flip horizontally. Default `true` |
+| `opts.v`  | boolean | Optional. Flip vertically                   |
+
 ### read()
 
 Read an image from a file path, URL, or buffer.

@@ -55,3 +55,30 @@ export function isAnimatedWebP(buffer) {
 export function randomFileName(ext) {
   return `bare-media-test-${Math.random().toString().slice(2)}.${ext}`
 }
+
+export function makeRGBA() {
+  return {
+    width: 2,
+    height: 2,
+    data: Buffer.from([255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255])
+  }
+}
+
+export function makeAnimatedRGBA() {
+  const makeFrame = (timestamp) => {
+    const rgba = makeRGBA()
+    return { ...rgba, data: Buffer.from(rgba.data), timestamp }
+  }
+
+  return {
+    width: 2,
+    height: 2,
+    loops: 1,
+    frames: [makeFrame(10), makeFrame(20)]
+  }
+}
+
+export function pixelAt(rgba, x, y) {
+  const i = (y * rgba.width + x) * 4
+  return [rgba.data[i], rgba.data[i + 1], rgba.data[i + 2], rgba.data[i + 3]]
+}

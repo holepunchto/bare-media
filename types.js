@@ -37,3 +37,16 @@ export function isVideoSupported(mimetype) {
 export function isMediaSupported(mimetype) {
   return isImageSupported(mimetype) || isVideoSupported(mimetype)
 }
+
+export const EXIF = {
+  ORIENTATION: {
+    NORMAL: 1,
+    MIRROR_HORIZONTAL: 2,
+    ROTATE_180: 3,
+    MIRROR_VERTICAL: 4,
+    TRANSPOSE: 5,
+    ROTATE_90: 6,
+    TRANSVERSE: 7,
+    ROTATE_270: 8
+  }
+}

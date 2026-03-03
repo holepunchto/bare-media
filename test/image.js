@@ -5,9 +5,16 @@ import os from 'bare-os'
 import barePath from 'bare-path'
 
 import { image } from '..'
-import { makeHttpLink, isAnimatedWebP, randomFileName } from './helpers'
+import {
+  makeHttpLink,
+  isAnimatedWebP,
+  randomFileName,
+  makeRGBA,
+  makeAnimatedRGBA,
+  pixelAt
+} from './helpers'
 
-const { read, decode, encode, crop, resize, slice } = image
+const { read, decode, encode, crop, resize, slice, orientate, rotate, flip } = image
 
 test('image read() path', async (t) => {
   const path = './test/fixtures/sample.jpg'
@@ -463,6 +470,218 @@ test('image slice() throws if start > end', async (t) => {
       end: 2
     })
   })
+})
+
+test('image orientate() reading EXIF metadata', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const rgbaO = await orientate(rgba, { file: buffer })
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.is(rgba.width, 120)
+  t.is(rgba.height, 150)
+
+  t.ok(Buffer.isBuffer(rgbaO.data))
+  t.is(rgbaO.width, 150)
+  t.is(rgbaO.height, 120)
+})
+
+test('image orientate() without EXIF orientation', async (t) => {
+  const path = './test/fixtures/exif-empty.jpg'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const rgbaO = await orientate(rgba, { file: buffer })
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.ok(Buffer.isBuffer(rgbaO.data))
+  t.is(rgba.width, rgbaO.width)
+  t.is(rgba.height, rgbaO.height)
+})
+
+test('image orientate() EXIF values 1..8', async (t) => {
+  const rgba = makeRGBA()
+
+  const expected = {
+    1: [
+      [255, 0, 0, 255],
+      [0, 255, 0, 255],
+      [0, 0, 255, 255],
+      [255, 255, 0, 255]
+    ],
+    2: [
+      [0, 255, 0, 255],
+      [255, 0, 0, 255],
+      [255, 255, 0, 255],
+      [0, 0, 255, 255]
+    ],
+    3: [
+      [255, 255, 0, 255],
+      [0, 0, 255, 255],
+      [0, 255, 0, 255],
+      [255, 0, 0, 255]
+    ],
+    4: [
+      [0, 0, 255, 255],
+      [255, 255, 0, 255],
+      [255, 0, 0, 255],
+      [0, 255, 0, 255]
+    ],
+    5: [
+      [255, 0, 0, 255],
+      [0, 0, 255, 255],
+      [0, 255, 0, 255],
+      [255, 255, 0, 255]
+    ],
+    6: [
+      [0, 0, 255, 255],
+      [255, 0, 0, 255],
+      [255, 255, 0, 255],
+      [0, 255, 0, 255]
+    ],
+    7: [
+      [255, 255, 0, 255],
+      [0, 255, 0, 255],
+      [0, 0, 255, 255],
+      [255, 0, 0, 255]
+    ],
+    8: [
+      [0, 255, 0, 255],
+      [255, 255, 0, 255],
+      [255, 0, 0, 255],
+      [0, 0, 255, 255]
+    ]
+  }
+
+  for (let exif = 1; exif <= 8; exif++) {
+    const transformed = await orientate(rgba, { exif })
+
+    t.alike(
+      [
+        pixelAt(transformed, 0, 0),
+        pixelAt(transformed, 1, 0),
+        pixelAt(transformed, 0, 1),
+        pixelAt(transformed, 1, 1)
+      ],
+      expected[exif],
+      `exif orientation ${exif}`
+    )
+  }
+})
+
+test('image orientate() unknown exif values do nothing (and do not throw)', async (t) => {
+  const rgba = makeRGBA()
+
+  const exif0 = await orientate(rgba, { exif: 0 })
+  const exif9 = await orientate(rgba, { exif: 9 })
+
+  t.is(exif0.width, rgba.width)
+  t.is(exif0.height, rgba.height)
+  t.alike(exif0.data, rgba.data)
+
+  t.is(exif9.width, rgba.width)
+  t.is(exif9.height, rgba.height)
+  t.alike(exif9.data, rgba.data)
+})
+
+test('image orientate() animated', async (t) => {
+  const animated = makeAnimatedRGBA()
+
+  const transformed = await orientate(animated, { exif: 6 })
+
+  t.ok(Array.isArray(transformed.frames))
+  t.is(transformed.frames.length, 2)
+  t.is(transformed.loops, animated.loops)
+  t.is(transformed.width, 2)
+  t.is(transformed.height, 2)
+  t.is(transformed.frames[0].timestamp, 10)
+  t.is(transformed.frames[1].timestamp, 20)
+
+  for (const frame of transformed.frames) {
+    t.alike(pixelAt(frame, 0, 0), [0, 0, 255, 255])
+    t.alike(pixelAt(frame, 1, 0), [255, 0, 0, 255])
+    t.alike(pixelAt(frame, 0, 1), [255, 255, 0, 255])
+    t.alike(pixelAt(frame, 1, 1), [0, 255, 0, 255])
+  }
+})
+
+test('image orientate() in pipeline', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const rgba = await image(path).decode()
+  const rgbaO = await image(path).decode().orientate()
+
+  t.ok(Buffer.isBuffer(rgba.data))
+  t.is(rgba.width, 120)
+  t.is(rgba.height, 150)
+
+  t.ok(Buffer.isBuffer(rgbaO.data))
+  t.is(rgbaO.width, 150)
+  t.is(rgbaO.height, 120)
+})
+
+test('image rotate()', (t) => {
+  const rgba = makeRGBA()
+
+  const rotated0 = rotate(rgba, { deg: 0 })
+  const rotated90 = rotate(rgba, { deg: 90 })
+  const rotated180 = rotate(rgba, { deg: 180 })
+  const rotated270 = rotate(rgba, { deg: 270 })
+
+  t.alike(pixelAt(rotated0, 0, 0), [255, 0, 0, 255])
+  t.alike(pixelAt(rotated0, 1, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(rotated0, 0, 1), [0, 0, 255, 255])
+  t.alike(pixelAt(rotated0, 1, 1), [255, 255, 0, 255])
+
+  t.alike(pixelAt(rotated90, 0, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(rotated90, 1, 0), [255, 0, 0, 255])
+  t.alike(pixelAt(rotated90, 0, 1), [255, 255, 0, 255])
+  t.alike(pixelAt(rotated90, 1, 1), [0, 255, 0, 255])
+
+  t.alike(pixelAt(rotated180, 0, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(rotated180, 1, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(rotated180, 0, 1), [0, 255, 0, 255])
+  t.alike(pixelAt(rotated180, 1, 1), [255, 0, 0, 255])
+
+  t.alike(pixelAt(rotated270, 0, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(rotated270, 1, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(rotated270, 0, 1), [255, 0, 0, 255])
+  t.alike(pixelAt(rotated270, 1, 1), [0, 0, 255, 255])
+
+  t.exception(() => rotate(rgba, { deg: 123 }))
+})
+
+test('image flip()', (t) => {
+  const rgba = makeRGBA()
+
+  const flipped = flip(rgba)
+  const flippedH = flip(rgba, { h: true })
+  const flippedV = flip(rgba, { h: false, v: true })
+  const flippedHV = flip(rgba, { h: true, v: true })
+
+  t.alike(pixelAt(flipped, 0, 0), pixelAt(flippedH, 0, 0))
+  t.alike(pixelAt(flipped, 1, 0), pixelAt(flippedH, 1, 0))
+  t.alike(pixelAt(flipped, 0, 1), pixelAt(flippedH, 0, 1))
+  t.alike(pixelAt(flipped, 1, 1), pixelAt(flippedH, 1, 1))
+
+  t.alike(pixelAt(flippedH, 0, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(flippedH, 1, 0), [255, 0, 0, 255])
+  t.alike(pixelAt(flippedH, 0, 1), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedH, 1, 1), [0, 0, 255, 255])
+
+  t.alike(pixelAt(flippedV, 0, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(flippedV, 1, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedV, 0, 1), [255, 0, 0, 255])
+  t.alike(pixelAt(flippedV, 1, 1), [0, 255, 0, 255])
+
+  t.alike(pixelAt(flippedHV, 0, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(flippedHV, 1, 0), [0, 0, 255, 255])
+  t.alike(pixelAt(flippedHV, 0, 1), [0, 255, 0, 255])
+  t.alike(pixelAt(flippedHV, 1, 1), [255, 0, 0, 255])
+
+  t.exception(() => flip(rgba, { h: 'not-bool' }))
 })
 
 test('image pipeline: decode + crop + resize + encode jpeg', async (t) => {
