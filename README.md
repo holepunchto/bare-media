@@ -152,6 +152,21 @@ Extracts frames from a video in RGBA
 | ----------------- | ------ | ------------------------------ |
 | `opts.frameIndex` | number | Number of the frame to extract |
 
+### metadata()
+
+Basic metadata for the primary video stream
+
+Returns an object with:
+
+- `width`
+- `height`
+- `duration`
+- `avgFramerate`
+- `displayRotation`
+- `rotation`
+- `flipH`
+- `flipV`
+
 ### transcode()
 
 > [!IMPORTANT]

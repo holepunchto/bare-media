@@ -3,6 +3,8 @@ import fs from 'bare-fs'
 import b4a from 'b4a'
 
 import { video } from '..'
+import { parseDisplayMatrix } from '../src/video/display-matrix.js'
+import { createDisplayMatrix } from './helpers.js'
 
 test('video extractFrames()', async (t) => {
   const path = './test/fixtures/sample.mp4'
@@ -16,7 +18,7 @@ test('video extractFrames()', async (t) => {
   t.is(rgba.height, 240)
 })
 
-test('video pipeline', async (t) => {
+test('video extractFrames() in pipeline', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
   const rgba = await video(path).extractFrames({ frameIndex: 1 })
@@ -24,6 +26,57 @@ test('video pipeline', async (t) => {
   t.ok(Buffer.isBuffer(rgba.data))
   t.is(rgba.width, 320)
   t.is(rgba.height, 240)
+})
+
+test('video metadata()', async (t) => {
+  const path = './test/fixtures/orientation.mov'
+
+  const fd = fs.openSync(path, 'r')
+  const metadata = await video.metadata(fd)
+  fs.closeSync(fd)
+
+  t.alike(metadata, {
+    width: 120,
+    height: 160,
+    duration: 163840,
+    avgFramerate: {
+      numerator: 1,
+      denominator: 1
+    },
+    displayRotation: 270,
+    rotation: 90,
+    flipH: false,
+    flipV: false
+  })
+})
+
+test('video metadata() in pipeline', async (t) => {
+  const path = './test/fixtures/orientation.mov'
+
+  const metadata = await video(path).metadata()
+  t.is(metadata.width, 120)
+  t.is(metadata.height, 160)
+  t.is(metadata.displayRotation, 270)
+  t.is(metadata.rotation, 90)
+  t.is(metadata.flipH, false)
+  t.is(metadata.flipV, false)
+})
+
+test('parseDisplayMatrix()', (t) => {
+  let transform = parseDisplayMatrix(createDisplayMatrix(1, 0, 0, 1))
+  t.is(transform.rotation, 0)
+
+  transform = parseDisplayMatrix(createDisplayMatrix(0, 1, -1, 0))
+  t.is(transform.rotation, 270)
+
+  transform = parseDisplayMatrix(createDisplayMatrix(-1, 0, 0, 1))
+  t.is(transform.rotation, 0)
+
+  transform = parseDisplayMatrix(createDisplayMatrix(0, 1, 1, 0))
+  t.is(transform.rotation, 90)
+
+  transform = parseDisplayMatrix(createDisplayMatrix(0.0002, 0.9998, -1.0001, -0.0002))
+  t.is(transform.rotation, 270)
 })
 
 test('video.transcode() - webm to mp4', async (t) => {

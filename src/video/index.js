@@ -1,15 +1,12 @@
 import fs from 'bare-fs'
 import { importFFmpeg } from '../codecs'
+import { parseDisplayMatrix } from './display-matrix.js'
 
-async function extractFrames(fd, opts = {}) {
-  const { frameIndex } = opts
-
+function createIOContext(fd, ffmpeg) {
   const fileSize = fs.fstatSync(fd).size
   let offset = 0
 
-  const ffmpeg = await importFFmpeg()
-
-  const io = new ffmpeg.IOContext(4096, {
+  return new ffmpeg.IOContext(4096, {
     onread: (buffer, requested) => {
       const read = fs.readSync(fd, buffer, 0, requested, offset)
       if (read === 0) return 0
@@ -25,6 +22,13 @@ async function extractFrames(fd, opts = {}) {
       return offset
     }
   })
+}
+
+async function extractFrames(fd, opts = {}) {
+  const { frameIndex } = opts
+
+  const ffmpeg = await importFFmpeg()
+  const io = createIOContext(fd, ffmpeg)
 
   using inputFormat = new ffmpeg.InputFormatContext(io)
   const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
@@ -91,6 +95,51 @@ async function extractFrames(fd, opts = {}) {
   return result
 }
 
+async function metadata(fd) {
+  const ffmpeg = await importFFmpeg()
+  const io = createIOContext(fd, ffmpeg)
+
+  using inputFormat = new ffmpeg.InputFormatContext(io)
+  const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
+
+  if (!stream) throw new Error('No video stream found')
+
+  let displayRotation
+  let correctiveRotation
+  let flipH
+  let flipV
+
+  for (const entry of stream.sideData) {
+    if (entry.type === ffmpeg.constants.packetSideDataType.DISPLAYMATRIX) {
+      const transform = parseDisplayMatrix(entry.data)
+      if (transform) {
+        displayRotation = transform.rotation
+        flipH = transform.flipH
+        flipV = transform.flipV
+      }
+      break
+    }
+  }
+
+  if (displayRotation !== undefined) {
+    correctiveRotation = ((-displayRotation % 360) + 360) % 360
+  }
+
+  return {
+    width: stream.codecParameters.width,
+    height: stream.codecParameters.height,
+    duration: stream.duration,
+    avgFramerate: {
+      numerator: stream.avgFramerate.numerator,
+      denominator: stream.avgFramerate.denominator
+    },
+    displayRotation,
+    rotation: correctiveRotation,
+    flipH,
+    flipV
+  }
+}
+
 async function* transcode(fd, opts = {}) {
   const { Transcoder } = await import('./transcoder.js')
 
@@ -126,6 +175,20 @@ class VideoPipeline {
     return result
   }
 
+  async metadata() {
+    let fd
+    let result
+
+    try {
+      fd = fs.openSync(this.input, 'r')
+      result = await metadata(fd)
+    } finally {
+      fs.closeSync(fd)
+    }
+
+    return result
+  }
+
   async *transcode(opts) {
     const fd = fs.openSync(this.input, 'r')
     try {
@@ -146,6 +209,7 @@ async function getFormatRegistry() {
 }
 
 video.extractFrames = extractFrames
+video.metadata = metadata
 video.transcode = transcode
 video.getFormatRegistry = getFormatRegistry
 
