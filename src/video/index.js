@@ -123,10 +123,15 @@ async function metadata(fd) {
 
   correctiveRotation = ((-displayRotation % 360) + 360) % 360
 
+  const duration =
+    Number.isFinite(stream.duration) && stream.timeBase.denominator !== 0
+      ? (stream.duration * stream.timeBase.numerator) / stream.timeBase.denominator
+      : stream.duration
+
   return {
     width: stream.codecParameters.width,
     height: stream.codecParameters.height,
-    duration: stream.duration,
+    duration,
     avgFramerate: {
       numerator: stream.avgFramerate.numerator,
       denominator: stream.avgFramerate.denominator

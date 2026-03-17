@@ -38,7 +38,7 @@ test('video metadata()', async (t) => {
   t.alike(metadata, {
     width: 120,
     height: 160,
-    duration: 163840,
+    duration: 10,
     avgFramerate: {
       numerator: 1,
       denominator: 1

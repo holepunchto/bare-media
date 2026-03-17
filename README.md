@@ -160,7 +160,7 @@ Returns an object with:
 
 - `width`
 - `height`
-- `duration`
+- `duration` in seconds
 - `avgFramerate`
 - `displayRotation`
 - `rotation`
