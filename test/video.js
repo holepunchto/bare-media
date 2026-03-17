@@ -56,8 +56,20 @@ test('video metadata() in pipeline', async (t) => {
   const metadata = await video(path).metadata()
   t.is(metadata.width, 120)
   t.is(metadata.height, 160)
+  t.is(metadata.duration, 10)
   t.is(metadata.displayRotation, 270)
   t.is(metadata.rotation, 90)
+  t.is(metadata.flipH, false)
+  t.is(metadata.flipV, false)
+})
+
+test('video metadata() defaults', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  const metadata = await video(path).metadata()
+
+  t.is(metadata.displayRotation, 0)
+  t.is(metadata.rotation, 0)
   t.is(metadata.flipH, false)
   t.is(metadata.flipV, false)
 })

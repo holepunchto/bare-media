@@ -104,10 +104,10 @@ async function metadata(fd) {
 
   if (!stream) throw new Error('No video stream found')
 
-  let displayRotation
-  let correctiveRotation
-  let flipH
-  let flipV
+  let displayRotation = 0
+  let correctiveRotation = 0
+  let flipH = false
+  let flipV = false
 
   for (const entry of stream.sideData) {
     if (entry.type === ffmpeg.constants.packetSideDataType.DISPLAYMATRIX) {
@@ -121,9 +121,7 @@ async function metadata(fd) {
     }
   }
 
-  if (displayRotation !== undefined) {
-    correctiveRotation = ((-displayRotation % 360) + 360) % 360
-  }
+  correctiveRotation = ((-displayRotation % 360) + 360) % 360
 
   return {
     width: stream.codecParameters.width,
