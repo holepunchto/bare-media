@@ -82,3 +82,12 @@ export function pixelAt(rgba, x, y) {
   const i = (y * rgba.width + x) * 4
   return [rgba.data[i], rgba.data[i + 1], rgba.data[i + 2], rgba.data[i + 3]]
 }
+
+export function createDisplayMatrix(a, b, c, d) {
+  const buffer = Buffer.alloc(36)
+  buffer.writeInt32LE(Math.round(a * 65536), 0)
+  buffer.writeInt32LE(Math.round(b * 65536), 4)
+  buffer.writeInt32LE(Math.round(c * 65536), 12)
+  buffer.writeInt32LE(Math.round(d * 65536), 16)
+  return buffer
+}
