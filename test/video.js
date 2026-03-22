@@ -76,19 +76,37 @@ test('video metadata() defaults', async (t) => {
 
 test('parseDisplayMatrix()', (t) => {
   let transform = parseDisplayMatrix(createDisplayMatrix(1, 0, 0, 1))
-  t.is(transform.rotation, 0)
-
-  transform = parseDisplayMatrix(createDisplayMatrix(0, 1, -1, 0))
-  t.is(transform.rotation, 270)
+  t.alike(transform, { rotation: 0, flipH: false, flipV: false })
 
   transform = parseDisplayMatrix(createDisplayMatrix(-1, 0, 0, 1))
-  t.is(transform.rotation, 0)
+  t.alike(transform, { rotation: 0, flipH: true, flipV: false })
+
+  transform = parseDisplayMatrix(createDisplayMatrix(-0.9998, 0.0001, -0.0002, 1.0002))
+  t.alike(transform, { rotation: 0, flipH: true, flipV: false })
+
+  transform = parseDisplayMatrix(createDisplayMatrix(1, 0, 0, -1))
+  t.alike(transform, { rotation: 0, flipH: false, flipV: true })
 
   transform = parseDisplayMatrix(createDisplayMatrix(0, 1, 1, 0))
-  t.is(transform.rotation, 90)
+  t.alike(transform, { rotation: 90, flipH: true, flipV: false })
+
+  transform = parseDisplayMatrix(createDisplayMatrix(0, -1, -1, 0))
+  t.alike(transform, { rotation: 90, flipH: false, flipV: true })
+
+  transform = parseDisplayMatrix(createDisplayMatrix(0.0001, -0.9998, -1.0002, -0.0001))
+  t.alike(transform, { rotation: 90, flipH: false, flipV: true })
+
+  transform = parseDisplayMatrix(createDisplayMatrix(-1, 0, 0, -1))
+  t.alike(transform, { rotation: 180, flipH: false, flipV: false })
+
+  transform = parseDisplayMatrix(createDisplayMatrix(-1.0001, -0.0001, 0.0002, -0.9998))
+  t.alike(transform, { rotation: 180, flipH: false, flipV: false })
+
+  transform = parseDisplayMatrix(createDisplayMatrix(0, 1, -1, 0))
+  t.alike(transform, { rotation: 270, flipH: false, flipV: false })
 
   transform = parseDisplayMatrix(createDisplayMatrix(0.0002, 0.9998, -1.0001, -0.0002))
-  t.is(transform.rotation, 270)
+  t.alike(transform, { rotation: 270, flipH: false, flipV: false })
 })
 
 test('video.transcode() - webm to mp4', async (t) => {
