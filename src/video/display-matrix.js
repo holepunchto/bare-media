@@ -1,11 +1,9 @@
-function snap(value, epsilon = 1e-3) {
-  if (Math.abs(value - 1) < epsilon) return 1
-  if (Math.abs(value + 1) < epsilon) return -1
-  if (Math.abs(value) < epsilon) return 0
-  return value
-}
-
-// Simple parsing of the display matrix
+// Parse the parts of a display matrix that affect orientation.
+//
+// A display matrix is normally applied to each pixel to determine how a frame
+// should be presented. Here we only need to extract the orientation we expose
+// in our metadata model: [rotation, flipH, flipV].
+//
 export function parseDisplayMatrix(matrix) {
   const a = snap(matrix.readInt32LE(0) / 65536)
   const b = snap(matrix.readInt32LE(4) / 65536)
@@ -40,4 +38,11 @@ export function parseDisplayMatrix(matrix) {
   }
 
   return { rotation, flipH, flipV }
+}
+
+function snap(value, epsilon = 1e-3) {
+  if (Math.abs(value - 1) < epsilon) return 1
+  if (Math.abs(value + 1) < epsilon) return -1
+  if (Math.abs(value) < epsilon) return 0
+  return value
 }
