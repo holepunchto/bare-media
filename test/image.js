@@ -586,6 +586,19 @@ test('image orientate() unknown exif values do nothing (and do not throw)', asyn
   t.alike(exif9.data, rgba.data)
 })
 
+test('image orientate() with "transform"', async (t) => {
+  const rgba = makeRGBA()
+
+  const transformed = await orientate(rgba, {
+    transform: { rotate: 90, flipH: true, flipV: false }
+  })
+
+  t.alike(pixelAt(transformed, 0, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(transformed, 1, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(transformed, 0, 1), [0, 0, 255, 255])
+  t.alike(pixelAt(transformed, 1, 1), [255, 0, 0, 255])
+})
+
 test('image orientate() animated', async (t) => {
   const animated = makeAnimatedRGBA()
 
