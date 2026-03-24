@@ -2,7 +2,7 @@
 //
 // A display matrix is normally applied to each pixel to determine how a frame
 // should be presented. Here we only need to extract the orientation we expose
-// in our metadata model: [rotation, flipH, flipV].
+// in our metadata model: {rotation, flipH, flipV}.
 //
 export function parseDisplayMatrix(matrix) {
   const a = snap(matrix.readInt32LE(0) / 65536)
