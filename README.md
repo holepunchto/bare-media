@@ -152,6 +152,26 @@ Extracts frames from a video in RGBA
 | ----------------- | ------ | ------------------------------ |
 | `opts.frameIndex` | number | Number of the frame to extract |
 
+### metadata()
+
+Basic metadata for the primary video stream
+
+Returns:
+
+| Field                      | Type    | Description                                            |
+| -------------------------- | ------- | ------------------------------------------------------ |
+| `width`                    | number  | Width of the primary video stream                      |
+| `height`                   | number  | Height of the primary video stream                     |
+| `duration`                 | number  | Stream duration in seconds                             |
+| `avgFramerate.numerator`   | number  | Average frame rate numerator                           |
+| `avgFramerate.denominator` | number  | Average frame rate denominator                         |
+| `displayRotation`          | number  | Rotation stored in display metadata                    |
+| `rotation`                 | number  | Corrective rotation to display the video upright       |
+| `flipH`                    | boolean | Whether the display metadata applies a horizontal flip |
+| `flipV`                    | boolean | Whether the display metadata applies a vertical flip   |
+
+Throws if the input has no video stream.
+
 ### transcode()
 
 > [!IMPORTANT]
