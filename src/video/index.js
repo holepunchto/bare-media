@@ -28,7 +28,7 @@ async function extractFrames(fd, opts = {}) {
   const { frameIndex } = opts
 
   const ffmpeg = await importFFmpeg()
-  using io = createIOContext(fd, ffmpeg)
+  const io = createIOContext(fd, ffmpeg)
 
   using inputFormat = new ffmpeg.InputFormatContext(io)
   const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
@@ -97,7 +97,7 @@ async function extractFrames(fd, opts = {}) {
 
 async function metadata(fd) {
   const ffmpeg = await importFFmpeg()
-  using io = createIOContext(fd, ffmpeg)
+  const io = createIOContext(fd, ffmpeg)
 
   using inputFormat = new ffmpeg.InputFormatContext(io)
   const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
