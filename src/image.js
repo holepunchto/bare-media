@@ -213,6 +213,20 @@ function flip(rgba, opts = {}) {
 }
 
 async function orientate(rgba, opts = {}) {
+  if (opts.transform !== undefined) {
+    const { rotate = 0, flipH = false, flipV = false } = opts.transform
+
+    if (![0, 90, 180, 270].includes(rotate)) {
+      throw new Error('orientate(): transform.rotate can only be [0, 90, 180, 270]')
+    }
+
+    if (typeof flipH !== 'boolean' || typeof flipV !== 'boolean') {
+      throw new Error('orientate(): transform.flipH and transform.flipV must be boolean')
+    }
+
+    return _transform(rgba, { rotate, flipH, flipV })
+  }
+
   let orientation
 
   if (opts.file) {
@@ -229,7 +243,7 @@ async function orientate(rgba, opts = {}) {
   } else if (opts.exif !== undefined) {
     orientation = opts.exif
   } else {
-    throw new Error('orientate(): needs either "file" or "exif"')
+    throw new Error('orientate(): needs either "file", "exif", or "transform"')
   }
 
   let transformOpts
