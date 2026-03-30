@@ -326,6 +326,30 @@ test('image crop()', async (t) => {
   t.is(cropped.height, 50)
 })
 
+test('image crop() animated', async (t) => {
+  const animated = makeAnimatedRGBA()
+
+  const cropped = await crop(animated, {
+    left: 1,
+    top: 0,
+    width: 1,
+    height: 2
+  })
+
+  t.ok(Array.isArray(cropped.frames))
+  t.is(cropped.frames.length, 2)
+  t.is(cropped.loops, animated.loops)
+  t.is(cropped.width, 1)
+  t.is(cropped.height, 2)
+  t.is(cropped.frames[0].timestamp, 10)
+  t.is(cropped.frames[1].timestamp, 20)
+
+  for (const frame of cropped.frames) {
+    t.alike(pixelAt(frame, 0, 0), [0, 255, 0, 255])
+    t.alike(pixelAt(frame, 0, 1), [255, 255, 0, 255])
+  }
+})
+
 test('image crop() throws if the rectangle is out of bounds', async (t) => {
   const path = './test/fixtures/sample.jpg'
 
