@@ -326,6 +326,30 @@ test('image crop()', async (t) => {
   t.is(cropped.height, 50)
 })
 
+test('image crop() animated', async (t) => {
+  const animated = makeAnimatedRGBA()
+
+  const cropped = await crop(animated, {
+    left: 1,
+    top: 0,
+    width: 1,
+    height: 2
+  })
+
+  t.ok(Array.isArray(cropped.frames))
+  t.is(cropped.frames.length, 2)
+  t.is(cropped.loops, animated.loops)
+  t.is(cropped.width, 1)
+  t.is(cropped.height, 2)
+  t.is(cropped.frames[0].timestamp, 10)
+  t.is(cropped.frames[1].timestamp, 20)
+
+  for (const frame of cropped.frames) {
+    t.alike(pixelAt(frame, 0, 0), [0, 255, 0, 255])
+    t.alike(pixelAt(frame, 0, 1), [255, 255, 0, 255])
+  }
+})
+
 test('image crop() throws if the rectangle is out of bounds', async (t) => {
   const path = './test/fixtures/sample.jpg'
 
@@ -584,6 +608,19 @@ test('image orientate() unknown exif values do nothing (and do not throw)', asyn
   t.is(exif9.width, rgba.width)
   t.is(exif9.height, rgba.height)
   t.alike(exif9.data, rgba.data)
+})
+
+test('image orientate() with "transform"', async (t) => {
+  const rgba = makeRGBA()
+
+  const transformed = await orientate(rgba, {
+    transform: { rotate: 90, flipH: true, flipV: false }
+  })
+
+  t.alike(pixelAt(transformed, 0, 0), [255, 255, 0, 255])
+  t.alike(pixelAt(transformed, 1, 0), [0, 255, 0, 255])
+  t.alike(pixelAt(transformed, 0, 1), [0, 0, 255, 255])
+  t.alike(pixelAt(transformed, 1, 1), [255, 0, 0, 255])
 })
 
 test('image orientate() animated', async (t) => {

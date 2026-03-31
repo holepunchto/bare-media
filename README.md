@@ -93,13 +93,14 @@ Limits an animated image to a subset of frames. If the image is not animated, it
 
 Apply EXIF orientation.
 
-| Parameter   | Type   | Description                                          |
-| ----------- | ------ | ---------------------------------------------------- |
-| `buffer`    | object | The rgba image                                       |
-| `opts.file` | Buffer | Optional. Input image used to extract EXIF metadata. |
-| `opts.exif` | number | Optional. EXIF orientation value.                    |
+| Parameter        | Type   | Description                                                     |
+| ---------------- | ------ | --------------------------------------------------------------- |
+| `buffer`         | object | The rgba image                                                  |
+| `opts.file`      | Buffer | Optional. Input image used to extract EXIF metadata.            |
+| `opts.exif`      | number | Optional. EXIF orientation value.                               |
+| `opts.transform` | object | Optional. Transform object with `rotate`, `flipH`, and `flipV`. |
 
-At least one of `opts.file` or `opts.exif` is required. In a pipeline, `orientate()` can be called without options:
+At least one of `opts.file`, `opts.exif`, or `opts.transform` is required. In a pipeline, `orientate()` can be called without options:
 
 ```js
 const rgba = await image(path).decode().orientate()
@@ -151,6 +152,26 @@ Extracts frames from a video in RGBA
 | Parameter         | Type   | Description                    |
 | ----------------- | ------ | ------------------------------ |
 | `opts.frameIndex` | number | Number of the frame to extract |
+
+### metadata()
+
+Basic metadata for the primary video stream
+
+Returns:
+
+| Field                      | Type    | Description                                            |
+| -------------------------- | ------- | ------------------------------------------------------ |
+| `width`                    | number  | Width of the primary video stream                      |
+| `height`                   | number  | Height of the primary video stream                     |
+| `duration`                 | number  | Stream duration in seconds                             |
+| `avgFramerate.numerator`   | number  | Average frame rate numerator                           |
+| `avgFramerate.denominator` | number  | Average frame rate denominator                         |
+| `displayRotation`          | number  | Rotation stored in display metadata                    |
+| `rotation`                 | number  | Corrective rotation to display the video upright       |
+| `flipH`                    | boolean | Whether the display metadata applies a horizontal flip |
+| `flipV`                    | boolean | Whether the display metadata applies a vertical flip   |
+
+Throws if the input has no video stream.
 
 ### transcode()
 
