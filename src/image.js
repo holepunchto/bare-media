@@ -101,6 +101,26 @@ async function encode(rgba, opts = {}) {
   return encoded
 }
 
+function _cropFrame(frame, opts) {
+  const { left, top, width, height } = opts
+
+  const data = Buffer.alloc(width * height * 4)
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const srcIndex = ((y + top) * frame.width + (x + left)) * 4
+      const dstIndex = (y * width + x) * 4
+
+      data[dstIndex] = frame.data[srcIndex]
+      data[dstIndex + 1] = frame.data[srcIndex + 1]
+      data[dstIndex + 2] = frame.data[srcIndex + 2]
+      data[dstIndex + 3] = frame.data[srcIndex + 3]
+    }
+  }
+
+  return { ...frame, width, height, data }
+}
+
 async function crop(rgba, opts = {}) {
   const { left, top, width, height } = opts
 
@@ -124,26 +144,8 @@ async function crop(rgba, opts = {}) {
     throw new Error('Crop rectangle coordinates must be integers')
   }
 
-  const cropFrame = (frame) => {
-    const data = Buffer.alloc(width * height * 4)
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const srcIndex = ((y + top) * frame.width + (x + left)) * 4
-        const dstIndex = (y * width + x) * 4
-
-        data[dstIndex] = frame.data[srcIndex]
-        data[dstIndex + 1] = frame.data[srcIndex + 1]
-        data[dstIndex + 2] = frame.data[srcIndex + 2]
-        data[dstIndex + 3] = frame.data[srcIndex + 3]
-      }
-    }
-
-    return { ...frame, width, height, data }
-  }
-
   if (Array.isArray(rgba.frames)) {
-    const frames = rgba.frames.map(cropFrame)
+    const frames = rgba.frames.map((frame) => _cropFrame(frame, opts))
     return {
       ...rgba,
       width,
@@ -152,7 +154,7 @@ async function crop(rgba, opts = {}) {
     }
   }
 
-  return cropFrame(rgba)
+  return _cropFrame(rgba, opts)
 }
 
 async function resize(rgba, opts = {}) {
