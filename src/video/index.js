@@ -32,7 +32,7 @@ async function extractFrames(fd, opts = {}) {
 
   using inputFormat = new ffmpeg.InputFormatContext(io)
   const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
-  const decoder = stream.decoder()
+  using decoder = stream.decoder()
   decoder.open()
 
   using packet = new ffmpeg.Packet()
@@ -85,8 +85,6 @@ async function extractFrames(fd, opts = {}) {
     packet.unref()
     if (result) break
   }
-
-  decoder.destroy()
 
   if (!result) {
     throw new Error(`Frame ${frameIndex} not found (video only has ${currentFrame} frames)`)
