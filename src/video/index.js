@@ -33,60 +33,63 @@ async function extractFrames(fd, opts = {}) {
   using inputFormat = new ffmpeg.InputFormatContext(io)
   const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
   const decoder = stream.decoder()
-  decoder.open()
-
-  using packet = new ffmpeg.Packet()
-  using frame = new ffmpeg.Frame()
 
   let currentFrame = 0
   let result = null
 
-  while (inputFormat.readFrame(packet)) {
-    if (packet.streamIndex === stream.index) {
-      if (decoder.sendPacket(packet)) {
-        while (decoder.receiveFrame(frame)) {
-          if (currentFrame === frameIndex) {
-            // Convert to RGBA
-            using scaler = new ffmpeg.Scaler(
-              frame.format,
-              frame.width,
-              frame.height,
-              ffmpeg.constants.pixelFormats.RGBA,
-              frame.width,
-              frame.height
-            )
+  try {
+    decoder.open()
 
-            using rgbaFrame = new ffmpeg.Frame()
-            rgbaFrame.width = frame.width
-            rgbaFrame.height = frame.height
-            rgbaFrame.format = ffmpeg.constants.pixelFormats.RGBA
-            rgbaFrame.alloc()
+    using packet = new ffmpeg.Packet()
+    using frame = new ffmpeg.Frame()
 
-            scaler.scale(frame, rgbaFrame)
+    while (inputFormat.readFrame(packet)) {
+      if (packet.streamIndex === stream.index) {
+        if (decoder.sendPacket(packet)) {
+          while (decoder.receiveFrame(frame)) {
+            if (currentFrame === frameIndex) {
+              // Convert to RGBA
+              using scaler = new ffmpeg.Scaler(
+                frame.format,
+                frame.width,
+                frame.height,
+                ffmpeg.constants.pixelFormats.RGBA,
+                frame.width,
+                frame.height
+              )
 
-            const image = new ffmpeg.Image(
-              ffmpeg.constants.pixelFormats.RGBA,
-              rgbaFrame.width,
-              rgbaFrame.height
-            )
-            image.read(rgbaFrame)
+              using rgbaFrame = new ffmpeg.Frame()
+              rgbaFrame.width = frame.width
+              rgbaFrame.height = frame.height
+              rgbaFrame.format = ffmpeg.constants.pixelFormats.RGBA
+              rgbaFrame.alloc()
 
-            result = {
-              width: rgbaFrame.width,
-              height: rgbaFrame.height,
-              data: image.data
+              scaler.scale(frame, rgbaFrame)
+
+              const image = new ffmpeg.Image(
+                ffmpeg.constants.pixelFormats.RGBA,
+                rgbaFrame.width,
+                rgbaFrame.height
+              )
+              image.read(rgbaFrame)
+
+              result = {
+                width: rgbaFrame.width,
+                height: rgbaFrame.height,
+                data: image.data
+              }
+              break
             }
-            break
+            currentFrame++
           }
-          currentFrame++
         }
       }
+      packet.unref()
+      if (result) break
     }
-    packet.unref()
-    if (result) break
+  } finally {
+    decoder.destroy()
   }
-
-  decoder.destroy()
 
   if (!result) {
     throw new Error(`Frame ${frameIndex} not found (video only has ${currentFrame} frames)`)
