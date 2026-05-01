@@ -77,4 +77,48 @@ async function metadata(buffer, opts = {}) {
   return data
 }
 
-export { metadata }
+async function clear (buffer, opts = {}) {
+  throw new Error('Not implemented')
+}
+
+class ImageMetadataPipeline {
+  constructor(input, opts = {}) {
+    this.input = input
+    this.steps = []
+    this.read = opts.read
+    this.write = opts.save
+
+    const methods = ['clear']
+    for (let method of methods) {
+      this[method] = (opts) => {
+        this.steps.push({ op: method, opts })
+        return this
+      }
+    }
+  }
+
+  async then(resolve, reject) {
+    try {
+      let buffer = await this.read(this.input)
+
+      for (const step of this.steps) {
+        if (step.op === 'clear') {
+          buffer = await clear(buffer, step.opts)
+        }
+      }
+
+      resolve(buffer)
+    } catch (err) {
+      reject(err)
+    }
+  }
+
+  async save(filename, opts) {
+    const buffer = await this
+    return this.write(filename, buffer, opts)
+  }
+}
+
+metadata.clear = clear
+
+export { metadata, ImageMetadataPipeline }

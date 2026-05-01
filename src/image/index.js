@@ -3,7 +3,7 @@ import fetch from 'bare-fetch'
 
 import { EXIF } from '../../types.js'
 import { importCodec, supportsQuality } from '../codecs.js'
-import { metadata } from './metadata.js'
+import { metadata, ImageMetadataPipeline } from './metadata.js'
 import { isHttpUrl, detectMimeType, calculateFitDimensions } from '../util.js'
 
 const animatableMimetypes = ['image/gif', 'image/webp']
@@ -381,9 +381,12 @@ class ImagePipeline {
     }
   }
 
-  async metadata(opts = {}) {
-    const buffer = await read(this.input)
-    return metadata(buffer, opts)
+  metadata(opts = {}) {
+    if (opts.edit) {
+      return new ImageMetadataPipeline(this.input, { read, save })
+    }
+
+    return read(this.input).then((buffer) => metadata(buffer, opts))
   }
 
   async then(resolve, reject) {

@@ -15,7 +15,6 @@ import {
 } from './helpers'
 
 const { read, decode, encode, crop, resize, slice, orientate, rotate, flip } = image
-const { read: readMetadata, get: getMetadata } = image.metadata
 
 test('image read() path', async (t) => {
   const path = './test/fixtures/sample.jpg'
@@ -65,6 +64,54 @@ test('image.metadata() single entry', async (t) => {
   const orientation = await image(path).metadata({ tag: 'orientation' })
 
   t.is(orientation, 6)
+})
+
+test('image.metadata({ edit: true }).save() only copies the image', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+  const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
+
+  await image(path).metadata({ edit: true }).save(outPath)
+  console.log({ outPath })
+
+  const input = await image.read(path)
+  const output = await image.read(outPath)
+
+  t.alike(output, input)
+
+  t.teardown(() => {
+    fs.rm(outPath, { force: true })
+  })
+})
+
+
+test.skip('image.metadata({ edit: true }).clear().save() strips all metadata', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+  const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.exif.COLOR_SPACE)
+  t.ok(metadata.exif.EXIF_VERSION)
+  t.ok(metadata.exif.FLASH_PIX_VERSION)
+  t.ok(metadata.exif.ORIENTATION)
+  t.ok(metadata.exif.RESOLUTION_UNIT)
+  t.is(metadata.orientation, 6)
+
+  await image(path).metadata({ edit: true }).clear().save(outPath)
+
+  {
+    const metadata = await image(outPath).metadata()
+    t.absent(metadata.exif.COLOR_SPACE)
+    t.absent(metadata.exif.EXIF_VERSION)
+    t.absent(metadata.exif.FLASH_PIX_VERSION)
+    t.absent(metadata.exif.ORIENTATION)
+    t.absent(metadata.exif.RESOLUTION_UNIT)
+    t.absent(metadata.orientation, 6)
+  }
+
+  t.teardown(() => {
+    fs.rm(outPath, { force: true })
+  })
 })
 
 test('image decode() avif', async (t) => {
