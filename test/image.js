@@ -15,6 +15,7 @@ import {
 } from './helpers'
 
 const { read, decode, encode, crop, resize, slice, orientate, rotate, flip } = image
+const { read: readMetadata, get: getMetadata } = image.metadata
 
 test('image read() path', async (t) => {
   const path = './test/fixtures/sample.jpg'
@@ -43,6 +44,27 @@ test('image read() buffer', async (t) => {
 
   t.ok(Buffer.isBuffer(buffer))
   t.alike(buffer.slice(0, 2), b4a.from([0xff, 0xd8]), 'jpeg')
+})
+
+test('image.metadata() all entries', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.exif.COLOR_SPACE)
+  t.ok(metadata.exif.EXIF_VERSION)
+  t.ok(metadata.exif.FLASH_PIX_VERSION)
+  t.ok(metadata.exif.ORIENTATION)
+  t.ok(metadata.exif.RESOLUTION_UNIT)
+  t.is(metadata.orientation, 6)
+})
+
+test('image.metadata() single entry', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const orientation = await image(path).metadata({ tag: 'orientation' })
+
+  t.is(orientation, 6)
 })
 
 test('image decode() avif', async (t) => {
