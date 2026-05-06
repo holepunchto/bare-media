@@ -70,6 +70,8 @@ const orientation = await image(path).metadata({ tag: 'orientation' })
 | ---------- | ------ | ----------------------------------- |
 | `opts.tag` | string | Optional. Read a single tag by name |
 
+**Supported formats**: `jpeg`, `tiff`.
+
 ### metadata.strip()
 
 > [!IMPORTANT]
