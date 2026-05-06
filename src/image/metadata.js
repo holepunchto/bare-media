@@ -13,7 +13,7 @@ function isSupported(buffer) {
 
 function resolveExifTag(exif, tag) {
   if (typeof tag === 'number') return tag
-  
+
   if (typeof tag === 'string') {
     for (const [name, value] of Object.entries(exif.constants.tags)) {
       if (name.toLowerCase() === tag.toLowerCase()) {
@@ -88,7 +88,7 @@ async function stripJPEG(buffer, opts = {}) {
   return jpeg.replaceMarkers(buffer, keep)
 }
 
-async function strip (buffer, opts = {}) {
+async function strip(buffer, opts = {}) {
   const mimetype = detectMimeType(buffer)
 
   if (mimetype === IMAGE.JPEG || mimetype === IMAGE.JPG) {

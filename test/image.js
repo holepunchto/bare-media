@@ -98,18 +98,7 @@ test('image.metadata.strip().save() strips all metadata', async (t) => {
 })
 
 test('isStripMetadataSupported() agrees with strip()', async (t) => {
-  const formats = [
-    'avif',
-    'bmp',
-    'gif',
-    'heic',
-    'ico',
-    'jpg',
-    'png',
-    'svg',
-    'tiff',
-    'webp'
-  ]
+  const formats = ['avif', 'bmp', 'gif', 'heic', 'ico', 'jpg', 'png', 'svg', 'tiff', 'webp']
 
   for (const format of formats) {
     const mimetype = `image/${format}`
