@@ -57,38 +57,6 @@ Encodes an image to a specific format
 | `opts.maxBytes` | number | Max bytes for the encoded image (reduces quality or fps in case of animated images) |
 | `opts...`       | any    | Additional encoder-specific options                                                 |
 
-### metadata()
-
-Read image metadata.
-
-```js
-const data = await image(path).metadata()
-const orientation = await image(path).metadata({ tag: 'orientation' })
-```
-
-| Parameter  | Type   | Description                         |
-| ---------- | ------ | ----------------------------------- |
-| `opts.tag` | string | Optional. Read a single tag by name |
-
-**Supported formats**: `jpeg`, `tiff`.
-
-### metadata.strip()
-
-> [!IMPORTANT]
-> This feature is experimental. The API is subject to change and may break at any time.
-
-Strip metadata from an image returning a new image buffer.
-
-```js
-await image(path).metadata.strip().save(outPath)
-```
-
-| Parameter        | Type    | Description                                                         |
-| ---------------- | ------- | ------------------------------------------------------------------- |
-| `opts.keepColor` | boolean | Keep color-transform metadata to avoid color shifts. Default `true` |
-
-Check with `isStripMetadataSupported()` for supported types, only `jpeg` at the moment.
-
 ### crop()
 
 Crop an image
@@ -174,6 +142,41 @@ Write an encoded image buffer to a file.
 | `filename` | string | Destination file path                    |
 | `buffer`   | object | Encoded image buffer                     |
 | `opts`     | object | Options passed through to `fs.writeFile` |
+
+### metadata()
+
+> [!IMPORTANT]
+> This feature is experimental. The API is subject to change and may break at any time.
+
+Read image metadata.
+
+```js
+const data = await image(path).metadata()
+const orientation = await image(path).metadata({ tag: 'orientation' })
+```
+
+| Parameter  | Type   | Description                         |
+| ---------- | ------ | ----------------------------------- |
+| `opts.tag` | string | Optional. Read a single tag by name |
+
+**Supported formats**: `jpeg`, `tiff`.
+
+### metadata.strip()
+
+> [!IMPORTANT]
+> This feature is experimental. The API is subject to change and may break at any time.
+
+Strip metadata from an image returning a new image buffer.
+
+```js
+await image(path).metadata.strip().save(outPath)
+```
+
+| Parameter        | Type    | Description                                                         |
+| ---------------- | ------- | ------------------------------------------------------------------- |
+| `opts.keepColor` | boolean | Keep color-transform metadata to avoid color shifts. Default `true` |
+
+Check with `isStripMetadataSupported()` for supported types, only `jpeg` at the moment.
 
 ## Video API
 
