@@ -67,23 +67,7 @@ test('image.metadata() single entry', async (t) => {
   t.is(orientation, 6)
 })
 
-test('image.metadata({ edit: true }).save() only copies the image', async (t) => {
-  const path = './test/fixtures/exif-orientation.jpg'
-  const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
-
-  await image(path).metadata({ edit: true }).save(outPath)
-
-  const input = await image.read(path)
-  const output = await image.read(outPath)
-
-  t.alike(output, input)
-
-  t.teardown(() => {
-    fs.rm(outPath, { force: true })
-  })
-})
-
-test.skip('image.metadata({ edit: true }).strip().save() strips all metadata', async (t) => {
+test('image.metadata.strip().save() strips all metadata', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
   const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
 
@@ -96,7 +80,7 @@ test.skip('image.metadata({ edit: true }).strip().save() strips all metadata', a
   t.ok(metadata.exif.RESOLUTION_UNIT)
   t.is(metadata.orientation, 6)
 
-  await image(path).metadata({ edit: true }).strip().save(outPath)
+  await image(path).metadata.strip().save(outPath)
 
   {
     const metadata = await image(outPath).metadata()
@@ -133,7 +117,7 @@ test('isStripMetadataSupported() agrees with strip()', async (t) => {
 
     let threw = false
     try {
-      await image(`./test/fixtures/sample.${format}`).metadata({ edit: true }).strip()
+      await image(`./test/fixtures/sample.${format}`).metadata.strip()
     } catch {
       threw = true
     }

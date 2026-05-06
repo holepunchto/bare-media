@@ -379,14 +379,9 @@ class ImagePipeline {
         return this
       }
     }
-  }
 
-  metadata(opts = {}) {
-    if (opts.edit) {
-      return new ImageMetadataPipeline(this.input, { read, save })
-    }
-
-    return read(this.input).then((buffer) => metadata(buffer, opts))
+    this.metadata = (opts) => read(input).then((buffer) => metadata(buffer, opts))
+    this.metadata.strip = (opts) => new ImageMetadataPipeline(input, { read, save }).strip(opts)
   }
 
   async then(resolve, reject) {
