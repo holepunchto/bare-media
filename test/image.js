@@ -5,6 +5,7 @@ import os from 'bare-os'
 import barePath from 'bare-path'
 
 import { image } from '..'
+import { isStripMetadataSupported } from '../types.js'
 import {
   makeHttpLink,
   isAnimatedWebP,
@@ -82,7 +83,6 @@ test('image.metadata({ edit: true }).save() only copies the image', async (t) =>
   })
 })
 
-
 test.skip('image.metadata({ edit: true }).strip().save() strips all metadata', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
   const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
@@ -111,6 +111,35 @@ test.skip('image.metadata({ edit: true }).strip().save() strips all metadata', a
   t.teardown(() => {
     fs.rm(outPath, { force: true })
   })
+})
+
+test('isStripMetadataSupported() agrees with strip()', async (t) => {
+  const formats = [
+    'avif',
+    'bmp',
+    'gif',
+    'heic',
+    'ico',
+    'jpg',
+    'png',
+    'svg',
+    'tiff',
+    'webp'
+  ]
+
+  for (const format of formats) {
+    const mimetype = `image/${format}`
+    const supported = isStripMetadataSupported(mimetype)
+
+    let threw = false
+    try {
+      await image(`./test/fixtures/sample.${format}`).metadata({ edit: true }).strip()
+    } catch {
+      threw = true
+    }
+
+    t.is(threw, !supported, `isStripMetadataSupported() mismatch with ${mimetype}`)
+  }
 })
 
 test('image decode() avif', async (t) => {
