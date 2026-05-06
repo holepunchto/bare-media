@@ -111,7 +111,11 @@ test('isStripMetadataSupported() agrees with strip()', async (t) => {
       threw = true
     }
 
-    t.is(threw, !supported, `isStripMetadataSupported() mismatch with ${mimetype}`)
+    t.is(
+      threw,
+      !supported,
+      `isStripMetadataSupported() match with strip() support for ${mimetype} ${supported ? '✔' : '⨯'}`
+    )
   }
 })
 
