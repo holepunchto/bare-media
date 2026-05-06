@@ -77,21 +77,21 @@ async function metadata(buffer, opts = {}) {
   return data
 }
 
-async function clearJPEG(buffer, opts = {}) {
+async function stripJPEG(buffer, opts = {}) {
   const jpeg = await import('bare-jpeg')
   const { markers } = jpeg.readHeader(buffer)
   // TODO: need to keep some markers for a correct visualization, maybe also exif orientation.
   return jpeg.replaceMarkers(buffer, [])
 }
 
-async function clear (buffer, opts = {}) {
+async function strip (buffer, opts = {}) {
   const mimetype = detectMimeType(buffer)
 
   if (mimetype === IMAGE.JPEG || mimetype === IMAGE.JPG) {
-    return clearJPEG(buffer, opts)
+    return stripJPEG(buffer, opts)
   }
 
-  throw new Error(`metadata clear(): unsupported type ${mimetype}`)
+  throw new Error(`metadata strip(): unsupported type ${mimetype}`)
 }
 
 class ImageMetadataPipeline {
@@ -101,7 +101,7 @@ class ImageMetadataPipeline {
     this.read = opts.read
     this.write = opts.save
 
-    const methods = ['clear']
+    const methods = ['strip']
     for (let method of methods) {
       this[method] = (opts) => {
         this.steps.push({ op: method, opts })
@@ -115,8 +115,8 @@ class ImageMetadataPipeline {
       let buffer = await this.read(this.input)
 
       for (const step of this.steps) {
-        if (step.op === 'clear') {
-          buffer = await clear(buffer, step.opts)
+        if (step.op === 'strip') {
+          buffer = await strip(buffer, step.opts)
         }
       }
 
@@ -132,6 +132,6 @@ class ImageMetadataPipeline {
   }
 }
 
-metadata.clear = clear
+metadata.strip = strip
 
 export { metadata, ImageMetadataPipeline }

@@ -71,7 +71,6 @@ test('image.metadata({ edit: true }).save() only copies the image', async (t) =>
   const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
 
   await image(path).metadata({ edit: true }).save(outPath)
-  console.log({ outPath })
 
   const input = await image.read(path)
   const output = await image.read(outPath)
@@ -84,7 +83,7 @@ test('image.metadata({ edit: true }).save() only copies the image', async (t) =>
 })
 
 
-test.skip('image.metadata({ edit: true }).clear().save() strips all metadata', async (t) => {
+test.skip('image.metadata({ edit: true }).strip().save() strips all metadata', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
   const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
 
@@ -97,7 +96,7 @@ test.skip('image.metadata({ edit: true }).clear().save() strips all metadata', a
   t.ok(metadata.exif.RESOLUTION_UNIT)
   t.is(metadata.orientation, 6)
 
-  await image(path).metadata({ edit: true }).clear().save(outPath)
+  await image(path).metadata({ edit: true }).strip().save(outPath)
 
   {
     const metadata = await image(outPath).metadata()
