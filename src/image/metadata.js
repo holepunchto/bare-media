@@ -77,8 +77,21 @@ async function metadata(buffer, opts = {}) {
   return data
 }
 
+async function clearJPEG(buffer, opts = {}) {
+  const jpeg = await import('bare-jpeg')
+  const { markers } = jpeg.readHeader(buffer)
+  // TODO: need to keep some markers for a correct visualization, maybe also exif orientation.
+  return jpeg.replaceMarkers(buffer, [])
+}
+
 async function clear (buffer, opts = {}) {
-  throw new Error('Not implemented')
+  const mimetype = detectMimeType(buffer)
+
+  if (mimetype === IMAGE.JPEG || mimetype === IMAGE.JPG) {
+    return clearJPEG(buffer, opts)
+  }
+
+  throw new Error(`metadata clear(): unsupported type ${mimetype}`)
 }
 
 class ImageMetadataPipeline {
