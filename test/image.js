@@ -51,11 +51,14 @@ test('image.metadata() all entries', async (t) => {
 
   const metadata = await image(path).metadata()
 
-  t.ok(metadata.exif.COLOR_SPACE)
-  t.ok(metadata.exif.EXIF_VERSION)
-  t.ok(metadata.exif.FLASH_PIX_VERSION)
-  t.ok(metadata.exif.ORIENTATION)
-  t.ok(metadata.exif.RESOLUTION_UNIT)
+  t.is(metadata.exif.COLOR_SPACE, 65535)
+  t.is(metadata.exif.EXIF_VERSION.toString(), '0210')
+  t.is(metadata.exif.FLASH_PIX_VERSION.toString(), '0100')
+  t.is(metadata.exif.ORIENTATION, 6)
+  t.is(metadata.exif.RESOLUTION_UNIT, 1)
+  t.alike(metadata.exif.X_RESOLUTION, { numerator: 1, denominator: 1 })
+  t.alike(metadata.exif.Y_RESOLUTION, { numerator: 1, denominator: 1 })
+  t.is(metadata.exif.YCBCR_POSITIONING, 1)
   t.is(metadata.orientation, 6)
 })
 
