@@ -7,10 +7,6 @@ function isExifSupported(buffer) {
   return supportedExifMimetypes.has(detectMimeType(buffer))
 }
 
-function isSupported(buffer) {
-  return isExifSupported(buffer)
-}
-
 function resolveExifTag(exif, tag) {
   if (typeof tag === 'number') return tag
 
@@ -60,7 +56,7 @@ function metadataTag(buffer, tag) {
 }
 
 async function metadata(buffer, opts = {}) {
-  if (!isSupported(buffer)) return {}
+  if (!isExifSupported(buffer)) return {}
 
   if (opts.tag) {
     return metadataTag(buffer, opts.tag)
