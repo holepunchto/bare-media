@@ -101,6 +101,7 @@ class ImageMetadataPipeline {
     this.read = opts.read
     this.write = opts.save
 
+    // Add future chainable metadata edit methods here, like set() or remove().
     const methods = ['strip']
     for (let method of methods) {
       this[method] = (opts) => {
