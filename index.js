@@ -1,3 +1,3 @@
 export * from './src/codecs'
-export * from './src/image/image.js'
+export * from './src/image'
 export * from './src/video'
