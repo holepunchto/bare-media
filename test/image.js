@@ -70,7 +70,32 @@ test('image.metadata() single entry', async (t) => {
   t.is(orientation, 6)
 })
 
-test('image.metadata.strip().save() strips all metadata', async (t) => {
+test('image.metadata.strip() strips all metadata', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.exif.COLOR_SPACE)
+  t.ok(metadata.exif.EXIF_VERSION)
+  t.ok(metadata.exif.FLASH_PIX_VERSION)
+  t.ok(metadata.exif.ORIENTATION)
+  t.ok(metadata.exif.RESOLUTION_UNIT)
+  t.is(metadata.orientation, 6)
+
+  const newImage = await image(path).metadata.strip()
+
+  {
+    const metadata = await image(newImage).metadata()
+    t.absent(metadata.exif.COLOR_SPACE)
+    t.absent(metadata.exif.EXIF_VERSION)
+    t.absent(metadata.exif.FLASH_PIX_VERSION)
+    t.absent(metadata.exif.ORIENTATION)
+    t.absent(metadata.exif.RESOLUTION_UNIT)
+    t.absent(metadata.orientation, 6)
+  }
+})
+
+test('image.metadata.strip().save() strips all metadata and saves the file', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
   const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
 
