@@ -1,8 +1,9 @@
 import fs from 'bare-fs'
 import fetch from 'bare-fetch'
 
-import { EXIF } from '../types.js'
-import { importCodec, supportsQuality } from './codecs.js'
+import { EXIF } from '../types'
+import { importCodec, supportsQuality } from './codecs'
+import { metadata, ImageMetadataPipeline } from './image/metadata'
 import { isHttpUrl, detectMimeType, calculateFitDimensions } from './util'
 
 const animatableMimetypes = ['image/gif', 'image/webp']
@@ -246,16 +247,7 @@ async function orientate(rgba, opts = {}) {
   let orientation
 
   if (opts.file) {
-    try {
-      const exif = await import('bare-exif')
-      const exifData = new exif.Data(opts.file)
-      const entry = exifData.entry(exif.constants.tags.ORIENTATION)
-      if (entry) {
-        orientation = entry.read()
-      }
-    } catch (err) {
-      console.error('orientate(): Could not get EXIF data', err)
-    }
+    orientation = await metadata(opts.file, { tag: 'orientation' })
   } else if (opts.exif !== undefined) {
     orientation = opts.exif
   } else {
@@ -387,6 +379,9 @@ class ImagePipeline {
         return this
       }
     }
+
+    this.metadata = (opts) => read(input).then((buffer) => metadata(buffer, opts))
+    this.metadata.strip = (opts) => new ImageMetadataPipeline(input, { read, save }).strip(opts)
   }
 
   async then(resolve, reject) {
@@ -460,5 +455,6 @@ image.resize = resize
 image.crop = crop
 image.slice = slice
 image.encode = encode
+image.metadata = metadata
 
 export { image }
