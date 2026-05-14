@@ -86,12 +86,47 @@ test('image.metadata.strip() strips all metadata', async (t) => {
 
   {
     const metadata = await image(newImage).metadata()
+
+    // no exif data is stored
     t.absent(metadata.exif.COLOR_SPACE)
     t.absent(metadata.exif.EXIF_VERSION)
     t.absent(metadata.exif.FLASH_PIX_VERSION)
     t.absent(metadata.exif.ORIENTATION)
     t.absent(metadata.exif.RESOLUTION_UNIT)
     t.absent(metadata.orientation, 6)
+  }
+})
+
+test('image.metadata.strip() strips all metadata, except orientation', async (t) => {
+  const path = './test/fixtures/exif.jpg'
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.exif.COLOR_SPACE)
+  t.ok(metadata.exif.EXIF_VERSION)
+  t.ok(metadata.exif.FLASH_PIX_VERSION)
+  t.ok(metadata.exif.RESOLUTION_UNIT)
+  t.ok(metadata.exif.MAKE)
+  t.ok(metadata.exif.LENS_MAKE)
+  t.ok(metadata.exif.ARTIST)
+  t.ok(metadata.exif.ORIENTATION)
+  t.is(metadata.orientation, 6)
+
+  const newImage = await image(path).metadata.strip({ keepOrientation: true })
+
+  {
+    const metadata = await image(newImage).metadata()
+
+    // some mandatory tags remain as for the spec
+    t.ok(metadata.exif.COLOR_SPACE)
+    t.ok(metadata.exif.EXIF_VERSION)
+    t.ok(metadata.exif.FLASH_PIX_VERSION)
+    t.ok(metadata.exif.RESOLUTION_UNIT)
+    t.absent(metadata.exif.MAKE)
+    t.absent(metadata.exif.LENS_MAKE)
+    t.absent(metadata.exif.ARTIST)
+    t.ok(metadata.exif.ORIENTATION)
+    t.is(metadata.orientation, 6)
   }
 })
 

@@ -172,9 +172,10 @@ Strip metadata from an image returning a new image buffer.
 await image(path).metadata.strip().save(outPath)
 ```
 
-| Parameter        | Type    | Description                                                         |
-| ---------------- | ------- | ------------------------------------------------------------------- |
-| `opts.keepColor` | boolean | Keep color-transform metadata to avoid color shifts. Default `true` |
+| Parameter              | Type    | Description                                                         |
+| ---------------------- | ------- | ------------------------------------------------------------------- |
+| `opts.keepColor`       | boolean | Keep color-transform metadata to avoid color shifts. Default `true` |
+| `opts.keepOrientation` | boolean | Keep orientation to avoid image rotations. Default `false`          |
 
 Check with `isStripMetadataSupported()` for supported types, only `jpeg` at the moment.
 
