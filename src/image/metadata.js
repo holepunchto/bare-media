@@ -95,7 +95,7 @@ async function stripJPEG(buffer, opts = {}) {
 
     for (const tag of Object.values(tags)) {
       if (tag !== tags.ORIENTATION) {
-        data.remove(tag)
+        data.removeEntry(tag)
       }
     }
 
