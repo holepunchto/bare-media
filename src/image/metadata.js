@@ -99,7 +99,7 @@ async function stripJPEG(buffer, opts = {}) {
       }
     }
 
-    const rawExif = data.save()
+    const rawExif = data.saveData()
 
     newMarkers.push({
       marker: APP1,
