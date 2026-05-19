@@ -74,14 +74,40 @@ async function metadata(buffer, opts = {}) {
 }
 
 async function stripJPEG(buffer, opts = {}) {
-  const { keepColor = true } = opts
+  const { keepColor = true, keepOrientation = false } = opts
 
   const jpeg = await import('bare-jpeg')
+  const APP1 = 0xe1
   const APP14 = 0xee
-  const { markers } = jpeg.readHeader(buffer)
-  const keep = keepColor ? markers.filter((m) => m.marker === APP14) : []
 
-  return jpeg.replaceMarkers(buffer, keep)
+  const { markers } = jpeg.readHeader(buffer)
+
+  let newMarkers = []
+
+  if (keepColor) {
+    newMarkers = markers.filter((m) => m.marker === APP14)
+  }
+
+  if (keepOrientation) {
+    const exif = await import('bare-exif')
+    const tags = exif.constants.tags
+    const data = new exif.Data(buffer)
+
+    for (const tag of Object.values(tags)) {
+      if (tag !== tags.ORIENTATION) {
+        data.removeEntry(tag)
+      }
+    }
+
+    const rawExif = data.saveData()
+
+    newMarkers.push({
+      marker: APP1,
+      data: rawExif
+    })
+  }
+
+  return jpeg.replaceMarkers(buffer, newMarkers)
 }
 
 async function strip(buffer, opts = {}) {
