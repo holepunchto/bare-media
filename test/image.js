@@ -5,6 +5,7 @@ import os from 'bare-os'
 import barePath from 'bare-path'
 
 import { image } from '..'
+import { isStripMetadataSupported } from '../types.js'
 import {
   makeHttpLink,
   isAnimatedWebP,
@@ -43,6 +44,142 @@ test('image read() buffer', async (t) => {
 
   t.ok(Buffer.isBuffer(buffer))
   t.alike(buffer.slice(0, 2), b4a.from([0xff, 0xd8]), 'jpeg')
+})
+
+test('image.metadata() all entries', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const metadata = await image(path).metadata()
+
+  t.is(metadata.exif.COLOR_SPACE, 65535)
+  t.is(metadata.exif.EXIF_VERSION.toString(), '0210')
+  t.is(metadata.exif.FLASH_PIX_VERSION.toString(), '0100')
+  t.is(metadata.exif.ORIENTATION, 6)
+  t.is(metadata.exif.RESOLUTION_UNIT, 1)
+  t.alike(metadata.exif.X_RESOLUTION, { numerator: 1, denominator: 1 })
+  t.alike(metadata.exif.Y_RESOLUTION, { numerator: 1, denominator: 1 })
+  t.is(metadata.exif.YCBCR_POSITIONING, 1)
+  t.is(metadata.orientation, 6)
+})
+
+test('image.metadata() single entry', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const orientation = await image(path).metadata({ tag: 'orientation' })
+
+  t.is(orientation, 6)
+})
+
+test('image.metadata.strip() strips all metadata', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.exif.COLOR_SPACE)
+  t.ok(metadata.exif.EXIF_VERSION)
+  t.ok(metadata.exif.FLASH_PIX_VERSION)
+  t.ok(metadata.exif.ORIENTATION)
+  t.ok(metadata.exif.RESOLUTION_UNIT)
+  t.is(metadata.orientation, 6)
+
+  const newImage = await image(path).metadata.strip()
+
+  {
+    const metadata = await image(newImage).metadata()
+
+    // no exif data is stored
+    t.absent(metadata.exif.COLOR_SPACE)
+    t.absent(metadata.exif.EXIF_VERSION)
+    t.absent(metadata.exif.FLASH_PIX_VERSION)
+    t.absent(metadata.exif.ORIENTATION)
+    t.absent(metadata.exif.RESOLUTION_UNIT)
+    t.absent(metadata.orientation, 6)
+  }
+})
+
+test('image.metadata.strip() strips all metadata, except orientation', async (t) => {
+  const path = './test/fixtures/exif.jpg'
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.exif.COLOR_SPACE)
+  t.ok(metadata.exif.EXIF_VERSION)
+  t.ok(metadata.exif.FLASH_PIX_VERSION)
+  t.ok(metadata.exif.RESOLUTION_UNIT)
+  t.ok(metadata.exif.MAKE)
+  t.ok(metadata.exif.LENS_MAKE)
+  t.ok(metadata.exif.ARTIST)
+  t.ok(metadata.exif.ORIENTATION)
+  t.is(metadata.orientation, 6)
+
+  const newImage = await image(path).metadata.strip({ keepOrientation: true })
+
+  {
+    const metadata = await image(newImage).metadata()
+
+    // some mandatory tags remain as for the spec
+    t.ok(metadata.exif.COLOR_SPACE)
+    t.ok(metadata.exif.EXIF_VERSION)
+    t.ok(metadata.exif.FLASH_PIX_VERSION)
+    t.ok(metadata.exif.RESOLUTION_UNIT)
+    t.absent(metadata.exif.MAKE)
+    t.absent(metadata.exif.LENS_MAKE)
+    t.absent(metadata.exif.ARTIST)
+    t.ok(metadata.exif.ORIENTATION)
+    t.is(metadata.orientation, 6)
+  }
+})
+
+test('image.metadata.strip().save() strips all metadata and saves the file', async (t) => {
+  const path = './test/fixtures/exif-orientation.jpg'
+  const outPath = barePath.join(os.tmpdir(), randomFileName('jpg'))
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.exif.COLOR_SPACE)
+  t.ok(metadata.exif.EXIF_VERSION)
+  t.ok(metadata.exif.FLASH_PIX_VERSION)
+  t.ok(metadata.exif.ORIENTATION)
+  t.ok(metadata.exif.RESOLUTION_UNIT)
+  t.is(metadata.orientation, 6)
+
+  await image(path).metadata.strip().save(outPath)
+
+  {
+    const metadata = await image(outPath).metadata()
+    t.absent(metadata.exif.COLOR_SPACE)
+    t.absent(metadata.exif.EXIF_VERSION)
+    t.absent(metadata.exif.FLASH_PIX_VERSION)
+    t.absent(metadata.exif.ORIENTATION)
+    t.absent(metadata.exif.RESOLUTION_UNIT)
+    t.absent(metadata.orientation, 6)
+  }
+
+  t.teardown(() => {
+    fs.rm(outPath, { force: true })
+  })
+})
+
+test('isStripMetadataSupported() agrees with strip()', async (t) => {
+  const formats = ['avif', 'bmp', 'gif', 'heic', 'ico', 'jpg', 'png', 'svg', 'tiff', 'webp']
+
+  for (const format of formats) {
+    const mimetype = `image/${format}`
+    const supported = isStripMetadataSupported(mimetype)
+
+    let threw = false
+    try {
+      await image(`./test/fixtures/sample.${format}`).metadata.strip()
+    } catch {
+      threw = true
+    }
+
+    t.is(
+      threw,
+      !supported,
+      `isStripMetadataSupported() match with strip() support for ${mimetype} ${supported ? '✔' : '⨯'}`
+    )
+  }
 })
 
 test('image decode() avif', async (t) => {

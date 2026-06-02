@@ -38,6 +38,10 @@ export function isMediaSupported(mimetype) {
   return isImageSupported(mimetype) || isVideoSupported(mimetype)
 }
 
+export function isStripMetadataSupported(mimetype) {
+  return mimetype === IMAGE.JPG || mimetype === IMAGE.JPEG
+}
+
 export const EXIF = {
   ORIENTATION: {
     NORMAL: 1,
