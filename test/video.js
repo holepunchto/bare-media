@@ -1,6 +1,7 @@
 import { test } from 'brittle'
 import fs from 'bare-fs'
 import b4a from 'b4a'
+import ffmpeg from 'bare-ffmpeg'
 
 import { video } from '..'
 import { parseDisplayMatrix } from '../src/video/display-matrix.js'
@@ -38,6 +39,10 @@ test('video metadata()', async (t) => {
   t.alike(metadata, {
     width: 120,
     height: 160,
+    codec: {
+      id: ffmpeg.constants.codecs.H264,
+      name: 'h264'
+    },
     duration: 10,
     avgFramerate: {
       numerator: 1,
@@ -54,8 +59,11 @@ test('video metadata() in pipeline', async (t) => {
   const path = './test/fixtures/orientation.mov'
 
   const metadata = await video(path).metadata()
+
   t.is(metadata.width, 120)
   t.is(metadata.height, 160)
+  t.is(metadata.codec.id, ffmpeg.constants.codecs.H264)
+  t.is(metadata.codec.name, 'h264')
   t.is(metadata.duration, 10)
   t.is(metadata.displayRotation, 270)
   t.is(metadata.rotation, 90)
@@ -68,6 +76,7 @@ test('video metadata() defaults', async (t) => {
 
   const metadata = await video(path).metadata()
 
+  t.is(metadata.codec.name, 'h264')
   t.is(metadata.displayRotation, 0)
   t.is(metadata.rotation, 0)
   t.is(metadata.flipH, false)
@@ -346,7 +355,6 @@ test('video.getFormatRegistry() - getAudioConfig throws for unsupported format',
 })
 
 test('video.getFormatRegistry() - register custom format', async (t) => {
-  const ffmpeg = (await import('bare-ffmpeg')).default
   const registry = await video.getFormatRegistry()
 
   registry.register('mp4-ios', {

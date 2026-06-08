@@ -199,6 +199,8 @@ Returns:
 | -------------------------- | ------- | ------------------------------------------------------ |
 | `width`                    | number  | Width of the primary video stream                      |
 | `height`                   | number  | Height of the primary video stream                     |
+| `codec.id`                 | number  | FFmpeg codec id of the primary video stream            |
+| `codec.name`               | string  | FFmpeg codec name of the primary video stream          |
 | `duration`                 | number  | Stream duration in seconds                             |
 | `avgFramerate.numerator`   | number  | Average frame rate numerator                           |
 | `avgFramerate.denominator` | number  | Average frame rate denominator                         |
