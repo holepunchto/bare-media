@@ -121,14 +121,20 @@ async function metadata(fd) {
 
   correctiveRotation = ((-displayRotation % 360) + 360) % 360
 
+  const { codec, codecParameters } = stream
+
   const duration =
     Number.isFinite(stream.duration) && stream.timeBase.denominator !== 0
       ? (stream.duration * stream.timeBase.numerator) / stream.timeBase.denominator
       : stream.duration
 
   return {
-    width: stream.codecParameters.width,
-    height: stream.codecParameters.height,
+    width: codecParameters.width,
+    height: codecParameters.height,
+    codec: {
+      id: codec.id,
+      name: codec.name
+    },
     duration,
     avgFramerate: {
       numerator: stream.avgFramerate.numerator,
@@ -209,9 +215,15 @@ async function getFormatRegistry() {
   return formatRegistry
 }
 
+async function getConstants() {
+  const ffmpeg = await import('bare-ffmpeg')
+  return ffmpeg.constants
+}
+
 video.extractFrames = extractFrames
 video.metadata = metadata
 video.transcode = transcode
 video.getFormatRegistry = getFormatRegistry
+video.getConstants = getConstants
 
 export { video }
