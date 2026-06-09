@@ -10,6 +10,7 @@ import {
   isStripMetadataSupported
 } from 'bare-media/types'
 import getMimeType from 'get-mime-type'
+import { detectMimeType } from './src/util'
 
 import pkg from './package'
 
@@ -64,18 +65,16 @@ const cli = command(
 
 async function metadata(parsed) {
   const input = validateInput(parsed.args.input)
-  const mimetype = getMimeType(input)
+  const mimetype = detectMimeType(await head(input))
 
   if (parsed.flags.strip) {
+    if (!isStripMetadataSupported(mimetype)) {
+      throw new Error(`Metadata stripping is not supported for ${mimetype}`)
+    }
     if (!parsed.args.output) {
       throw new Error('Missing output path')
     }
     const output = path.resolve(parsed.args.output)
-    const mimetype = getMimeType(input)
-    if (!isStripMetadataSupported(mimetype)) {
-      throw new Error(`Metadata stripping is not supported for ${mimetype}`)
-    }
-
     await image(input).metadata.strip().save(output)
     return
   }
@@ -139,6 +138,20 @@ function types() {
   for (const mimetype of supportedImageMimetypes) console.log(`  ${mimetype}`)
   console.log('Videos:')
   for (const mimetype of supportedVideoMimetypes) console.log(`  ${mimetype}`)
+}
+
+async function head(filePath, byteLength = 4100) {
+  const fd = await fs.open(filePath)
+
+  const buffer = Buffer.alloc(byteLength)
+
+  try {
+    await fs.read(fd, buffer)
+  } finally {
+    await fs.close(fd)
+  }
+
+  return buffer
 }
 
 function validateInput(input) {
