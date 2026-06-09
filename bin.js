@@ -70,10 +70,12 @@ async function metadata(parsed) {
   if (mimetype.startsWith('image/')) {
     if (parsed.flags.strip) {
       if (!isStripMetadataSupported(mimetype)) {
-        throw new Error(`Metadata stripping is not supported for ${mimetype}`)
+        console.log(`Metadata stripping is not supported for ${mimetype}`)
+        Bare.exit(1)
       }
       if (!parsed.args.output) {
-        throw new Error('Missing output path')
+        console.log('Missing output path')
+        Bare.exit(1)
       }
       const output = path.resolve(parsed.args.output)
       await image(input).metadata.strip().save(output)
@@ -91,13 +93,12 @@ async function metadata(parsed) {
     print(data, { json: parsed.flags.json })
   }
 
-  throw new Error('Not supported for ', mimetype)
+  console.log('Not supported for ', mimetype)
 }
 
 async function convert(parsed) {
   const input = validateInput(parsed.args.input)
-  const output = path.resolve(parsed.args.output)
-  let source = input
+  const output = validateOutput(parsed.args.output)
 
   const maxWidth = validateFlag(parsed.flags.maxWidth, '--max-width', 'number')
   const maxHeight = validateFlag(parsed.flags.maxHeight, '--max-height', 'number')
@@ -105,7 +106,7 @@ async function convert(parsed) {
   const maxBytes = validateFlag(parsed.flags.maxBytes, '--max-bytes', 'number')
   const mimetype = getMimeType(output)
 
-  let pipeline = image(source).decode({ maxFrames })
+  let pipeline = image(input).decode({ maxFrames })
   if (parsed.flags.orientate) pipeline = pipeline.orientate()
   if (maxWidth || maxHeight) {
     pipeline = pipeline.resize({
@@ -120,7 +121,7 @@ async function convert(parsed) {
 
 async function transcode(parsed) {
   const input = validateInput(parsed.args.input)
-  const output = path.resolve(parsed.args.output)
+  const output = validateOutput(parsed.args.output)
   const width = validateFlag(parsed.flags.width, '--width', 'number')
   const height = validateFlag(parsed.flags.height, '--height', 'number')
   const mimetype = getMimeType(output)
@@ -160,8 +161,19 @@ async function head(filePath, byteLength = 4100) {
 
 function validateInput(input) {
   const file = path.resolve(input)
-  if (!fs.existsSync(file)) throw new Error(`File not found: ${file}`)
+  if (!fs.existsSync(file)) {
+    console.error(`File not found: ${file}`)
+    Bare.exit(1)
+  }
   return file
+}
+
+function validateOutput(output) {
+  if (!output) {
+    console.error('Missing output')
+    Bare.exit(1)
+  }
+  return path.resolve(output)
 }
 
 function validateFlag(value, name, type) {
@@ -198,4 +210,19 @@ function print(value, opts = {}) {
   }
 }
 
-cli.parse()
+async function main() {
+  const parsed = cli.parse()
+  if (!parsed) return exit(cli.bailed)
+
+  if (parsed.running) await parsed.running
+  if (parsed.bailed) exit(parsed.bailed)
+}
+
+function exit(bailed) {
+  if (!bailed) return
+
+  console.error(bailed.output || bailed.bail?.reason || 'Command failed')
+  Bare.exit(1)
+}
+
+main()
