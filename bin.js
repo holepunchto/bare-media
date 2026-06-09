@@ -10,8 +10,8 @@ import {
   isStripMetadataSupported
 } from 'bare-media/types'
 import getMimeType from 'get-mime-type'
-import { detectMimeType } from './src/util'
 
+import { detectMimeType } from './src/util'
 import pkg from './package'
 
 const cli = command(
