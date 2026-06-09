@@ -238,6 +238,22 @@ for await (const chunk of video('input.mkv').transcode({
 }
 ```
 
+## CLI
+
+`bare-media [flags] [command]`
+
+```sh
+Flags:
+  --version|-v   Print version
+  --help|-h      Show help
+
+Commands:
+  metadata       Print image or video metadata (experimental)
+  convert        Convert an image
+  transcode      Transcode a video
+  types          List supported MIME types
+```
+
 ## Supported Types
 
 Helpers to check supported media types are exposed in `bare-media/types`:
