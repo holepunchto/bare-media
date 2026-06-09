@@ -108,13 +108,22 @@ async function convert(parsed) {
   const mimetype = getMimeType(output)
 
   let pipeline = image(input).decode({ maxFrames })
-  if (parsed.flags.orientate) pipeline = pipeline.orientate()
-  if (maxWidth || maxHeight) {
-    pipeline = pipeline.resize({
-      maxWidth: maxWidth || Number.MAX_SAFE_INTEGER,
-      maxHeight: maxHeight || Number.MAX_SAFE_INTEGER
-    })
+
+  if (parsed.flags.orientate) {
+    pipeline = pipeline.orientate()
   }
+
+  if (maxWidth || maxHeight) {
+    const resizeOpts = {}
+    if (maxWidth) {
+      resizeOpts.maxWidth = maxWidth
+    }
+    if (maxHeight) {
+      resizeOpts.maxHeight = maxHeight
+    }
+    pipeline = pipeline.resize(resizeOpts)
+  }
+
   await pipeline.encode({ mimetype, maxBytes }).save(output)
 
   console.log(output)

@@ -5,7 +5,7 @@ export function detectMimeType(buffer) {
   return getMimeType(getFileFormat(buffer))
 }
 
-export function calculateFitDimensions(width, height, maxWidth, maxHeight) {
+export function calculateFitDimensions(width, height, maxWidth = Infinity, maxHeight = Infinity) {
   if (width <= maxWidth && height <= maxHeight) {
     return { width, height }
   }
