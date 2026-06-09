@@ -91,6 +91,7 @@ async function metadata(parsed) {
   if (mimetype.startsWith('video/')) {
     const data = await video(input).metadata()
     print(data, { json: parsed.flags.json })
+    return
   }
 
   console.log('Not supported for ', mimetype)
