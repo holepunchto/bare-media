@@ -13,6 +13,9 @@
     "index.js",
     "types.js"
   ],
+  "bin": {
+    "bare-media": "./bin.js"
+  },
   "scripts": {
     "format": "prettier --write . && lunte --fix",
     "lint": "prettier --check . && lunte",
@@ -45,7 +48,8 @@
     "bare-tiff": "^1.0.1",
     "bare-webp": "^1.0.3",
     "get-file-format": "^1.1.0",
-    "get-mime-type": "^2.0.1"
+    "get-mime-type": "^2.0.1",
+    "paparam": "^1.10.1"
   },
   "devDependencies": {
     "b4a": "^1.7.3",
