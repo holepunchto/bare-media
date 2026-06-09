@@ -35,9 +35,15 @@ test('video metadata()', async (t) => {
   const metadata = await video.metadata(fd)
   fs.closeSync(fd)
 
+  const constants = await video.getConstants()
+
   t.alike(metadata, {
     width: 120,
     height: 160,
+    codec: {
+      id: constants.codecs.H264,
+      name: 'h264'
+    },
     duration: 10,
     avgFramerate: {
       numerator: 1,
@@ -54,8 +60,12 @@ test('video metadata() in pipeline', async (t) => {
   const path = './test/fixtures/orientation.mov'
 
   const metadata = await video(path).metadata()
+  const constants = await video.getConstants()
+
   t.is(metadata.width, 120)
   t.is(metadata.height, 160)
+  t.is(metadata.codec.id, constants.codecs.H264)
+  t.is(metadata.codec.name, 'h264')
   t.is(metadata.duration, 10)
   t.is(metadata.displayRotation, 270)
   t.is(metadata.rotation, 90)
@@ -68,6 +78,7 @@ test('video metadata() defaults', async (t) => {
 
   const metadata = await video(path).metadata()
 
+  t.is(metadata.codec.name, 'h264')
   t.is(metadata.displayRotation, 0)
   t.is(metadata.rotation, 0)
   t.is(metadata.flipH, false)
@@ -346,18 +357,18 @@ test('video.getFormatRegistry() - getAudioConfig throws for unsupported format',
 })
 
 test('video.getFormatRegistry() - register custom format', async (t) => {
-  const ffmpeg = (await import('bare-ffmpeg')).default
   const registry = await video.getFormatRegistry()
+  const constants = await video.getConstants()
 
   registry.register('mp4-ios', {
     video: {
-      id: ffmpeg.constants.codecs.H264,
-      format: ffmpeg.constants.pixelFormats.YUV420P,
+      id: constants.codecs.H264,
+      format: constants.pixelFormats.YUV420P,
       encoder: 'h264_videotoolbox'
     },
     audio: {
-      id: ffmpeg.constants.codecs.AAC,
-      format: ffmpeg.constants.sampleFormats.FLTP,
+      id: constants.codecs.AAC,
+      format: constants.sampleFormats.FLTP,
       sampleRate: 48000,
       encoder: 'aac'
     },
