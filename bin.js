@@ -67,27 +67,31 @@ async function metadata(parsed) {
   const input = validateInput(parsed.args.input)
   const mimetype = detectMimeType(await head(input))
 
-  if (parsed.flags.strip) {
-    if (!isStripMetadataSupported(mimetype)) {
-      throw new Error(`Metadata stripping is not supported for ${mimetype}`)
-    }
-    if (!parsed.args.output) {
-      throw new Error('Missing output path')
-    }
-    const output = path.resolve(parsed.args.output)
-    await image(input).metadata.strip().save(output)
-    return
-  }
-
   if (mimetype.startsWith('image/')) {
+    if (parsed.flags.strip) {
+      if (!isStripMetadataSupported(mimetype)) {
+        throw new Error(`Metadata stripping is not supported for ${mimetype}`)
+      }
+      if (!parsed.args.output) {
+        throw new Error('Missing output path')
+      }
+      const output = path.resolve(parsed.args.output)
+      await image(input).metadata.strip().save(output)
+      return
+    }
+
     const data = await image(input).metadata()
     const out = data || { mimetype }
     print(out, { json: parsed.flags.json })
     return
   }
 
-  const data = await video(input).metadata()
-  print(data, { json: parsed.flags.json })
+  if (mimetype.startsWith('video/')) {
+    const data = await video(input).metadata()
+    print(data, { json: parsed.flags.json })
+  }
+
+  throw new Error('Not supported for ', mimetype)
 }
 
 async function convert(parsed) {
