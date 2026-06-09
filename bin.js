@@ -38,7 +38,7 @@ const cli = command(
     arg('<input>', 'Input image file'),
     arg('<output>', 'Output image file'),
     flag('--max-width|-w <px>', 'Maximum output width'),
-    flag('--max-height|-h <px>', 'Maximum output height'),
+    flag('--max-height|-H <px>', 'Maximum output height'),
     flag('--max-frames|-f <n>', 'Maximum frames to decode'),
     flag('--max-bytes|-n <n>', 'Maximum encoded size'),
     flag('--orientate|-o', 'Apply EXIF orientation'),
