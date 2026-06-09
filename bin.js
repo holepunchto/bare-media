@@ -94,7 +94,7 @@ async function metadata(parsed) {
     return
   }
 
-  console.log('Not supported for ', mimetype)
+  console.log('Not supported for mimetype', mimetype)
 }
 
 async function convert(parsed) {
