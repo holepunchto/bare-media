@@ -14,8 +14,7 @@
     "types.js"
   ],
   "bin": {
-    "bare-media": "./bin.js",
-    "bm": "./bin.js"
+    "bare-media": "./bin.js"
   },
   "scripts": {
     "format": "prettier --write . && lunte --fix",
