@@ -215,9 +215,15 @@ async function getFormatRegistry() {
   return formatRegistry
 }
 
+async function getConstants() {
+  const ffmpeg = await import('bare-ffmpeg')
+  return ffmpeg.constants
+}
+
 video.extractFrames = extractFrames
 video.metadata = metadata
 video.transcode = transcode
 video.getFormatRegistry = getFormatRegistry
+video.getConstants = getConstants
 
 export { video }
