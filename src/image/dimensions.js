@@ -12,12 +12,3 @@ export function calculateFitDimensions(width, height, maxWidth = Infinity, maxHe
     height: Math.round(height * ratio)
   }
 }
-
-export function isHttpUrl(value) {
-  try {
-    const url = new URL(value)
-    return url.protocol === 'http:' || url.protocol === 'https:'
-  } catch {
-    return false
-  }
-}

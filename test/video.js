@@ -3,8 +3,8 @@ import fs from 'bare-fs'
 import b4a from 'b4a'
 
 import { video } from '..'
-import { parseDisplayMatrix } from '../src/video/display-matrix.js'
-import { createDisplayMatrix } from './helpers.js'
+import { parseDisplayMatrix } from '../src/video/metadata'
+import { createDisplayMatrix } from './helpers'
 
 test('video extractFrames()', async (t) => {
   const path = './test/fixtures/sample.mp4'

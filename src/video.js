@@ -1,28 +1,7 @@
 import fs from 'bare-fs'
-import { importFFmpeg } from '../codecs'
-import { parseDisplayMatrix } from './display-matrix.js'
-
-function createIOContext(fd, ffmpeg) {
-  const fileSize = fs.fstatSync(fd).size
-  let offset = 0
-
-  return new ffmpeg.IOContext(4096, {
-    onread: (buffer, requested) => {
-      const read = fs.readSync(fd, buffer, 0, requested, offset)
-      if (read === 0) return 0
-      offset += read
-      return read
-    },
-    onseek: (o, whence) => {
-      if (whence === ffmpeg.constants.seek.SIZE) return fileSize
-      if (whence === ffmpeg.constants.seek.SET) offset = o
-      else if (whence === ffmpeg.constants.seek.CUR) offset += o
-      else if (whence === ffmpeg.constants.seek.END) offset = fileSize + o
-      else return -1
-      return offset
-    }
-  })
-}
+import { importFFmpeg } from './codecs'
+import { createIOContext } from './video/io'
+import { metadata } from './video/metadata'
 
 async function extractFrames(fd, opts = {}) {
   const { frameIndex } = opts
@@ -93,62 +72,8 @@ async function extractFrames(fd, opts = {}) {
   return result
 }
 
-async function metadata(fd) {
-  const ffmpeg = await importFFmpeg()
-  const io = createIOContext(fd, ffmpeg)
-
-  using inputFormat = new ffmpeg.InputFormatContext(io)
-  const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
-
-  if (!stream) throw new Error('No video stream found')
-
-  let displayRotation = 0
-  let correctiveRotation = 0
-  let flipH = false
-  let flipV = false
-
-  for (const entry of stream.sideData) {
-    if (entry.type === ffmpeg.constants.packetSideDataType.DISPLAYMATRIX) {
-      const transform = parseDisplayMatrix(entry.data)
-      if (transform) {
-        displayRotation = transform.rotation
-        flipH = transform.flipH
-        flipV = transform.flipV
-      }
-      break
-    }
-  }
-
-  correctiveRotation = ((-displayRotation % 360) + 360) % 360
-
-  const { codec, codecParameters } = stream
-
-  const duration =
-    Number.isFinite(stream.duration) && stream.timeBase.denominator !== 0
-      ? (stream.duration * stream.timeBase.numerator) / stream.timeBase.denominator
-      : stream.duration
-
-  return {
-    width: codecParameters.width,
-    height: codecParameters.height,
-    codec: {
-      id: codec.id,
-      name: codec.name
-    },
-    duration,
-    avgFramerate: {
-      numerator: stream.avgFramerate.numerator,
-      denominator: stream.avgFramerate.denominator
-    },
-    displayRotation,
-    rotation: correctiveRotation,
-    flipH,
-    flipV
-  }
-}
-
 async function* transcode(fd, opts = {}) {
-  const { Transcoder } = await import('./transcoder.js')
+  const { Transcoder } = await import('./video/transcoder')
 
   const transcoder = new Transcoder(fd, {
     outputParameters: {
@@ -211,7 +136,7 @@ function video(input) {
 }
 
 async function getFormatRegistry() {
-  const { formatRegistry } = await import('./transcoder.js')
+  const { formatRegistry } = await import('./video/transcoder')
   return formatRegistry
 }
 
