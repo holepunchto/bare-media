@@ -11,7 +11,7 @@ import {
 } from 'bare-media/types'
 import getMimeType from 'get-mime-type'
 
-import { detectMimeType } from './src/util'
+import { detectMimeType } from './src/codecs'
 import pkg from './package'
 
 const cli = command(

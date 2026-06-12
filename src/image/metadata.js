@@ -1,6 +1,5 @@
 import { IMAGE } from '../../types.js'
 import { detectMimeType } from '../codecs.js'
-import { isHttpUrl } from '../util.js'
 
 const supportedExifMimetypes = new Set([IMAGE.JPEG, IMAGE.JPG, IMAGE.TIFF, IMAGE.TIF])
 
@@ -111,7 +110,7 @@ async function stripJPEG(buffer, opts = {}) {
   return jpeg.replaceMarkers(buffer, newMarkers)
 }
 
-async function strip(buffer, opts = {}) {
+function strip(buffer, opts = {}) {
   const mimetype = detectMimeType(buffer)
 
   if (mimetype === IMAGE.JPEG || mimetype === IMAGE.JPG) {

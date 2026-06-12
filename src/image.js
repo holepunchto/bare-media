@@ -2,9 +2,9 @@ import fs from 'bare-fs'
 import fetch from 'bare-fetch'
 
 import { EXIF } from '../types.js'
-import { importCodec, supportsQuality, detectMimeType } from './codecs.js'
+import { importCodec, supportsQuality, detectMimeType } from './codecs'
+import { calculateFitDimensions } from './image/dimensions'
 import { metadata, ImageMetadataPipeline } from './image/metadata'
-import { isHttpUrl, calculateFitDimensions } from './util'
 
 const animatableMimetypes = ['image/gif', 'image/webp']
 
@@ -12,7 +12,7 @@ async function read(input) {
   let buffer
 
   if (typeof input === 'string') {
-    if (isHttpUrl(input)) {
+    if (_isHttpUrl(input)) {
       const response = await fetch(input)
       buffer = await response.buffer()
     } else {
@@ -25,7 +25,7 @@ async function read(input) {
   return buffer
 }
 
-async function save(filename, buffer, opts) {
+function save(filename, buffer, opts) {
   return fs.writeFile(filename, buffer, opts)
 }
 
@@ -122,7 +122,7 @@ function _cropFrame(frame, opts) {
   return { ...frame, width, height, data }
 }
 
-async function crop(rgba, opts = {}) {
+function crop(rgba, opts = {}) {
   const { left, top, width, height } = opts
 
   if (
@@ -365,6 +365,15 @@ async function _encodeRGBA(rgba, mimetype, opts) {
   }
 
   return encoded
+}
+
+function _isHttpUrl(value) {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
 }
 
 class ImagePipeline {
