@@ -164,7 +164,7 @@ async function resize(rgba, opts = {}) {
 
   let maybeResizedRGBA
 
-  if (maxWidth && maxHeight && (width > maxWidth || height > maxHeight)) {
+  if ((maxWidth || maxHeight) && (width > maxWidth || height > maxHeight)) {
     const { resize } = await import('bare-image-resample')
     const dimensions = calculateFitDimensions(width, height, maxWidth, maxHeight)
     if (Array.isArray(rgba.frames)) {

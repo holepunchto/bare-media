@@ -199,6 +199,8 @@ Returns:
 | -------------------------- | ------- | ------------------------------------------------------ |
 | `width`                    | number  | Width of the primary video stream                      |
 | `height`                   | number  | Height of the primary video stream                     |
+| `codec.id`                 | number  | FFmpeg codec id of the primary video stream            |
+| `codec.name`               | string  | FFmpeg codec name of the primary video stream          |
 | `duration`                 | number  | Stream duration in seconds                             |
 | `avgFramerate.numerator`   | number  | Average frame rate numerator                           |
 | `avgFramerate.denominator` | number  | Average frame rate denominator                         |
@@ -236,6 +238,22 @@ for await (const chunk of video('input.mkv').transcode({
 })) {
   console.log('Received chunk:', chunk.buffer.length)
 }
+```
+
+## CLI
+
+`bare-media [flags] [command]`
+
+```sh
+Flags:
+  --version|-v   Print version
+  --help|-h      Show help
+
+Commands:
+  metadata       Print image or video metadata (experimental)
+  convert        Convert an image
+  transcode      Transcode a video
+  types          List supported MIME types
 ```
 
 ## Supported Types
