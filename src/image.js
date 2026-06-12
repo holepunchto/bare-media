@@ -1,10 +1,10 @@
 import fs from 'bare-fs'
 import fetch from 'bare-fetch'
 
-import { EXIF } from '../types'
-import { importCodec, supportsQuality } from './codecs'
+import { EXIF } from '../types.js'
+import { importCodec, supportsQuality, detectMimeType } from './codecs.js'
 import { metadata, ImageMetadataPipeline } from './image/metadata'
-import { isHttpUrl, detectMimeType, calculateFitDimensions } from './util'
+import { isHttpUrl, calculateFitDimensions } from './util'
 
 const animatableMimetypes = ['image/gif', 'image/webp']
 

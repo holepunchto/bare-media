@@ -267,6 +267,16 @@ Helpers to check supported media types are exposed in `bare-media/types`:
 - `isMediaSupported(mimetype)`: returns `true` if the mimetype is either a supported image or video format.
 - `isStripMetadataSupported(mimetype)`: returns `true` if `metadata.strip()` supports the mimetype.
 
+Detect the MIME type of a buffer:
+
+```js
+import { detectMimeType } from 'bare-media'
+
+const mimetype = detectMimeType(buffer)
+```
+
+> This may return non-media MIME types, use `isMediaSupported()` to validate support.
+
 ## License
 
 Apache-2.0
