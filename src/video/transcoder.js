@@ -51,7 +51,7 @@ formatRegistry.register('webm', {
   },
   audio: {
     id: ffmpeg.constants.codecs.OPUS,
-    format: ffmpeg.constants.sampleFormats.FLTP,
+    format: ffmpeg.constants.sampleFormats.S16,
     sampleRate: 48000,
     encoder: 'libopus'
   },
@@ -66,7 +66,7 @@ formatRegistry.register('mp4', {
   },
   audio: {
     id: ffmpeg.constants.codecs.OPUS,
-    format: ffmpeg.constants.sampleFormats.FLTP,
+    format: ffmpeg.constants.sampleFormats.S16,
     sampleRate: 48000,
     encoder: 'libopus'
   },
@@ -81,7 +81,7 @@ formatRegistry.register('matroska', {
   },
   audio: {
     id: ffmpeg.constants.codecs.OPUS,
-    format: ffmpeg.constants.sampleFormats.FLTP,
+    format: ffmpeg.constants.sampleFormats.S16,
     sampleRate: 48000,
     encoder: 'libopus'
   },
@@ -96,7 +96,7 @@ formatRegistry.register('mkv', {
   },
   audio: {
     id: ffmpeg.constants.codecs.OPUS,
-    format: ffmpeg.constants.sampleFormats.FLTP,
+    format: ffmpeg.constants.sampleFormats.S16,
     sampleRate: 48000,
     encoder: 'libopus'
   },
