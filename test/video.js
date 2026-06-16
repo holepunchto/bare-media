@@ -166,6 +166,30 @@ test('video.transcode() - mp4 to webm', async (t) => {
   t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
 })
 
+test('video.transcode() - mp4 to webm with stereo', async (t) => {
+  const path = './test/fixtures/sample-stereo.mp4'
+
+  const chunks = []
+  for await (const chunk of video(path).transcode({
+    format: 'webm',
+    width: 320,
+    height: 240
+  })) {
+    chunks.push(chunk)
+  }
+
+  t.ok(chunks.length > 0, 'Received some chunks')
+
+  const totalOutputBuffer = b4a.concat(chunks.map((c) => c.buffer))
+  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+
+  // Check for WebM/EBML header
+  t.is(totalOutputBuffer[0], 0x1a, 'Output starts with EBML header byte 0')
+  t.is(totalOutputBuffer[1], 0x45, 'Output starts with EBML header byte 1')
+  t.is(totalOutputBuffer[2], 0xdf, 'Output starts with EBML header byte 2')
+  t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
+})
+
 test('video.transcode() - mov to webm with 6 channel (5.1) audio', async (t) => {
   const path = './test/fixtures/sample-6-ac.mov'
 
