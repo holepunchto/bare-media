@@ -169,18 +169,16 @@ test('video.transcode() - mp4 to webm', async (t) => {
 test('video.transcode() - mov to webm with 6 channel (5.1) audio', async (t) => {
   const path = './test/fixtures/sample-6-ac.mov'
 
-  const chunks = []
+  const buffers = []
   for await (const chunk of video(path).transcode({
     format: 'webm',
     width: 320,
     height: 240
   })) {
-    chunks.push(chunk)
+    buffers.push(chunk.buffer)
   }
 
-  t.ok(chunks.length > 0, 'Received some chunks')
-
-  const totalOutputBuffer = b4a.concat(chunks.map((c) => c.buffer))
+  const totalOutputBuffer = b4a.concat(buffers)
   t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
 
   // Check for WebM/EBML header
