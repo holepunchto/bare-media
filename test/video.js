@@ -190,8 +190,8 @@ test('video.transcode() - mp4 to webm with stereo', async (t) => {
   t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
 })
 
-test('video.transcode() - mov to webm with 6 channel (5.1) audio', async (t) => {
-  const path = './test/fixtures/sample-6-ac.mov'
+test('video.transcode() - mkv to webm with 6 channel (5.1) audio', async (t) => {
+  const path = './test/fixtures/sample-6-ac.mkv'
 
   const buffers = []
   for await (const chunk of video(path).transcode({
