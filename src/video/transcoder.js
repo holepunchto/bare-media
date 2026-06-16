@@ -187,7 +187,10 @@ class TranscodeStreamConfig {
       outputStream.timeBase = new ffmpeg.Rational(1, 90000)
     } else {
       outputStream.codecParameters.sampleRate = config.sampleRate
-      outputStream.codecParameters.channelLayout = decoder.channelLayout
+      outputStream.codecParameters.channelLayout =
+        decoder.channelLayout.nbChannels > 2
+          ? ffmpeg.ChannelLayout.from(ffmpeg.constants.channelLayouts.STEREO)
+          : decoder.channelLayout
       outputStream.timeBase = new ffmpeg.Rational(1, config.sampleRate)
     }
   }
