@@ -132,10 +132,7 @@ test('video.transcode() - webm to mp4', async (t) => {
     chunks.push(chunk)
   }
 
-  t.ok(chunks.length > 0, 'Received some chunks')
-
-  const totalOutputBuffer = b4a.concat(chunks.map((c) => c.buffer))
-  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+  const totalOutputBuffer = assertChunks(t, chunks)
 
   // Check for MP4 header (e.g., ftyp box)
   const header = b4a.toString(totalOutputBuffer.subarray(4, 8))
@@ -154,10 +151,7 @@ test('video.transcode() - mp4 to webm', async (t) => {
     chunks.push(chunk)
   }
 
-  t.ok(chunks.length > 0, 'Received some chunks')
-
-  const totalOutputBuffer = b4a.concat(chunks.map((c) => c.buffer))
-  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+  const totalOutputBuffer = assertChunks(t, chunks)
 
   // Check for WebM/EBML header
   t.is(totalOutputBuffer[0], 0x1a, 'Output starts with EBML header byte 0')
@@ -178,10 +172,7 @@ test('video.transcode() - mp4 to webm with stereo', async (t) => {
     chunks.push(chunk)
   }
 
-  t.ok(chunks.length > 0, 'Received some chunks')
-
-  const totalOutputBuffer = b4a.concat(chunks.map((c) => c.buffer))
-  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+  const totalOutputBuffer = assertChunks(t, chunks)
 
   // Check for WebM/EBML header
   t.is(totalOutputBuffer[0], 0x1a, 'Output starts with EBML header byte 0')
@@ -224,10 +215,7 @@ test('video.transcode() - mkv to mp4', async (t) => {
     chunks.push(chunk)
   }
 
-  t.ok(chunks.length > 0, 'Received some chunks')
-
-  const totalOutputBuffer = b4a.concat(chunks.map((c) => c.buffer))
-  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+  const totalOutputBuffer = assertChunks(t, chunks)
 
   // Check for MP4 header
   const header = b4a.toString(totalOutputBuffer.subarray(4, 8))
@@ -246,10 +234,7 @@ test('video.transcode() - mp4 to matroska', async (t) => {
     chunks.push(chunk)
   }
 
-  t.ok(chunks.length > 0, 'Received some chunks')
-
-  const totalOutputBuffer = b4a.concat(chunks.map((c) => c.buffer))
-  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+  const totalOutputBuffer = assertChunks(t, chunks)
 
   // Check for Matroska/EBML header
   t.is(totalOutputBuffer[0], 0x1a, 'Output starts with EBML header byte 0')
@@ -271,6 +256,7 @@ test('video.transcode() - yields chunks incrementally (not all at once)', async 
   const first = await iterator.next()
   t.absent(first.done, 'First chunk yielded before transcoding is complete')
   t.ok(Buffer.isBuffer(first.value.buffer), 'First chunk has a buffer')
+  t.ok(isValidTime(first.value.time), 'First chunk has a valid time')
 
   // Drain the rest
   let count = 1
@@ -446,3 +432,31 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
     }
   }, /Unsupported.*output format/)
 })
+
+function isValidTime(time) {
+  return Number.isFinite(time) && time >= 0
+}
+
+function assertChunks(t, chunks) {
+  // Check buffer
+  t.ok(chunks.length > 0, 'Received some chunks')
+  const totalOutputBuffer = b4a.concat(chunks.map((c) => c.buffer))
+  t.ok(totalOutputBuffer.length > 0, 'Total output buffer has data')
+
+  // Check time
+  let allValidTimes = true
+  let allMonotonic = true
+  let prevTime = 0
+
+  for (const chunk of chunks) {
+    allValidTimes &&= isValidTime(chunk.time)
+    allMonotonic &&= chunk.time >= prevTime
+    prevTime = chunk.time
+  }
+
+  t.ok(allValidTimes, 'Chunk times are finite and non-negative')
+  t.ok(allMonotonic, 'Chunk times are monotonic')
+  t.ok(prevTime > 0, 'Chunk time advances')
+
+  return totalOutputBuffer
+}

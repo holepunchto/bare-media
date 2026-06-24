@@ -371,6 +371,7 @@ class Transcoder {
     this.bufferSize = opts.bufferSize || 32 * 1024
 
     this.chunks = []
+    this.currentTime = 0
     this.inputFormatContext = null
     this.outputFormatContext = null
     this.configs = []
@@ -459,9 +460,21 @@ class Transcoder {
     this.outputFormatContext.writeHeader(muxerOptions)
   }
 
+  #trackTime(packet, config) {
+    const ts = packet.dts
+    const tb = config.inputStream.timeBase
+
+    if (!Number.isFinite(ts) || ts < 0 || !tb.denominator) return
+
+    const seconds = (ts * tb.numerator) / tb.denominator
+    if (Number.isFinite(seconds) && seconds > this.currentTime) {
+      this.currentTime = seconds
+    }
+  }
+
   *#drainChunks() {
     for (const chunk of this.chunks) {
-      yield { buffer: chunk }
+      yield { buffer: chunk, time: this.currentTime }
     }
     this.chunks = []
   }
@@ -477,6 +490,8 @@ class Transcoder {
           packet.unref()
           continue
         }
+
+        this.#trackTime(packet, config)
 
         const { decoder } = config
 
