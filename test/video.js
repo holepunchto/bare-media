@@ -73,6 +73,23 @@ test('video metadata() in pipeline', async (t) => {
   t.is(metadata.flipV, false)
 })
 
+test('video metadata() with missing stream duration', async (t) => {
+  const path = './test/fixtures/sample-no-stream-duration.mkv'
+
+  const metadata = await video(path).metadata()
+  const constants = await video.getConstants()
+
+  t.is(metadata.width, 64)
+  t.is(metadata.height, 64)
+  t.is(metadata.codec.id, constants.codecs.H264)
+  t.is(metadata.codec.name, 'h264')
+  t.is(metadata.duration, 2)
+  t.is(metadata.displayRotation, 0)
+  t.is(metadata.rotation, 0)
+  t.is(metadata.flipH, false)
+  t.is(metadata.flipV, false)
+})
+
 test('video metadata() defaults', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
