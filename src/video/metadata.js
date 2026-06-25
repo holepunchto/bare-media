@@ -1,6 +1,8 @@
 import { importFFmpeg } from '../codecs'
 import { createIOContext } from './io'
 
+const AV_TIME_BASE = 1000000
+
 export async function metadata(fd) {
   const ffmpeg = await importFFmpeg()
   const io = createIOContext(fd, ffmpeg)
@@ -31,10 +33,7 @@ export async function metadata(fd) {
 
   const { codec, codecParameters } = stream
 
-  const duration =
-    Number.isFinite(stream.duration) && stream.timeBase.denominator !== 0
-      ? (stream.duration * stream.timeBase.numerator) / stream.timeBase.denominator
-      : stream.duration
+  const duration = getDuration(inputFormat, stream)
 
   return {
     width: codecParameters.width,
@@ -53,6 +52,30 @@ export async function metadata(fd) {
     flipH,
     flipV
   }
+}
+
+function getDuration(inputFormat, stream) {
+  const streamDuration = getStreamDuration(stream)
+  if (streamDuration > 0) return streamDuration
+
+  const formatDuration = getFormatDuration(inputFormat)
+  if (formatDuration > 0) return formatDuration
+
+  return 0
+}
+
+function getStreamDuration(stream) {
+  if (!Number.isFinite(stream.duration) || stream.timeBase.denominator === 0) {
+    return stream.duration
+  }
+
+  return (stream.duration * stream.timeBase.numerator) / stream.timeBase.denominator
+}
+
+function getFormatDuration(inputFormat) {
+  if (!Number.isFinite(inputFormat.duration) || inputFormat.duration < 0) return 0
+
+  return inputFormat.duration / AV_TIME_BASE
 }
 
 /*
