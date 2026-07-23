@@ -224,7 +224,7 @@ Transcode a media file to a different format
 | `opts.width`  | number | Width of the output video                                           |
 | `opts.height` | number | Height of the output video                                          |
 
-**Supported formats**: `mp4` (VP9+Opus), `webm` (VP8+Opus), `matroska`/`mkv` (VP9+Opus)
+**Supported formats**: `mp4` (VP9+Opus), `webm` (VP9+Opus), `matroska`/`mkv` (VP9+Opus)
 
 #### Example
 

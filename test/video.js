@@ -381,7 +381,7 @@ test('video.getFormatRegistry() - getVideoConfig returns codec info', async (t) 
   const webmVideo = registry.getVideoConfig('webm')
   t.ok(webmVideo.id !== undefined, 'webm video has codec id')
   t.ok(webmVideo.format !== undefined, 'webm video has pixel format')
-  t.is(webmVideo.encoder, 'libvpx', 'webm video encoder is libvpx')
+  t.is(webmVideo.encoder, 'libvpx-vp9', 'webm video encoder is libvpx-vp9')
 })
 
 test('video.getFormatRegistry() - getAudioConfig returns codec info', async (t) => {
