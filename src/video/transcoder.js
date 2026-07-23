@@ -45,9 +45,9 @@ const formatRegistry = new FormatRegistry()
 
 formatRegistry.register('webm', {
   video: {
-    id: ffmpeg.constants.codecs.VP8,
+    id: ffmpeg.constants.codecs.VP9,
     format: ffmpeg.constants.pixelFormats.YUV420P,
-    encoder: 'libvpx'
+    encoder: 'libvpx-vp9'
   },
   audio: {
     id: ffmpeg.constants.codecs.OPUS,
@@ -211,7 +211,13 @@ class TranscodeStreamConfig {
     }
 
     const encoderOptions = this.isVideo()
-      ? ffmpeg.Dictionary.from({ allow_sw: '1', deadline: 'realtime', speed: '8' })
+      ? ffmpeg.Dictionary.from({
+          allow_sw: '1',
+          deadline: 'good',
+          'cpu-used': '6',
+          crf: '30',
+          b: '0'
+        })
       : new ffmpeg.Dictionary()
 
     encoder.open(encoderOptions)
