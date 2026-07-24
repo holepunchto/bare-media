@@ -196,7 +196,7 @@ test('video.transcode() - mp4 to webm', async (t) => {
   t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
 })
 
-test.solo('video.transcode() - mp4 to webm has metadata', async (t) => {
+test('video.transcode() - mp4 to webm has metadata', async (t) => {
   const path = './test/fixtures/sample.mp4'
   const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
   t.teardown(() => fs.unlinkSync(outputPath))
