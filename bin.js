@@ -51,6 +51,7 @@ const cli = command(
     arg('<output>', 'Output video file'),
     flag('--width <px>', 'Output width'),
     flag('--height <px>', 'Output height'),
+    flag('--preset <name>', 'Encoding preset (fast, compact, best, or balanced)'),
     transcode
   ),
   command('types', summary('List supported MIME types'), types),
@@ -134,10 +135,11 @@ async function transcode(parsed) {
   const output = validateOutput(parsed.args.output)
   const width = validateFlag(parsed.flags.width, '--width', 'number')
   const height = validateFlag(parsed.flags.height, '--height', 'number')
+  const preset = parsed.flags.preset
   const mimetype = getMimeType(output)
   const format = mimetype.split('/')[1]
 
-  const chunks = video(input).transcode({ format, width, height })
+  const chunks = video(input).transcode({ format, width, height, preset })
   const fd = fs.openSync(output, 'w')
   try {
     for await (const chunk of chunks) fs.writeSync(fd, chunk.buffer)

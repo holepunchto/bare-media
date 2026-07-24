@@ -467,6 +467,40 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
   }, /Unsupported.*output format/)
 })
 
+test('video.transcode() - encoding presets', async (t) => {
+  const path = './test/fixtures/duration-stream.mp4'
+  const outputs = new Map()
+
+  for (const preset of ['fast', 'compact', 'best', 'balanced']) {
+    const chunks = []
+
+    for await (const chunk of video(path).transcode({ format: 'webm', preset })) {
+      chunks.push(chunk.buffer)
+    }
+
+    const output = b4a.concat(chunks)
+    outputs.set(preset, output)
+
+    t.ok(output.length > 0, `${preset} preset produces output`)
+    t.is(output[0], 0x1a, `${preset} preset produces WebM`)
+  }
+
+  const chunks = []
+  for await (const chunk of video(path).transcode({ format: 'webm' })) {
+    chunks.push(chunk.buffer)
+  }
+
+  t.is(b4a.concat(chunks).length, outputs.get('balanced').length, 'balanced is the default preset')
+})
+
+test('video.transcode() - throws error for unsupported preset', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  await t.exception(async () => {
+    for await (const chunk of video(path).transcode({ preset: 'unknown' }));
+  }, /Unsupported preset: unknown/)
+})
+
 function isValidTime(time) {
   return Number.isFinite(time) && time >= 0
 }
