@@ -10,12 +10,12 @@ const encoderPresets = {
   fast: {
     deadline: 'realtime',
     'cpu-used': '8',
-    crf: '26'
+    crf: '42'
   },
-  compact: {
+  quality: {
     deadline: 'realtime',
     'cpu-used': '8',
-    crf: '42'
+    crf: '26'
   },
   best: {
     deadline: 'good',

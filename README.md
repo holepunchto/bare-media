@@ -223,7 +223,7 @@ Transcode a media file to a different format
 | `opts.format` | string | Output format name (e.g., `mp4`, `webm`, `matroska`). Default `mp4` |
 | `opts.width`  | number | Width of the output video                                           |
 | `opts.height` | number | Height of the output video                                          |
-| `opts.preset` | string | Encoding preset: `fast`, `compact`, `best`, or `balanced` (default) |
+| `opts.preset` | string | Encoding preset: `fast`, `quality`, `best`, or `balanced` (default) |
 
 **Supported formats**: `mp4` (VP9+Opus), `webm` (VP9+Opus), `matroska`/`mkv` (VP9+Opus)
 
@@ -231,8 +231,8 @@ Presets choose a tradeoff between conversion speed, visual quality, and file siz
 
 | Preset     | Prioritizes                  | Tradeoff             |
 | ---------- | ---------------------------- | -------------------- |
-| `fast`     | Speed and visual quality     | Larger files         |
-| `compact`  | Speed and smaller files      | Lower visual quality |
+| `fast`     | Speed and smaller files      | Lower visual quality |
+| `quality`  | Speed and visual quality     | Larger files         |
 | `best`     | Visual quality and file size | Slower conversion    |
 | `balanced` | A balance of all three       | Balanced tradeoffs   |
 

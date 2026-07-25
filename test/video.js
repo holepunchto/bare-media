@@ -471,7 +471,7 @@ test('video.transcode() - encoding presets', async (t) => {
   const path = './test/fixtures/duration-stream.mp4'
   const outputs = new Map()
 
-  for (const preset of ['fast', 'compact', 'best', 'balanced']) {
+  for (const preset of ['fast', 'quality', 'best', 'balanced']) {
     const chunks = []
 
     for await (const chunk of video(path).transcode({ format: 'webm', preset })) {

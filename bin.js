@@ -51,7 +51,7 @@ const cli = command(
     arg('<output>', 'Output video file'),
     flag('--width <px>', 'Output width'),
     flag('--height <px>', 'Output height'),
-    flag('--preset <name>', 'Encoding preset (fast, compact, best, or balanced)'),
+    flag('--preset <name>', 'Encoding preset (fast, quality, best, or balanced)'),
     transcode
   ),
   command('types', summary('List supported MIME types'), types),
