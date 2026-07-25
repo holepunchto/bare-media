@@ -463,6 +463,15 @@ class Transcoder {
     const options = formatRegistry.getMuxerOptions(this.containerFormat)
     const muxerOptions = ffmpeg.Dictionary.from(options)
 
+    const duration = this.inputFormatContext.duration
+    if (duration > 0) {
+      this.outputFormatContext.duration = duration
+
+      if (muxerOptions.get('live') === '1') {
+        muxerOptions.set('live', '0')
+      }
+    }
+
     this.outputFormatContext.writeHeader(muxerOptions)
   }
 

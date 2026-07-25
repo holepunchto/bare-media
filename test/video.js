@@ -1,10 +1,12 @@
 import { test } from 'brittle'
 import fs from 'bare-fs'
 import b4a from 'b4a'
+import os from 'bare-os'
+import barePath from 'bare-path'
 
 import { video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
-import { createDisplayMatrix } from './helpers'
+import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
   const path = './test/fixtures/sample.mp4'
@@ -192,6 +194,33 @@ test('video.transcode() - mp4 to webm', async (t) => {
   t.is(totalOutputBuffer[1], 0x45, 'Output starts with EBML header byte 1')
   t.is(totalOutputBuffer[2], 0xdf, 'Output starts with EBML header byte 2')
   t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
+})
+
+test('video.transcode() - mp4 to webm has metadata', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'webm' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const metadata = await video(outputPath).metadata()
+  const constants = await video.getConstants()
+
+  t.is(metadata.width, 320, 'width is set')
+  t.is(metadata.height, 240, 'height is set')
+  t.is(metadata.codec.id, constants.codecs.VP9, 'codec is VP9')
+  t.is(metadata.codec.name, 'vp9', 'codec name is set')
+  t.is(metadata.avgFramerate.numerator, 25, 'framerate numerator is set')
+  t.is(metadata.avgFramerate.denominator, 1, 'framerate denominator is set')
+  t.is(metadata.duration, 4, 'duration is set')
+  t.is(metadata.displayRotation, 0, 'rotation is set')
 })
 
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
