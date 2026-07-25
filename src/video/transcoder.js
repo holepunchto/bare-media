@@ -4,6 +4,31 @@ import ffmpeg from 'bare-ffmpeg'
 
 const { VIDEO, AUDIO } = ffmpeg.constants.mediaTypes
 
+const DEFAULT_PRESET = 'balanced'
+
+const encoderPresets = {
+  fast: {
+    deadline: 'realtime',
+    'cpu-used': '8',
+    crf: '42'
+  },
+  quality: {
+    deadline: 'realtime',
+    'cpu-used': '8',
+    crf: '26'
+  },
+  best: {
+    deadline: 'good',
+    'cpu-used': '2',
+    crf: '26'
+  },
+  balanced: {
+    deadline: 'realtime',
+    'cpu-used': '6',
+    crf: '34'
+  }
+}
+
 class FormatRegistry {
   #formats = new Map()
 
@@ -104,21 +129,23 @@ formatRegistry.register('mkv', {
 })
 
 class TranscodeStreamConfig {
-  static create(inputStream, outputFormatContext, containerFormat, outputParameters) {
+  static create(inputStream, outputFormatContext, containerFormat, outputParameters, preset) {
     const config = new TranscodeStreamConfig(
       inputStream,
       outputFormatContext,
       containerFormat,
-      outputParameters
+      outputParameters,
+      preset
     )
     return config.#initialize() ? config : null
   }
 
-  constructor(inputStream, outputFormatContext, containerFormat, outputParameters) {
+  constructor(inputStream, outputFormatContext, containerFormat, outputParameters, preset) {
     this.inputStream = inputStream
     this.outputFormatContext = outputFormatContext
     this.containerFormat = containerFormat
     this.outputParameters = outputParameters
+    this.preset = preset
     this.codecType = inputStream.codecParameters.type
 
     this.outputStream = null
@@ -212,10 +239,8 @@ class TranscodeStreamConfig {
 
     const encoderOptions = this.isVideo()
       ? ffmpeg.Dictionary.from({
+          ...encoderPresets[this.preset],
           allow_sw: '1',
-          deadline: 'good',
-          'cpu-used': '6',
-          crf: '30',
           b: '0'
         })
       : new ffmpeg.Dictionary()
@@ -375,6 +400,11 @@ class Transcoder {
     this.fd = fd
     this.outputParameters = opts.outputParameters || {}
     this.bufferSize = opts.bufferSize || 32 * 1024
+    this.preset = opts.preset ?? DEFAULT_PRESET
+
+    if (!Object.hasOwn(encoderPresets, this.preset)) {
+      throw new Error(`Unsupported preset: ${this.preset}`)
+    }
 
     this.chunks = []
     this.currentTime = 0
@@ -450,7 +480,8 @@ class Transcoder {
         inputStream,
         this.outputFormatContext,
         this.containerFormat,
-        this.outputParameters
+        this.outputParameters,
+        this.preset
       )
 
       if (config) {

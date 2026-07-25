@@ -81,7 +81,8 @@ async function* transcode(fd, opts = {}) {
       width: opts.width,
       height: opts.height
     },
-    bufferSize: opts.bufferSize
+    bufferSize: opts.bufferSize,
+    preset: opts.preset
   })
 
   yield* transcoder.transcode()
