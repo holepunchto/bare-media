@@ -196,6 +196,41 @@ test('video.transcode() - mp4 to webm', async (t) => {
   t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
 })
 
+test('video.transcode() - Skips unsupported tracks if they are secondary', async (t) => {
+  const path = './test/fixtures/unsupported-secondary-audio.mov'
+
+  const chunks = []
+  for await (const chunk of video(path).transcode({
+    format: 'webm',
+    width: 320,
+    height: 240
+  })) {
+    chunks.push(chunk)
+  }
+
+  const totalOutputBuffer = assertChunks(t, chunks)
+
+  // Check for WebM/EBML header
+  t.is(totalOutputBuffer[0], 0x1a, 'Output starts with EBML header byte 0')
+  t.is(totalOutputBuffer[1], 0x45, 'Output starts with EBML header byte 1')
+  t.is(totalOutputBuffer[2], 0xdf, 'Output starts with EBML header byte 2')
+  t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
+})
+
+test('video.transcode() - Throws if an unsupported track is primary', async (t) => {
+  const path = './test/fixtures/unsupported-primary-audio.mov'
+
+  await t.exception(async () => {
+    for await (const chunk of video(path).transcode({
+      format: 'webm',
+      width: 320,
+      height: 240
+    })) {
+      // throws
+    }
+  }, /Input audio stream is not decodable/)
+})
+
 test('video.transcode() - mp4 to webm has metadata', async (t) => {
   const path = './test/fixtures/sample.mp4'
   const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
