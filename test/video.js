@@ -3,9 +3,11 @@ import fs from 'bare-fs'
 import b4a from 'b4a'
 import os from 'bare-os'
 import barePath from 'bare-path'
+import ffmpeg from 'bare-ffmpeg'
 
 import { video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
+import { createIOContext } from '../src/video/io'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
@@ -221,6 +223,27 @@ test('video.transcode() - mp4 to webm has metadata', async (t) => {
   t.is(metadata.avgFramerate.denominator, 1, 'framerate denominator is set')
   t.is(metadata.duration, 4, 'duration is set')
   t.is(metadata.displayRotation, 0, 'rotation is set')
+})
+
+test('video.transcode() - drains delayed decoder frames at end of input', async (t) => {
+  const path = './test/fixtures/orientation.mov'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const inputFrames = countVideoFrames(path)
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'webm' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const outputFrames = countVideoFrames(outputPath)
+
+  t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
 })
 
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
@@ -495,6 +518,43 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
     }
   }, /Unsupported.*output format/)
 })
+
+/*
+ * Count the decodable video frames in a file, flushing the decoder at EOF so
+ * frames delayed by reordering are included.
+ */
+function countVideoFrames(path) {
+  const fd = fs.openSync(path, 'r')
+  const io = createIOContext(fd, ffmpeg)
+  using format = new ffmpeg.InputFormatContext(io)
+  const stream = format.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
+  const decoder = stream.decoder()
+  decoder.open()
+
+  const packet = new ffmpeg.Packet()
+  const frame = new ffmpeg.Frame()
+
+  let count = 0
+
+  try {
+    while (format.readFrame(packet)) {
+      if (packet.streamIndex === stream.index && decoder.sendPacket(packet)) {
+        while (decoder.receiveFrame(frame)) count++
+      }
+      packet.unref()
+    }
+
+    decoder.sendPacket(packet)
+    while (decoder.receiveFrame(frame)) count++
+  } finally {
+    packet.destroy()
+    frame.destroy()
+    decoder.destroy()
+    fs.closeSync(fd)
+  }
+
+  return count
+}
 
 function isValidTime(time) {
   return Number.isFinite(time) && time >= 0
