@@ -19,7 +19,8 @@
   "scripts": {
     "format": "prettier --write . && lunte --fix",
     "lint": "prettier --check . && lunte",
-    "test": "brittle-bare --coverage test.js"
+    "test": "brittle-bare --coverage test.js",
+    "test:samples": "brittle-bare test/samples/index.js"
   },
   "keywords": [],
   "author": "Holepunch",
@@ -53,6 +54,7 @@
   },
   "devDependencies": {
     "b4a": "^1.7.3",
+    "bare-crypto": "^1.15.3",
     "bare-os": "^3.6.2",
     "bare-path": "^3.0.0",
     "bare-performance": "^1.3.0",

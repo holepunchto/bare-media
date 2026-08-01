@@ -1,0 +1,20 @@
+{
+  "catalog": {
+    "sources": {},
+    "samples": []
+  },
+  "tests": {
+    "metadata": {
+      "durationTolerance": 0.02,
+      "samples": []
+    },
+    "extractFrames": {
+      "samples": []
+    },
+    "transcode": {
+      "samples": [],
+      "formats": ["mp4", "webm", "matroska"],
+      "skip": []
+    }
+  }
+}

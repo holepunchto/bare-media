@@ -1,0 +1,36 @@
+{
+  "catalog": {
+    "sources": {},
+    "samples": []
+  },
+  "tests": {
+    "metadata": {
+      "samples": []
+    },
+    "decode": {
+      "samples": [],
+      "animated": []
+    },
+    "crop": {
+      "samples": []
+    },
+    "resize": {
+      "samples": []
+    },
+    "orientate": {
+      "samples": [],
+      "exif": []
+    },
+    "rotate": {
+      "samples": []
+    },
+    "flip": {
+      "samples": []
+    },
+    "encode": {
+      "samples": [],
+      "mimetypes": ["image/jpeg", "image/png", "image/tiff", "image/webp"],
+      "animated": []
+    }
+  }
+}

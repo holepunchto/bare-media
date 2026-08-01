@@ -1,0 +1,167 @@
+import { test } from 'brittle'
+import fs from 'bare-fs'
+import os from 'bare-os'
+import barePath from 'bare-path'
+
+import { detectMimeType, image } from '../..'
+import { randomFileName } from '../helpers'
+import suite from './suites/image.json' with { type: 'json' }
+
+for (const sample of suite.tests.metadata.samples) {
+  test(`image metadata() ${sample.id}`, async (t) => {
+    const path = pathFor(sample.id)
+
+    const metadata = await image(path).metadata()
+    t.is(metadata.orientation, sample.orientation, 'orientation')
+  })
+}
+
+for (const sample of suite.tests.metadata.samples) {
+  test(`image metadata.strip() ${sample.id}`, async (t) => {
+    const path = pathFor(sample.id)
+
+    const source = fs.readFileSync(path)
+    const stripped = await image.metadata.strip(source)
+    const strippedMetadata = await image.metadata(stripped)
+
+    t.absent(strippedMetadata.orientation, 'removes orientation')
+
+    const kept = await image.metadata.strip(source, { keepOrientation: true })
+    const metadata = await image.metadata(kept)
+    t.is(metadata.orientation, sample.orientation, 'keeps orientation')
+  })
+}
+
+for (const sample of suite.tests.decode.samples) {
+  test(`image decode ${sample.id}`, async (t) => {
+    const path = pathFor(sample.id)
+
+    const rgba = await image(path).decode()
+    t.is(rgba.width, sample.width, 'width')
+    t.is(rgba.height, sample.height, 'height')
+    t.is(frameLength(rgba), sample.frames, 'frames length')
+
+    for (const frame of Array.isArray(rgba.frames) ? rgba.frames : [rgba]) {
+      t.is(frame.data.byteLength, frame.width * frame.height * 4, 'frames byteLength')
+    }
+  })
+}
+
+for (const id of suite.tests.crop.samples) {
+  test(`image crop ${id}`, async (t) => {
+    const path = pathFor(id)
+
+    const rgba = await image(path).decode()
+    const width = Math.max(1, Math.floor(rgba.width / 2))
+    const height = Math.max(1, Math.floor(rgba.height / 2))
+    const cropped = image.crop(rgba, { left: 0, top: 0, width, height })
+
+    t.is(cropped.width, width, 'width')
+    t.is(cropped.height, height, 'height')
+  })
+}
+
+for (const id of suite.tests.resize.samples) {
+  test(`image resize ${id}`, async (t) => {
+    const path = pathFor(id)
+
+    const resized = await image(path).decode().resize({ maxWidth: 64, maxHeight: 64 })
+
+    t.ok(resized.width <= 64 && resized.height <= 64)
+  })
+}
+
+for (const sample of suite.tests.orientate.exif) {
+  test(`image orientate ${sample.id}`, async (t) => {
+    const path = pathFor(sample.id)
+
+    const oriented = await image(path).decode().orientate()
+    t.is(oriented.width, sample.orientedWidth, 'width')
+    t.is(oriented.height, sample.orientedHeight, 'height')
+  })
+}
+
+for (const id of suite.tests.orientate.samples) {
+  test(`image orientate with transform ${id}`, async (t) => {
+    const path = pathFor(id)
+
+    const rgba = await image(path).decode()
+    const oriented = await image.orientate(rgba, {
+      transform: { rotate: 90, flipH: false, flipV: false }
+    })
+
+    t.is(oriented.width, rgba.height, 'width')
+    t.is(oriented.height, rgba.width, 'height')
+  })
+}
+
+for (const id of suite.tests.rotate.samples) {
+  test(`image rotate ${id}`, async (t) => {
+    const path = pathFor(id)
+
+    const rgba = await image(path).decode()
+    const rotated = image.rotate(rgba, { deg: 90 })
+
+    t.is(rotated.width, rgba.height, 'width')
+    t.is(rotated.height, rgba.width, 'height')
+  })
+}
+
+for (const id of suite.tests.flip.samples) {
+  test(`image flip ${id}`, async (t) => {
+    const path = pathFor(id)
+
+    const rgba = await image(path).decode()
+    const flipped = image.flip(image.flip(rgba, { h: true, v: false }), {
+      h: true,
+      v: false
+    })
+    t.alike(firstFrame(flipped).data, firstFrame(rgba).data, 'double flip')
+  })
+}
+
+for (const id of suite.tests.encode.samples) {
+  for (const mimetype of suite.tests.encode.mimetypes) {
+    test(`image encode ${id} as ${mimetype}`, { timeout: 120_000 }, async (t) => {
+      const path = pathFor(id)
+
+      const rgba = firstFrame(await image(path).decode())
+      const encoded = await image.encode(rgba, { mimetype })
+
+      t.ok(encoded.byteLength > 0, 'byteLength')
+      t.is(detectMimeType(encoded), mimetype, 'mimetype')
+    })
+  }
+}
+
+for (const sample of suite.tests.encode.animated) {
+  test(`image encode animation ${sample.id}`, async (t) => {
+    const path = pathFor(sample.id)
+
+    const rgba = await image(path).decode()
+    const encoded = await image.encode(rgba, { mimetype: 'image/webp' })
+    const decoded = await image.decode(encoded)
+
+    t.is(frameLength(decoded), sample.frames, 'animated WebP roundtrip')
+  })
+}
+
+function pathFor(id) {
+  return samplePath(suite.catalog, id)
+}
+
+function samplePath(catalog, id) {
+  const sample = catalog.samples.find((sample) => sample.id === id)
+  if (!sample) throw new Error(`Unknown sample id: ${id}`)
+  return barePath.join('./test/samples/files', sample.source, sample.path)
+}
+
+export function frameLength(rgba) {
+  return Array.isArray(rgba.frames) ? rgba.frames.length : 1
+}
+
+export function firstFrame(rgba) {
+  if (!Array.isArray(rgba.frames)) return rgba
+  const frame = rgba.frames[0]
+  return { width: frame.width, height: frame.height, data: frame.data }
+}
