@@ -1,36 +1,311 @@
 {
   "catalog": {
-    "sources": {},
-    "samples": []
+    "sources": {
+      "local": {
+        "baseUrl": "http://127.0.0.1:8080/images"
+      }
+    },
+    "samples": [
+      {
+        "id": "image-bmp",
+        "source": "local",
+        "path": "still.bmp",
+        "sha256": "0079c7277d8ba8dc80abb1eb901c2ebe5e1053b78d78ab4bf786b758feb25a78"
+      },
+      {
+        "id": "image-gif",
+        "source": "local",
+        "path": "still.gif",
+        "sha256": "825bbd01ed450caed3c3c6cd9f50ee6b44eb15a0eb8eea96ef4ac856056dc9d8"
+      },
+      {
+        "id": "image-ico",
+        "source": "local",
+        "path": "still.ico",
+        "sha256": "eb2b09dce52b45c25d3080f2100daeb327c358a61c1ab26c65b23d7d2c6285d6"
+      },
+      {
+        "id": "image-jpeg",
+        "source": "local",
+        "path": "still.jpg",
+        "sha256": "c2962813b1a2801477345cacea0fa7d5ea0f07104e59670212118cad037532be"
+      },
+      {
+        "id": "image-png",
+        "source": "local",
+        "path": "still.png",
+        "sha256": "f8e2610576e3cca5ac3ffa8e61e94704cdf2cc791ec9dad96e8d84915fb69028"
+      },
+      {
+        "id": "image-tiff",
+        "source": "local",
+        "path": "still.tiff",
+        "sha256": "f5195e86afc184b573995c8f2c292df654c96ebdd6dec43a78e059cc39294e4f"
+      },
+      {
+        "id": "image-webp",
+        "source": "local",
+        "path": "still.webp",
+        "sha256": "8b620afddfb0cd075f93e033a381730aa5028af7f8293d751591d87bbbe16824"
+      },
+      {
+        "id": "image-svg",
+        "source": "local",
+        "path": "still.svg",
+        "sha256": "8f5e5c9a0e3cdf75175ee2a5a5b31d3e6b3af7b0a14c96076ca98f078de7afb4"
+      },
+      {
+        "id": "image-avif",
+        "source": "local",
+        "path": "still.avif",
+        "sha256": "9f018f8109378b103bce35eebc7583e6fd804ada2c9d8583d5a9889d67ef2459"
+      },
+      {
+        "id": "image-animated-gif",
+        "source": "local",
+        "path": "animated.gif",
+        "sha256": "fdd03b646898a1acf48dfe27f18513f8c528904936660b16c483bec2d7bfa557"
+      },
+      {
+        "id": "image-animated-webp",
+        "source": "local",
+        "path": "animated.webp",
+        "sha256": "18ef44e7917acf222e0a1818c1f0e3b5db105101142162541d8053054b9cdf79"
+      },
+      {
+        "id": "image-oriented-jpeg",
+        "source": "local",
+        "path": "oriented.jpg",
+        "sha256": "597aa736402aebb6df9f222ed19cf5db624fb5a0b32aeb3de6efee4eb76217d7"
+      },
+      {
+        "id": "image-heic",
+        "source": "local",
+        "path": "still.heic",
+        "sha256": "8aa50c7001ef9a081a929c5a30cd1886c5abc6370c2841b208ce0b2b980bca22"
+      }
+    ]
   },
   "tests": {
     "metadata": {
-      "samples": []
+      "samples": [
+        {
+          "id": "image-oriented-jpeg",
+          "orientation": 6
+        }
+      ]
     },
     "decode": {
-      "samples": [],
-      "animated": []
+      "samples": [
+        {
+          "id": "image-bmp",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-gif",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-ico",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-jpeg",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-png",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-tiff",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-webp",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-svg",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-avif",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-animated-gif",
+          "width": 96,
+          "height": 64,
+          "frames": 4
+        },
+        {
+          "id": "image-animated-webp",
+          "width": 96,
+          "height": 64,
+          "frames": 4
+        },
+        {
+          "id": "image-oriented-jpeg",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "id": "image-heic",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        }
+      ],
+      "animated": [
+        {
+          "id": "image-animated-gif",
+          "frames": 4
+        },
+        {
+          "id": "image-animated-webp",
+          "frames": 4
+        }
+      ]
     },
     "crop": {
-      "samples": []
+      "samples": [
+        "image-bmp",
+        "image-gif",
+        "image-ico",
+        "image-jpeg",
+        "image-png",
+        "image-tiff",
+        "image-webp",
+        "image-svg",
+        "image-avif",
+        "image-animated-gif",
+        "image-animated-webp",
+        "image-oriented-jpeg",
+        "image-heic"
+      ]
     },
     "resize": {
-      "samples": []
+      "samples": [
+        "image-bmp",
+        "image-gif",
+        "image-ico",
+        "image-jpeg",
+        "image-png",
+        "image-tiff",
+        "image-webp",
+        "image-svg",
+        "image-avif",
+        "image-animated-gif",
+        "image-animated-webp",
+        "image-oriented-jpeg",
+        "image-heic"
+      ]
     },
     "orientate": {
-      "samples": [],
-      "exif": []
+      "samples": [
+        "image-bmp",
+        "image-gif",
+        "image-ico",
+        "image-jpeg",
+        "image-png",
+        "image-tiff",
+        "image-webp",
+        "image-svg",
+        "image-avif",
+        "image-animated-gif",
+        "image-animated-webp",
+        "image-oriented-jpeg",
+        "image-heic"
+      ],
+      "exif": [
+        {
+          "id": "image-oriented-jpeg",
+          "orientedWidth": 64,
+          "orientedHeight": 96
+        }
+      ]
     },
     "rotate": {
-      "samples": []
+      "samples": [
+        "image-bmp",
+        "image-gif",
+        "image-ico",
+        "image-jpeg",
+        "image-png",
+        "image-tiff",
+        "image-webp",
+        "image-svg",
+        "image-avif",
+        "image-animated-gif",
+        "image-animated-webp",
+        "image-oriented-jpeg",
+        "image-heic"
+      ]
     },
     "flip": {
-      "samples": []
+      "samples": [
+        "image-bmp",
+        "image-gif",
+        "image-ico",
+        "image-jpeg",
+        "image-png",
+        "image-tiff",
+        "image-webp",
+        "image-svg",
+        "image-avif",
+        "image-animated-gif",
+        "image-animated-webp",
+        "image-oriented-jpeg",
+        "image-heic"
+      ]
     },
     "encode": {
-      "samples": [],
+      "samples": [
+        "image-bmp",
+        "image-gif",
+        "image-ico",
+        "image-jpeg",
+        "image-png",
+        "image-tiff",
+        "image-webp",
+        "image-svg",
+        "image-avif",
+        "image-animated-gif",
+        "image-animated-webp",
+        "image-oriented-jpeg",
+        "image-heic"
+      ],
       "mimetypes": ["image/jpeg", "image/png", "image/tiff", "image/webp"],
-      "animated": []
+      "animated": [
+        {
+          "id": "image-animated-gif",
+          "frames": 4
+        },
+        {
+          "id": "image-animated-webp",
+          "frames": 4
+        }
+      ]
     }
   }
 }
