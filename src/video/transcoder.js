@@ -254,7 +254,7 @@ class VideoFrameProcessor {
   }
 
   process(frame, config, packet) {
-    const { encoder, outputStream } = config
+    const { inputStream, encoder, outputStream } = config
 
     if (
       !config.rescaler ||
@@ -287,11 +287,15 @@ class VideoFrameProcessor {
 
     config.rescaler.scale(frame, outFrame)
 
-    outFrame.pts = config.nextVideoPts
     const frameDuration =
       (encoder.timeBase.denominator * encoder.frameRate.denominator) /
       (encoder.timeBase.numerator * encoder.frameRate.numerator)
-    config.nextVideoPts += frameDuration
+
+    outFrame.pts =
+      frame.pts === -1
+        ? config.nextVideoPts
+        : ffmpeg.Rational.rescaleQ(frame.pts, inputStream.timeBase, encoder.timeBase)
+    config.nextVideoPts = outFrame.pts + frameDuration
 
     this.transcoder._encodeAndWrite(encoder, outFrame, outputStream, packet)
 

@@ -175,6 +175,29 @@ test('video.transcode() - webm to mp4', async (t) => {
   t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
 })
 
+test('video.transcode() - preserves non-30fps video timestamps', async (t) => {
+  const path = './test/fixtures/sample.webm'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('mp4'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'mp4' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const inputMetadata = await video(path).metadata()
+  const outputMetadata = await video(outputPath).metadata()
+  const durationDelta = Math.abs(outputMetadata.duration - inputMetadata.duration)
+
+  t.is(inputMetadata.avgFramerate.numerator, 25, 'fixture uses a non-30fps frame rate')
+  t.is(inputMetadata.avgFramerate.denominator, 1, 'fixture frame rate denominator is set')
+  t.ok(durationDelta < 0.1, 'video duration is preserved')
+})
+
 test('video.transcode() - mp4 to webm', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
