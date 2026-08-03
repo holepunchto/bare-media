@@ -163,13 +163,15 @@ class TranscodeStreamConfig {
   }
 
   #createDecoder() {
-    const decoderContext = this.inputStream.decoder()
+    let decoderContext = null
+
     try {
+      decoderContext = this.inputStream.decoder()
       decoderContext.open()
       return decoderContext
     } catch (err) {
-      console.warn(`Failed to open decoder for stream ${this.inputStream.index}: ${err.message}`)
-      decoderContext.destroy()
+      console.warn(`Failed to create decoder for stream ${this.inputStream.index}: ${err.message}`)
+      if (decoderContext) decoderContext.destroy()
       return null
     }
   }
@@ -439,6 +441,9 @@ class Transcoder {
   }
 
   #discoverAndConfigureStreams() {
+    const videoBestStreamIndex = this.inputFormatContext.getBestStreamIndex(VIDEO)
+    const audioBestStreamIndex = this.inputFormatContext.getBestStreamIndex(AUDIO)
+
     for (const inputStream of this.inputFormatContext.streams) {
       const codecType = inputStream.codecParameters.type
 
@@ -453,9 +458,17 @@ class Transcoder {
         this.outputParameters
       )
 
-      if (config) {
-        this.configs[inputStream.index] = config
+      if (!config) {
+        if (
+          inputStream.index !== videoBestStreamIndex &&
+          inputStream.index !== audioBestStreamIndex
+        ) {
+          continue
+        }
+        throw new Error(`Input ${codecType === VIDEO ? 'video' : 'audio'} stream is not decodable`)
       }
+
+      this.configs[inputStream.index] = config
     }
   }
 
