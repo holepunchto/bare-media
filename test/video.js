@@ -223,45 +223,61 @@ test('video.transcode() - mp4 to webm has metadata', async (t) => {
   t.is(metadata.displayRotation, 0, 'rotation is set')
 })
 
-test('video.transcode() - bakes display orientation into pixels', async (t) => {
-  const path = './test/fixtures/orientation.mov'
-  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
-  t.teardown(() => fs.unlinkSync(outputPath))
+// One fixture per display-matrix transform. All are byte-identical to
+// orientation.mov except for the rotation/reflection cells of the tkhd
+// display matrix.
+const orientationFixtures = [
+  'orientation.mov', // display rotation 270
+  'orientation-identity.mov', // identity matrix, no filter applied
+  'orientation-90.mov',
+  'orientation-180.mov',
+  'orientation-hflip.mov',
+  'orientation-vflip.mov',
+  'orientation-90-hflip.mov',
+  'orientation-90-vflip.mov'
+]
 
-  const inputMetadata = await video(path).metadata()
-  const inputFrame = await video(path).extractFrames({ frameIndex: 0 })
-  const expectedFrame = await image.orientate(inputFrame, {
-    transform: {
-      rotate: inputMetadata.rotation,
-      flipH: inputMetadata.flipH,
-      flipV: inputMetadata.flipV
+for (const fixture of orientationFixtures) {
+  test(`video.transcode() - bakes display orientation into pixels (${fixture})`, async (t) => {
+    const path = `./test/fixtures/${fixture}`
+    const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+    t.teardown(() => fs.unlinkSync(outputPath))
+
+    const inputMetadata = await video(path).metadata()
+    const inputFrame = await video(path).extractFrames({ frameIndex: 0 })
+    const expectedFrame = await image.orientate(inputFrame, {
+      transform: {
+        rotate: inputMetadata.rotation,
+        flipH: inputMetadata.flipH,
+        flipV: inputMetadata.flipV
+      }
+    })
+
+    const fd = fs.openSync(outputPath, 'w')
+    try {
+      for await (const chunk of video(path).transcode({ format: 'webm' })) {
+        fs.writeSync(fd, chunk.buffer)
+      }
+    } finally {
+      fs.closeSync(fd)
     }
+
+    const outputMetadata = await video(outputPath).metadata()
+    const outputFrame = await video(outputPath).extractFrames({ frameIndex: 0 })
+    const pixelError = meanAbsolutePixelError(outputFrame, expectedFrame)
+
+    t.is(outputMetadata.displayRotation, 0, 'display rotation metadata is cleared')
+    t.is(outputMetadata.rotation, 0, 'corrective rotation metadata is cleared')
+    t.is(outputMetadata.flipH, false, 'horizontal flip metadata is cleared')
+    t.is(outputMetadata.flipV, false, 'vertical flip metadata is cleared')
+    t.alike(
+      { width: outputFrame.width, height: outputFrame.height },
+      { width: expectedFrame.width, height: expectedFrame.height },
+      'output frame has the transformed dimensions'
+    )
+    t.ok(pixelError < 5, `output pixels match the expected orientation (${pixelError.toFixed(2)})`)
   })
-
-  const fd = fs.openSync(outputPath, 'w')
-  try {
-    for await (const chunk of video(path).transcode({ format: 'webm' })) {
-      fs.writeSync(fd, chunk.buffer)
-    }
-  } finally {
-    fs.closeSync(fd)
-  }
-
-  const outputMetadata = await video(outputPath).metadata()
-  const outputFrame = await video(outputPath).extractFrames({ frameIndex: 0 })
-  const pixelError = meanAbsolutePixelError(outputFrame, expectedFrame)
-
-  t.is(outputMetadata.displayRotation, 0, 'display rotation metadata is cleared')
-  t.is(outputMetadata.rotation, 0, 'corrective rotation metadata is cleared')
-  t.is(outputMetadata.flipH, false, 'horizontal flip metadata is cleared')
-  t.is(outputMetadata.flipV, false, 'vertical flip metadata is cleared')
-  t.alike(
-    { width: outputFrame.width, height: outputFrame.height },
-    { width: expectedFrame.width, height: expectedFrame.height },
-    'output frame has the transformed dimensions'
-  )
-  t.ok(pixelError < 5, `output pixels match the expected orientation (${pixelError.toFixed(2)})`)
-})
+}
 
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
   const path = './test/fixtures/sample-stereo.mp4'
