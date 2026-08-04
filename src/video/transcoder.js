@@ -487,6 +487,14 @@ class Transcoder {
     }
   }
 
+  #handleDecodedFrame(frame, config, packet) {
+    if (config.isVideo()) {
+      this.videoProcessor.process(frame, config, packet)
+    } else if (config.isAudio()) {
+      this.audioProcessor.process(frame, config, packet)
+    }
+  }
+
   *#drainChunks() {
     for (const chunk of this.chunks) {
       yield { buffer: chunk, time: this.currentTime }
@@ -512,11 +520,7 @@ class Transcoder {
 
         if (decoder.sendPacket(packet)) {
           while (decoder.receiveFrame(frame)) {
-            if (config.isVideo()) {
-              this.videoProcessor.process(frame, config, packet)
-            } else if (config.isAudio()) {
-              this.audioProcessor.process(frame, config, packet)
-            }
+            this.#handleDecodedFrame(frame, config, packet)
           }
         }
         packet.unref()
@@ -559,11 +563,7 @@ class Transcoder {
     if (!decoder.sendPacket(packet)) return
 
     while (decoder.receiveFrame(frame)) {
-      if (config.isVideo()) {
-        this.videoProcessor.process(frame, config, packet)
-      } else if (config.isAudio()) {
-        this.audioProcessor.process(frame, config, packet)
-      }
+      this.#handleDecodedFrame(frame, config, packet)
     }
   }
 
