@@ -107,8 +107,8 @@ formatRegistry.register('mkv', {
 
 function getOrientationFilter({ rotation, flipH, flipV }) {
   if (rotation === 90) {
-    if (flipH) return 'transpose=clock_flip'
-    if (flipV) return 'transpose=cclock_flip'
+    if (flipH) return 'transpose=cclock_flip'
+    if (flipV) return 'transpose=clock_flip'
     return 'transpose=cclock'
   }
   if (rotation === 180) return 'hflip,vflip'
