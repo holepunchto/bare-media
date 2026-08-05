@@ -304,6 +304,40 @@ test('video.transcode() - drains delayed decoder frames at end of input', async 
   t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
 })
 
+test('video.transcode() - drains delayed audio samples at end of input', async (t) => {
+  const flush = ffmpeg.Resampler.prototype.flush
+  const write = ffmpeg.AudioFIFO.prototype.write
+  const flushedFrames = new WeakSet()
+  let flushedSamples = 0
+  let writtenSamples = 0
+
+  ffmpeg.Resampler.prototype.flush = function (frame) {
+    const samples = flush.call(this, frame)
+    flushedSamples += samples
+    if (samples > 0) flushedFrames.add(frame)
+    return samples
+  }
+
+  ffmpeg.AudioFIFO.prototype.write = function (frame) {
+    if (flushedFrames.has(frame)) writtenSamples += frame.nbSamples
+    return write.call(this, frame)
+  }
+
+  t.teardown(() => {
+    ffmpeg.Resampler.prototype.flush = flush
+    ffmpeg.AudioFIFO.prototype.write = write
+  })
+
+  const chunks = []
+  for await (const chunk of video('./test/fixtures/sample.mp4').transcode({ format: 'webm' })) {
+    chunks.push(chunk)
+  }
+
+  assertChunks(t, chunks)
+  t.ok(flushedSamples > 0, 'resampler releases delayed samples')
+  t.is(writtenSamples, flushedSamples, 'delayed samples are written to the FIFO')
+})
+
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
   const path = './test/fixtures/sample-stereo.mp4'
 
