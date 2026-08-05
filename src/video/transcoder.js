@@ -111,7 +111,15 @@ class TranscodeStreamConfig {
       containerFormat,
       outputParameters
     )
-    return config.#initialize() ? config : null
+
+    try {
+      return config.#initialize() ? config : null
+    } catch (err) {
+      try {
+        config.destroy()
+      } catch {}
+      throw err
+    }
   }
 
   constructor(inputStream, outputFormatContext, containerFormat, outputParameters) {
@@ -149,6 +157,15 @@ class TranscodeStreamConfig {
       : formatRegistry.getAudioConfig(this.containerFormat)
   }
 
+  destroy() {
+    if (this.decoder) this.decoder.destroy()
+    if (this.encoder) this.encoder.destroy()
+    if (this.rescaler) this.rescaler.destroy()
+    if (this.resampler) this.resampler.destroy()
+    if (this.fifo) this.fifo.destroy()
+    if (this.fifoFrame) this.fifoFrame.destroy()
+  }
+
   #initialize() {
     this.decoder = this.#createDecoder()
     if (!this.decoder) return false
@@ -156,7 +173,7 @@ class TranscodeStreamConfig {
     this.outputStream = this.outputFormatContext.createStream()
     this.#configureOutputStream(this.outputStream, this.decoder)
 
-    this.encoder = this.#createEncoder(this.outputStream, this.decoder)
+    this.#createEncoder(this.outputStream, this.decoder)
     this.outputStream.codecParameters.fromContext(this.encoder)
 
     return true
@@ -199,7 +216,8 @@ class TranscodeStreamConfig {
 
   #createEncoder(outputStream, decoder) {
     const config = this.getConfig()
-    const encoder = new ffmpeg.CodecContext(new ffmpeg.Encoder(config.encoder))
+    this.encoder = new ffmpeg.CodecContext(new ffmpeg.Encoder(config.encoder))
+    const encoder = this.encoder
     outputStream.codecParameters.toContext(encoder)
 
     if (this.isVideo()) {
@@ -223,7 +241,6 @@ class TranscodeStreamConfig {
       : new ffmpeg.Dictionary()
 
     encoder.open(encoderOptions)
-    return encoder
   }
 
   #configureVideoEncoder(encoder, outputStream, decoder) {
@@ -586,13 +603,7 @@ class Transcoder {
 
   #cleanup() {
     for (const index in this.configs) {
-      const config = this.configs[index]
-      config.decoder.destroy()
-      config.encoder.destroy()
-      if (config.rescaler) config.rescaler.destroy()
-      if (config.resampler) config.resampler.destroy()
-      if (config.fifo) config.fifo.destroy()
-      if (config.fifoFrame) config.fifoFrame.destroy()
+      this.configs[index].destroy()
     }
 
     if (this.inputFormatContext) this.inputFormatContext.destroy()
