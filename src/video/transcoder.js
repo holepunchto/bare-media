@@ -205,13 +205,15 @@ class TranscodeStreamConfig {
   }
 
   #createDecoder() {
-    const decoderContext = this.inputStream.decoder()
+    let decoderContext = null
+
     try {
+      decoderContext = this.inputStream.decoder()
       decoderContext.open()
       return decoderContext
     } catch (err) {
-      console.warn(`Failed to open decoder for stream ${this.inputStream.index}: ${err.message}`)
-      decoderContext.destroy()
+      console.warn(`Failed to create decoder for stream ${this.inputStream.index}: ${err.message}`)
+      if (decoderContext) decoderContext.destroy()
       return null
     }
   }
@@ -364,7 +366,7 @@ class VideoFrameProcessor {
   }
 
   #encodeFrame(frame, config, packet) {
-    const { encoder, outputStream } = config
+    const { inputStream, encoder, outputStream } = config
 
     if (
       !config.rescaler ||
@@ -397,11 +399,15 @@ class VideoFrameProcessor {
 
     config.rescaler.scale(frame, outFrame)
 
-    outFrame.pts = config.nextVideoPts
     const frameDuration =
       (encoder.timeBase.denominator * encoder.frameRate.denominator) /
       (encoder.timeBase.numerator * encoder.frameRate.numerator)
-    config.nextVideoPts += frameDuration
+
+    outFrame.pts =
+      frame.pts === -1
+        ? config.nextVideoPts
+        : ffmpeg.Rational.rescaleQ(frame.pts, inputStream.timeBase, encoder.timeBase)
+    config.nextVideoPts = outFrame.pts + frameDuration
 
     this.transcoder._encodeAndWrite(encoder, outFrame, outputStream, packet)
 
@@ -551,6 +557,9 @@ class Transcoder {
   }
 
   #discoverAndConfigureStreams() {
+    const videoBestStreamIndex = this.inputFormatContext.getBestStreamIndex(VIDEO)
+    const audioBestStreamIndex = this.inputFormatContext.getBestStreamIndex(AUDIO)
+
     for (const inputStream of this.inputFormatContext.streams) {
       const codecType = inputStream.codecParameters.type
 
@@ -565,9 +574,17 @@ class Transcoder {
         this.outputParameters
       )
 
-      if (config) {
-        this.configs[inputStream.index] = config
+      if (!config) {
+        if (
+          inputStream.index !== videoBestStreamIndex &&
+          inputStream.index !== audioBestStreamIndex
+        ) {
+          continue
+        }
+        throw new Error(`Input ${codecType === VIDEO ? 'video' : 'audio'} stream is not decodable`)
       }
+
+      this.configs[inputStream.index] = config
     }
   }
 
@@ -599,6 +616,14 @@ class Transcoder {
     }
   }
 
+  #handleDecodedFrame(frame, config, packet) {
+    if (config.isVideo()) {
+      this.videoProcessor.process(frame, config, packet)
+    } else if (config.isAudio()) {
+      this.audioProcessor.process(frame, config, packet)
+    }
+  }
+
   *#drainChunks() {
     for (const chunk of this.chunks) {
       yield { buffer: chunk, time: this.currentTime }
@@ -624,11 +649,7 @@ class Transcoder {
 
         if (decoder.sendPacket(packet)) {
           while (decoder.receiveFrame(frame)) {
-            if (config.isVideo()) {
-              this.videoProcessor.process(frame, config, packet)
-            } else if (config.isAudio()) {
-              this.audioProcessor.process(frame, config, packet)
-            }
+            this.#handleDecodedFrame(frame, config, packet)
           }
         }
         packet.unref()
@@ -642,10 +663,13 @@ class Transcoder {
 
   *#finalize() {
     const packet = new ffmpeg.Packet()
+    const frame = new ffmpeg.Frame()
 
     try {
       for (const index in this.configs) {
         const config = this.configs[index]
+
+        this.#drainDecoder(config, packet, frame)
         this.audioProcessor.flush(config, packet)
 
         this._encodeAndWrite(config.encoder, null, config.outputStream, packet)
@@ -655,6 +679,20 @@ class Transcoder {
       yield* this.#drainChunks()
     } finally {
       packet.destroy()
+      frame.destroy()
+    }
+  }
+
+  #drainDecoder(config, packet, frame) {
+    const { decoder } = config
+
+    // An empty packet signals end of stream, releasing any frames the decoder
+    // has buffered for reordering.
+    packet.unref()
+    if (!decoder.sendPacket(packet)) return
+
+    while (decoder.receiveFrame(frame)) {
+      this.#handleDecodedFrame(frame, config, packet)
     }
   }
 

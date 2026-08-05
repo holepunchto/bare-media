@@ -3,9 +3,11 @@ import fs from 'bare-fs'
 import b4a from 'b4a'
 import os from 'bare-os'
 import barePath from 'bare-path'
+import ffmpeg from 'bare-ffmpeg'
 
 import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
+import { createIOContext } from '../src/video/io'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
@@ -175,6 +177,29 @@ test('video.transcode() - webm to mp4', async (t) => {
   t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
 })
 
+test('video.transcode() - preserves non-30fps video timestamps', async (t) => {
+  const path = './test/fixtures/sample.webm'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('mp4'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'mp4' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const inputMetadata = await video(path).metadata()
+  const outputMetadata = await video(outputPath).metadata()
+  const durationDelta = Math.abs(outputMetadata.duration - inputMetadata.duration)
+
+  t.is(inputMetadata.avgFramerate.numerator, 25, 'fixture uses a non-30fps frame rate')
+  t.is(inputMetadata.avgFramerate.denominator, 1, 'fixture frame rate denominator is set')
+  t.ok(durationDelta < 0.1, 'video duration is preserved')
+})
+
 test('video.transcode() - mp4 to webm', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
@@ -194,6 +219,41 @@ test('video.transcode() - mp4 to webm', async (t) => {
   t.is(totalOutputBuffer[1], 0x45, 'Output starts with EBML header byte 1')
   t.is(totalOutputBuffer[2], 0xdf, 'Output starts with EBML header byte 2')
   t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
+})
+
+test('video.transcode() - Skips unsupported tracks if they are secondary', async (t) => {
+  const path = './test/fixtures/unsupported-secondary-audio.mov'
+
+  const chunks = []
+  for await (const chunk of video(path).transcode({
+    format: 'webm',
+    width: 320,
+    height: 240
+  })) {
+    chunks.push(chunk)
+  }
+
+  const totalOutputBuffer = assertChunks(t, chunks)
+
+  // Check for WebM/EBML header
+  t.is(totalOutputBuffer[0], 0x1a, 'Output starts with EBML header byte 0')
+  t.is(totalOutputBuffer[1], 0x45, 'Output starts with EBML header byte 1')
+  t.is(totalOutputBuffer[2], 0xdf, 'Output starts with EBML header byte 2')
+  t.is(totalOutputBuffer[3], 0xa3, 'Output starts with EBML header byte 3')
+})
+
+test('video.transcode() - Throws if an unsupported track is primary', async (t) => {
+  const path = './test/fixtures/unsupported-primary-audio.mov'
+
+  await t.exception(async () => {
+    for await (const chunk of video(path).transcode({
+      format: 'webm',
+      width: 320,
+      height: 240
+    })) {
+      // throws
+    }
+  }, /Input audio stream is not decodable/)
 })
 
 test('video.transcode() - mp4 to webm has metadata', async (t) => {
@@ -278,6 +338,27 @@ for (const fixture of orientationFixtures) {
     t.ok(pixelError < 5, `output pixels match the expected orientation (${pixelError.toFixed(2)})`)
   })
 }
+
+test('video.transcode() - drains delayed decoder frames at end of input', async (t) => {
+  const path = './test/fixtures/orientation.mov'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const inputFrames = countVideoFrames(path)
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'webm' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const outputFrames = countVideoFrames(outputPath)
+
+  t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
+})
 
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
   const path = './test/fixtures/sample-stereo.mp4'
@@ -569,6 +650,43 @@ function meanAbsolutePixelError(actual, expected) {
   }
 
   return totalError / ((actual.data.length / 4) * 3)
+}
+
+/*
+ * Count the decodable video frames in a file, flushing the decoder at EOF so
+ * frames delayed by reordering are included.
+ */
+function countVideoFrames(path) {
+  const fd = fs.openSync(path, 'r')
+  const io = createIOContext(fd, ffmpeg)
+  using format = new ffmpeg.InputFormatContext(io)
+  const stream = format.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
+  const decoder = stream.decoder()
+  decoder.open()
+
+  const packet = new ffmpeg.Packet()
+  const frame = new ffmpeg.Frame()
+
+  let count = 0
+
+  try {
+    while (format.readFrame(packet)) {
+      if (packet.streamIndex === stream.index && decoder.sendPacket(packet)) {
+        while (decoder.receiveFrame(frame)) count++
+      }
+      packet.unref()
+    }
+
+    decoder.sendPacket(packet)
+    while (decoder.receiveFrame(frame)) count++
+  } finally {
+    packet.destroy()
+    frame.destroy()
+    decoder.destroy()
+    fs.closeSync(fd)
+  }
+
+  return count
 }
 
 function isValidTime(time) {
