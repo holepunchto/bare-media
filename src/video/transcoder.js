@@ -504,6 +504,14 @@ class Transcoder {
     }
   }
 
+  #handleDecodedFrame(frame, config, packet) {
+    if (config.isVideo()) {
+      this.videoProcessor.process(frame, config, packet)
+    } else if (config.isAudio()) {
+      this.audioProcessor.process(frame, config, packet)
+    }
+  }
+
   *#drainChunks() {
     for (const chunk of this.chunks) {
       yield { buffer: chunk, time: this.currentTime }
@@ -529,11 +537,7 @@ class Transcoder {
 
         if (decoder.sendPacket(packet)) {
           while (decoder.receiveFrame(frame)) {
-            if (config.isVideo()) {
-              this.videoProcessor.process(frame, config, packet)
-            } else if (config.isAudio()) {
-              this.audioProcessor.process(frame, config, packet)
-            }
+            this.#handleDecodedFrame(frame, config, packet)
           }
         }
         packet.unref()
@@ -547,10 +551,13 @@ class Transcoder {
 
   *#finalize() {
     const packet = new ffmpeg.Packet()
+    const frame = new ffmpeg.Frame()
 
     try {
       for (const index in this.configs) {
         const config = this.configs[index]
+
+        this.#drainDecoder(config, packet, frame)
         this.audioProcessor.flush(config, packet)
 
         this._encodeAndWrite(config.encoder, null, config.outputStream, packet)
@@ -560,6 +567,20 @@ class Transcoder {
       yield* this.#drainChunks()
     } finally {
       packet.destroy()
+      frame.destroy()
+    }
+  }
+
+  #drainDecoder(config, packet, frame) {
+    const { decoder } = config
+
+    // An empty packet signals end of stream, releasing any frames the decoder
+    // has buffered for reordering.
+    packet.unref()
+    if (!decoder.sendPacket(packet)) return
+
+    while (decoder.receiveFrame(frame)) {
+      this.#handleDecodedFrame(frame, config, packet)
     }
   }
 
