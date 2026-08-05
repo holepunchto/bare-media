@@ -70,7 +70,7 @@ formatRegistry.register('mp4', {
     sampleRate: 48000,
     encoder: 'libopus'
   },
-  muxer: { movflags: 'frag_keyframe+empty_moov+default_base_moof' }
+  muxer: { movflags: 'frag_keyframe+delay_moov+default_base_moof' }
 })
 
 formatRegistry.register('matroska', {
@@ -128,7 +128,7 @@ class TranscodeStreamConfig {
     this.resampler = null
     this.fifo = null
     this.fifoFrame = null
-    this.samplesWritten = 0
+    this.nextAudioPts = null
     this.nextVideoPts = 0
     this.lastWidth = null
     this.lastHeight = null
@@ -309,7 +309,14 @@ class AudioFrameProcessor {
   }
 
   process(frame, config, packet) {
-    const { encoder, outputStream } = config
+    const { inputStream, encoder, outputStream } = config
+
+    if (config.nextAudioPts === null) {
+      config.nextAudioPts =
+        frame.pts === -1
+          ? 0
+          : ffmpeg.Rational.rescaleQ(frame.pts, inputStream.timeBase, encoder.timeBase)
+    }
 
     if (!config.resampler) {
       config.resampler = new ffmpeg.Resampler(
@@ -356,8 +363,8 @@ class AudioFrameProcessor {
 
       config.fifo.read(config.fifoFrame, frameSize)
 
-      config.fifoFrame.pts = config.samplesWritten
-      config.samplesWritten += config.fifoFrame.nbSamples
+      config.fifoFrame.pts = config.nextAudioPts
+      config.nextAudioPts += config.fifoFrame.nbSamples
 
       this.transcoder._encodeAndWrite(encoder, config.fifoFrame, outputStream, packet)
     }
@@ -369,8 +376,8 @@ class AudioFrameProcessor {
       config.fifoFrame.nbSamples = remaining
       config.fifoFrame.alloc()
       config.fifo.read(config.fifoFrame, remaining)
-      config.fifoFrame.pts = config.samplesWritten
-      config.samplesWritten += config.fifoFrame.nbSamples
+      config.fifoFrame.pts = config.nextAudioPts
+      config.nextAudioPts += config.fifoFrame.nbSamples
       this.transcoder._encodeAndWrite(config.encoder, config.fifoFrame, config.outputStream, packet)
     }
   }

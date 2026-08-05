@@ -200,6 +200,29 @@ test('video.transcode() - preserves non-30fps video timestamps', async (t) => {
   t.ok(durationDelta < 0.1, 'video duration is preserved')
 })
 
+test('video.transcode() - preserves audio start offset', async (t) => {
+  const path = './test/fixtures/audio-offset.mkv'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('mp4'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'mp4' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const inputTimestamps = firstMediaPacketTimestamps(path)
+  const outputTimestamps = firstMediaPacketTimestamps(outputPath)
+  const inputOffset = inputTimestamps.audio - inputTimestamps.video
+  const outputOffset = outputTimestamps.audio - outputTimestamps.video
+
+  t.ok(Math.abs(inputOffset - 0.244) < 0.001, 'fixture audio starts 244ms after video')
+  t.ok(Math.abs(outputOffset - inputOffset) < 0.01, 'audio start offset is preserved')
+})
+
 test('video.transcode() - mp4 to webm', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
@@ -576,6 +599,39 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
     }
   }, /Unsupported.*output format/)
 })
+
+function firstMediaPacketTimestamps(path) {
+  const fd = fs.openSync(path, 'r')
+  const io = createIOContext(fd, ffmpeg)
+  using format = new ffmpeg.InputFormatContext(io)
+  const packet = new ffmpeg.Packet()
+  const timestamps = {}
+
+  try {
+    while (format.readFrame(packet)) {
+      const stream = format.streams[packet.streamIndex]
+      const type = stream.codecParameters.type
+
+      if (packet.pts !== -1) {
+        const timestamp = (packet.pts * stream.timeBase.numerator) / stream.timeBase.denominator
+
+        if (type === ffmpeg.constants.mediaTypes.VIDEO && timestamps.video === undefined) {
+          timestamps.video = timestamp
+        } else if (type === ffmpeg.constants.mediaTypes.AUDIO && timestamps.audio === undefined) {
+          timestamps.audio = timestamp
+        }
+      }
+
+      packet.unref()
+      if (timestamps.video !== undefined && timestamps.audio !== undefined) break
+    }
+  } finally {
+    packet.destroy()
+    fs.closeSync(fd)
+  }
+
+  return timestamps
+}
 
 /*
  * Count the decodable video frames in a file, flushing the decoder at EOF so
