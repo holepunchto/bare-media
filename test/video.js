@@ -304,6 +304,101 @@ test('video.transcode() - drains delayed decoder frames at end of input', async 
   t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
 })
 
+test('video.transcode() - retries a decoder packet after backpressure', async (t) => {
+  const path = './test/fixtures/sample.webm'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const inputFrames = countVideoFrames(path)
+  const videoStreamIndex = getBestStreamIndex(path, ffmpeg.constants.mediaTypes.VIDEO)
+  const sendPacket = ffmpeg.CodecContext.prototype.sendPacket
+  const receiveFrame = ffmpeg.CodecContext.prototype.receiveFrame
+  let decoder = null
+  let backpressure = false
+
+  ffmpeg.CodecContext.prototype.sendPacket = function (packet) {
+    const accepted = sendPacket.call(this, packet)
+
+    if (packet.streamIndex === videoStreamIndex) {
+      if (!decoder) decoder = this
+      if (this === decoder && !accepted) backpressure = true
+    }
+
+    return accepted
+  }
+
+  ffmpeg.CodecContext.prototype.receiveFrame = function (frame) {
+    if (this === decoder && !backpressure) return false
+    return receiveFrame.call(this, frame)
+  }
+
+  t.teardown(() => {
+    ffmpeg.CodecContext.prototype.sendPacket = sendPacket
+    ffmpeg.CodecContext.prototype.receiveFrame = receiveFrame
+  })
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'webm' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const outputFrames = countVideoFrames(outputPath)
+
+  t.ok(backpressure, 'decoder reported backpressure')
+  t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
+})
+
+test('video.transcode() - retries an encoder frame after backpressure', async (t) => {
+  const path = './test/fixtures/sample.webm'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const inputFrames = countVideoFrames(path)
+  const sendFrame = ffmpeg.CodecContext.prototype.sendFrame
+  const receivePacket = ffmpeg.CodecContext.prototype.receivePacket
+  let encoder = null
+  let backpressure = false
+
+  ffmpeg.CodecContext.prototype.sendFrame = function (frame) {
+    const accepted = sendFrame.call(this, frame)
+
+    if (frame && frame.width > 0) {
+      if (!encoder) encoder = this
+      if (this === encoder && !accepted) backpressure = true
+    }
+
+    return accepted
+  }
+
+  ffmpeg.CodecContext.prototype.receivePacket = function (packet) {
+    if (this === encoder && !backpressure) return false
+    return receivePacket.call(this, packet)
+  }
+
+  t.teardown(() => {
+    ffmpeg.CodecContext.prototype.sendFrame = sendFrame
+    ffmpeg.CodecContext.prototype.receivePacket = receivePacket
+  })
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'webm' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const outputFrames = countVideoFrames(outputPath)
+
+  t.ok(backpressure, 'encoder reported backpressure')
+  t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
+})
+
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
   const path = './test/fixtures/sample-stereo.mp4'
 
@@ -576,6 +671,18 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
     }
   }, /Unsupported.*output format/)
 })
+
+function getBestStreamIndex(path, type) {
+  const fd = fs.openSync(path, 'r')
+  const io = createIOContext(fd, ffmpeg)
+  using format = new ffmpeg.InputFormatContext(io)
+
+  try {
+    return format.getBestStreamIndex(type)
+  } finally {
+    fs.closeSync(fd)
+  }
+}
 
 /*
  * Count the decodable video frames in a file, flushing the decoder at EOF so
