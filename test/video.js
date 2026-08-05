@@ -256,6 +256,59 @@ test('video.transcode() - Throws if an unsupported track is primary', async (t) 
   }, /Input audio stream is not decodable/)
 })
 
+test('video.transcode() - cleans up a partially initialized stream', async (t) => {
+  const path = './test/fixtures/sample.webm'
+  const failure = new Error('encoder initialization failed')
+  const open = ffmpeg.CodecContext.prototype.open
+  const destroy = ffmpeg.CodecContext.prototype.destroy
+  const contexts = []
+  const destroyCounts = new Map()
+  let decoder = null
+  let encoder = null
+
+  ffmpeg.CodecContext.prototype.open = function (options) {
+    contexts.push(this)
+
+    if (this._codec instanceof ffmpeg.Encoder) {
+      encoder = this
+      throw failure
+    }
+
+    decoder = this
+    return open.call(this, options)
+  }
+
+  ffmpeg.CodecContext.prototype.destroy = function () {
+    destroyCounts.set(this, (destroyCounts.get(this) || 0) + 1)
+    return destroy.call(this)
+  }
+
+  t.teardown(() => {
+    ffmpeg.CodecContext.prototype.open = open
+    ffmpeg.CodecContext.prototype.destroy = destroy
+
+    for (const context of contexts) {
+      if (!destroyCounts.has(context)) destroy.call(context)
+    }
+  })
+
+  let error = null
+
+  try {
+    for await (const chunk of video(path).transcode({ format: 'webm' })) {
+      // throws
+    }
+  } catch (err) {
+    error = err
+  }
+
+  t.is(error, failure, 'preserves the initialization error')
+  t.ok(decoder, 'decoder context was allocated')
+  t.ok(encoder, 'encoder context was allocated')
+  t.is(destroyCounts.get(decoder) || 0, 1, 'destroys the decoder context once')
+  t.is(destroyCounts.get(encoder) || 0, 1, 'destroys the encoder context once')
+})
+
 test('video.transcode() - mp4 to webm has metadata', async (t) => {
   const path = './test/fixtures/sample.mp4'
   const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
