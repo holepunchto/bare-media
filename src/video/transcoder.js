@@ -2,6 +2,8 @@ import fs from 'bare-fs'
 import b4a from 'b4a'
 import ffmpeg from 'bare-ffmpeg'
 
+import { parseDisplayMatrix } from './metadata'
+
 const { VIDEO, AUDIO } = ffmpeg.constants.mediaTypes
 
 class FormatRegistry {
@@ -103,6 +105,19 @@ formatRegistry.register('mkv', {
   muxer: { live: '1' }
 })
 
+function getOrientationFilter({ rotation, flipH, flipV }) {
+  if (rotation === 90) {
+    if (flipH) return 'transpose=cclock_flip'
+    if (flipV) return 'transpose=clock_flip'
+    return 'transpose=cclock'
+  }
+  if (rotation === 180) return 'hflip,vflip'
+  if (rotation === 270) return 'transpose=clock'
+  if (flipH) return 'hflip'
+  if (flipV) return 'vflip'
+  return null
+}
+
 class TranscodeStreamConfig {
   static create(inputStream, outputFormatContext, containerFormat, outputParameters) {
     const config = new TranscodeStreamConfig(
@@ -133,6 +148,14 @@ class TranscodeStreamConfig {
     this.lastWidth = null
     this.lastHeight = null
     this.lastFormat = null
+    this.orientation = null
+    this.orientationGraph = null
+    this.orientationSource = null
+    this.orientationSink = null
+    this.orientationFrame = null
+    this.orientationWidth = null
+    this.orientationHeight = null
+    this.orientationFormat = null
   }
 
   isVideo() {
@@ -153,6 +176,8 @@ class TranscodeStreamConfig {
     this.decoder = this.#createDecoder()
     if (!this.decoder) return false
 
+    if (this.isVideo()) this.orientation = this.#resolveOrientation()
+
     this.outputStream = this.outputFormatContext.createStream()
     this.#configureOutputStream(this.outputStream, this.decoder)
 
@@ -160,6 +185,23 @@ class TranscodeStreamConfig {
     this.outputStream.codecParameters.fromContext(this.encoder)
 
     return true
+  }
+
+  #resolveOrientation() {
+    for (const entry of this.inputStream.sideData) {
+      if (entry.type !== ffmpeg.constants.packetSideDataType.DISPLAYMATRIX) continue
+
+      const transform = parseDisplayMatrix(entry.data)
+      const filter = getOrientationFilter(transform)
+      if (!filter) return null
+
+      return {
+        filter,
+        swapsDimensions: transform.rotation === 90 || transform.rotation === 270
+      }
+    }
+
+    return null
   }
 
   #createDecoder() {
@@ -184,8 +226,12 @@ class TranscodeStreamConfig {
     outputStream.codecParameters.format = config.format
 
     if (this.isVideo()) {
-      outputStream.codecParameters.width = this.outputParameters?.width || decoder.width
-      outputStream.codecParameters.height = this.outputParameters?.height || decoder.height
+      const swap = this.orientation?.swapsDimensions
+      const width = swap ? decoder.height : decoder.width
+      const height = swap ? decoder.width : decoder.height
+
+      outputStream.codecParameters.width = this.outputParameters?.width || width
+      outputStream.codecParameters.height = this.outputParameters?.height || height
       outputStream.timeBase = new ffmpeg.Rational(1, 90000)
     } else {
       outputStream.codecParameters.sampleRate = config.sampleRate
@@ -254,6 +300,72 @@ class VideoFrameProcessor {
   }
 
   process(frame, config, packet) {
+    if (!config.orientation) {
+      this.#encodeFrame(frame, config, packet)
+      return
+    }
+
+    this.#ensureOrientationFilter(frame, config)
+
+    const err = config.orientationGraph.pushFrame(config.orientationSource, frame)
+    if (err < 0) throw new Error(`Failed to push video frame into orientation filter (${err})`)
+
+    while (
+      config.orientationGraph.pullFrame(config.orientationSink, config.orientationFrame) >= 0
+    ) {
+      this.#encodeFrame(config.orientationFrame, config, packet)
+    }
+  }
+
+  #ensureOrientationFilter(frame, config) {
+    if (
+      config.orientationGraph &&
+      config.orientationWidth === frame.width &&
+      config.orientationHeight === frame.height &&
+      config.orientationFormat === frame.format
+    ) {
+      return
+    }
+
+    if (config.orientationGraph) config.orientationGraph.destroy()
+
+    const graph = new ffmpeg.FilterGraph()
+    config.orientationGraph = graph
+
+    const source = new ffmpeg.FilterContext()
+    const sink = new ffmpeg.FilterContext()
+    const timeBase = config.inputStream.timeBase
+
+    graph.createFilter(
+      source,
+      new ffmpeg.Filter('buffer'),
+      'in',
+      `video_size=${frame.width}x${frame.height}:pix_fmt=${frame.format}:time_base=${timeBase.numerator}/${timeBase.denominator}:pixel_aspect=1/1`
+    )
+    graph.createFilter(sink, new ffmpeg.Filter('buffersink'), 'out')
+
+    using outputs = new ffmpeg.FilterInOut()
+    outputs.name = 'in'
+    outputs.filterContext = source
+    outputs.padIdx = 0
+
+    using inputs = new ffmpeg.FilterInOut()
+    inputs.name = 'out'
+    inputs.filterContext = sink
+    inputs.padIdx = 0
+
+    graph.parse(config.orientation.filter, inputs, outputs)
+    graph.configure()
+
+    config.orientationSource = source
+    config.orientationSink = sink
+    if (!config.orientationFrame) config.orientationFrame = new ffmpeg.Frame()
+    config.orientationWidth = frame.width
+    config.orientationHeight = frame.height
+    config.orientationFormat = frame.format
+  }
+
+  #encodeFrame(frame, config, packet) {
     const { inputStream, encoder, outputStream } = config
 
     if (
@@ -593,6 +705,8 @@ class Transcoder {
       if (config.resampler) config.resampler.destroy()
       if (config.fifo) config.fifo.destroy()
       if (config.fifoFrame) config.fifoFrame.destroy()
+      if (config.orientationGraph) config.orientationGraph.destroy()
+      if (config.orientationFrame) config.orientationFrame.destroy()
     }
 
     if (this.inputFormatContext) this.inputFormatContext.destroy()

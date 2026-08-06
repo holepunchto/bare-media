@@ -5,7 +5,7 @@ import os from 'bare-os'
 import barePath from 'bare-path'
 import ffmpeg from 'bare-ffmpeg'
 
-import { video } from '..'
+import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
 import { createIOContext } from '../src/video/io'
 import { createDisplayMatrix, randomFileName } from './helpers'
@@ -282,6 +282,62 @@ test('video.transcode() - mp4 to webm has metadata', async (t) => {
   t.is(metadata.duration, 4, 'duration is set')
   t.is(metadata.displayRotation, 0, 'rotation is set')
 })
+
+// One fixture per display-matrix transform. All are byte-identical to
+// orientation.mov except for the rotation/reflection cells of the tkhd
+// display matrix.
+const orientationFixtures = [
+  'orientation.mov', // display rotation 270
+  'orientation-identity.mov', // identity matrix, no filter applied
+  'orientation-90.mov',
+  'orientation-180.mov',
+  'orientation-hflip.mov',
+  'orientation-vflip.mov',
+  'orientation-90-hflip.mov',
+  'orientation-90-vflip.mov'
+]
+
+for (const fixture of orientationFixtures) {
+  test(`video.transcode() - bakes display orientation into pixels (${fixture})`, async (t) => {
+    const path = `./test/fixtures/${fixture}`
+    const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+    t.teardown(() => fs.unlinkSync(outputPath))
+
+    const inputMetadata = await video(path).metadata()
+    const inputFrame = await video(path).extractFrames({ frameIndex: 0 })
+    const expectedFrame = await image.orientate(inputFrame, {
+      transform: {
+        rotate: inputMetadata.rotation,
+        flipH: inputMetadata.flipH,
+        flipV: inputMetadata.flipV
+      }
+    })
+
+    const fd = fs.openSync(outputPath, 'w')
+    try {
+      for await (const chunk of video(path).transcode({ format: 'webm' })) {
+        fs.writeSync(fd, chunk.buffer)
+      }
+    } finally {
+      fs.closeSync(fd)
+    }
+
+    const outputMetadata = await video(outputPath).metadata()
+    const outputFrame = await video(outputPath).extractFrames({ frameIndex: 0 })
+    const pixelError = meanAbsolutePixelError(outputFrame, expectedFrame)
+
+    t.is(outputMetadata.displayRotation, 0, 'display rotation metadata is cleared')
+    t.is(outputMetadata.rotation, 0, 'corrective rotation metadata is cleared')
+    t.is(outputMetadata.flipH, false, 'horizontal flip metadata is cleared')
+    t.is(outputMetadata.flipV, false, 'vertical flip metadata is cleared')
+    t.alike(
+      { width: outputFrame.width, height: outputFrame.height },
+      { width: expectedFrame.width, height: expectedFrame.height },
+      'output frame has the transformed dimensions'
+    )
+    t.ok(pixelError < 5, `output pixels match the expected orientation (${pixelError.toFixed(2)})`)
+  })
+}
 
 test('video.transcode() - drains delayed decoder frames at end of input', async (t) => {
   const path = './test/fixtures/orientation.mov'
@@ -576,6 +632,25 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
     }
   }, /Unsupported.*output format/)
 })
+
+function meanAbsolutePixelError(actual, expected) {
+  if (
+    actual.width !== expected.width ||
+    actual.height !== expected.height ||
+    actual.data.length !== expected.data.length
+  ) {
+    return Infinity
+  }
+
+  let totalError = 0
+  for (let i = 0; i < actual.data.length; i += 4) {
+    totalError += Math.abs(actual.data[i] - expected.data[i])
+    totalError += Math.abs(actual.data[i + 1] - expected.data[i + 1])
+    totalError += Math.abs(actual.data[i + 2] - expected.data[i + 2])
+  }
+
+  return totalError / ((actual.data.length / 4) * 3)
+}
 
 /*
  * Count the decodable video frames in a file, flushing the decoder at EOF so
