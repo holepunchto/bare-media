@@ -421,7 +421,7 @@ class AudioFrameProcessor {
   }
 
   process(frame, config, packet) {
-    const { encoder, outputStream } = config
+    const { encoder } = config
 
     if (!config.resampler) {
       config.resampler = new ffmpeg.Resampler(
@@ -441,9 +441,6 @@ class AudioFrameProcessor {
         encoder.frameSize
       )
       config.fifoFrame = new ffmpeg.Frame()
-      config.fifoFrame.format = encoder.sampleFormat
-      config.fifoFrame.channelLayout = encoder.channelLayout
-      config.fifoFrame.sampleRate = encoder.sampleRate
     }
 
     const outFrame = new ffmpeg.Frame()
@@ -463,28 +460,56 @@ class AudioFrameProcessor {
 
     const frameSize = encoder.frameSize
     while (config.fifo.size >= frameSize) {
-      config.fifoFrame.nbSamples = frameSize
-      config.fifoFrame.alloc()
-
-      config.fifo.read(config.fifoFrame, frameSize)
-
-      config.fifoFrame.pts = config.samplesWritten
-      config.samplesWritten += config.fifoFrame.nbSamples
-
-      this.transcoder._encodeAndWrite(encoder, config.fifoFrame, outputStream, packet)
+      this.#encodeSamples(config, packet, frameSize)
     }
   }
 
   flush(config, packet) {
-    if (config.fifo && config.fifo.size > 0) {
-      const remaining = config.fifo.size
-      config.fifoFrame.nbSamples = remaining
-      config.fifoFrame.alloc()
-      config.fifo.read(config.fifoFrame, remaining)
-      config.fifoFrame.pts = config.samplesWritten
-      config.samplesWritten += config.fifoFrame.nbSamples
-      this.transcoder._encodeAndWrite(config.encoder, config.fifoFrame, config.outputStream, packet)
+    const { encoder } = config
+
+    if (config.resampler) {
+      const outFrame = new ffmpeg.Frame()
+      outFrame.format = encoder.sampleFormat
+      outFrame.channelLayout = encoder.channelLayout
+      outFrame.sampleRate = encoder.sampleRate
+
+      const outSamples =
+        Math.ceil(
+          (config.resampler.delay * encoder.sampleRate) / config.resampler.inputSampleRate
+        ) + 32
+      outFrame.nbSamples = outSamples
+      outFrame.alloc()
+
+      const flushedSamples = config.resampler.flush(outFrame)
+      outFrame.nbSamples = flushedSamples
+      if (flushedSamples > 0) config.fifo.write(outFrame)
+
+      outFrame.destroy()
     }
+
+    while (config.fifo && config.fifo.size >= encoder.frameSize) {
+      this.#encodeSamples(config, packet, encoder.frameSize)
+    }
+
+    if (config.fifo && config.fifo.size > 0) {
+      this.#encodeSamples(config, packet, config.fifo.size)
+    }
+  }
+
+  #encodeSamples(config, packet, samples) {
+    const { encoder, outputStream, fifo, fifoFrame: frame } = config
+
+    frame.unref()
+    frame.format = encoder.sampleFormat
+    frame.channelLayout = encoder.channelLayout
+    frame.sampleRate = encoder.sampleRate
+    frame.nbSamples = samples
+    frame.alloc()
+
+    fifo.read(frame, samples)
+    frame.pts = config.samplesWritten
+    config.samplesWritten += frame.nbSamples
+    this.transcoder._encodeAndWrite(encoder, frame, outputStream, packet)
   }
 }
 
