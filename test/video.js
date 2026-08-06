@@ -221,6 +221,8 @@ test('video.transcode() - preserves audio/video start offset', async (t) => {
 
   t.ok(Math.abs(inputOffset - 0.244) < 0.001, 'fixture audio starts 244ms after video')
   t.ok(Math.abs(outputOffset - inputOffset) < 0.01, 'audio start offset is preserved')
+      t.ok(Math.abs(outputTimestamps.video - inputTimestamps.video) < 0.01,
+      'video start time is preserved')
 })
 
 test('video.transcode() - mp4 to webm', async (t) => {
