@@ -200,7 +200,7 @@ test('video.transcode() - preserves non-30fps video timestamps', async (t) => {
   t.ok(durationDelta < 0.1, 'video duration is preserved')
 })
 
-test('video.transcode() - preserves audio start offset', async (t) => {
+test('video.transcode() - preserves audio/video start offset', async (t) => {
   const path = './test/fixtures/audio-offset.mkv'
   const outputPath = barePath.join(os.tmpdir(), randomFileName('mp4'))
   t.teardown(() => fs.unlinkSync(outputPath))
