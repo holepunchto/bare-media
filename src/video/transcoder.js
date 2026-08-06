@@ -441,9 +441,6 @@ class AudioFrameProcessor {
         encoder.frameSize
       )
       config.fifoFrame = new ffmpeg.Frame()
-      config.fifoFrame.format = encoder.sampleFormat
-      config.fifoFrame.channelLayout = encoder.channelLayout
-      config.fifoFrame.sampleRate = encoder.sampleRate
     }
 
     const outFrame = new ffmpeg.Frame()
@@ -500,14 +497,19 @@ class AudioFrameProcessor {
   }
 
   #encodeSamples(config, packet, samples) {
-    const { encoder, outputStream } = config
+    const { encoder, outputStream, fifo, fifoFrame: frame } = config
 
-    config.fifoFrame.nbSamples = samples
-    config.fifoFrame.alloc()
-    config.fifo.read(config.fifoFrame, samples)
-    config.fifoFrame.pts = config.samplesWritten
-    config.samplesWritten += config.fifoFrame.nbSamples
-    this.transcoder._encodeAndWrite(encoder, config.fifoFrame, outputStream, packet)
+    frame.unref()
+    frame.format = encoder.sampleFormat
+    frame.channelLayout = encoder.channelLayout
+    frame.sampleRate = encoder.sampleRate
+    frame.nbSamples = samples
+    frame.alloc()
+
+    fifo.read(frame, samples)
+    frame.pts = config.samplesWritten
+    config.samplesWritten += frame.nbSamples
+    this.transcoder._encodeAndWrite(encoder, frame, outputStream, packet)
   }
 }
 

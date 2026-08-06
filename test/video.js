@@ -361,37 +361,27 @@ test('video.transcode() - drains delayed decoder frames at end of input', async 
 })
 
 test('video.transcode() - drains delayed audio samples at end of input', async (t) => {
-  const flush = ffmpeg.Resampler.prototype.flush
-  const write = ffmpeg.AudioFIFO.prototype.write
-  const flushedFrames = new WeakSet()
-  let flushedSamples = 0
-  let writtenSamples = 0
+  const path = './test/fixtures/sample.mp4'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+  t.teardown(() => fs.unlinkSync(outputPath))
 
-  ffmpeg.Resampler.prototype.flush = function (frame) {
-    const samples = flush.call(this, frame)
-    flushedSamples += samples
-    if (samples > 0) flushedFrames.add(frame)
-    return samples
+  const input = decodedAudio(path)
+  const expectedSamples = Math.round((input.samples * 48000) / input.sampleRate)
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'webm' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
   }
 
-  ffmpeg.AudioFIFO.prototype.write = function (frame) {
-    if (flushedFrames.has(frame)) writtenSamples += frame.nbSamples
-    return write.call(this, frame)
-  }
+  const output = decodedAudio(outputPath)
 
-  t.teardown(() => {
-    ffmpeg.Resampler.prototype.flush = flush
-    ffmpeg.AudioFIFO.prototype.write = write
-  })
-
-  const chunks = []
-  for await (const chunk of video('./test/fixtures/sample.mp4').transcode({ format: 'webm' })) {
-    chunks.push(chunk)
-  }
-
-  assertChunks(t, chunks)
-  t.ok(flushedSamples > 0, 'resampler releases delayed samples')
-  t.is(writtenSamples, flushedSamples, 'delayed samples are written to the FIFO')
+  t.is(input.sampleRate, 44100, 'fixture exercises sample-rate conversion')
+  t.is(output.sampleRate, 48000, 'output uses the preset sample rate')
+  t.is(output.samples, expectedSamples, 'output contains every resampled audio sample')
 })
 
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
@@ -721,6 +711,45 @@ function countVideoFrames(path) {
   }
 
   return count
+}
+
+function decodedAudio(path) {
+  const fd = fs.openSync(path, 'r')
+  const io = createIOContext(fd, ffmpeg)
+  using format = new ffmpeg.InputFormatContext(io)
+  const stream = format.getBestStream(ffmpeg.constants.mediaTypes.AUDIO)
+  const decoder = stream.decoder()
+  decoder.open()
+
+  const packet = new ffmpeg.Packet()
+  const frame = new ffmpeg.Frame()
+  let samples = 0
+  let sampleRate = 0
+
+  try {
+    while (format.readFrame(packet)) {
+      if (packet.streamIndex === stream.index && decoder.sendPacket(packet)) {
+        while (decoder.receiveFrame(frame)) {
+          samples += frame.nbSamples
+          sampleRate = frame.sampleRate
+        }
+      }
+      packet.unref()
+    }
+
+    decoder.sendPacket(packet)
+    while (decoder.receiveFrame(frame)) {
+      samples += frame.nbSamples
+      sampleRate = frame.sampleRate
+    }
+  } finally {
+    packet.destroy()
+    frame.destroy()
+    decoder.destroy()
+    fs.closeSync(fd)
+  }
+
+  return { samples, sampleRate }
 }
 
 function isValidTime(time) {
