@@ -258,7 +258,9 @@ class TranscodeStreamConfig {
       encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
     }
 
-    const encoderOptions = this.isVideo()
+    // avcodec_open2 only consumes the options the codec recognises; the rest
+    // stay in the dictionary and are ours to free.
+    using encoderOptions = this.isVideo()
       ? ffmpeg.Dictionary.from({
           allow_sw: '1',
           deadline: 'realtime',
@@ -314,6 +316,7 @@ class VideoFrameProcessor {
       config.orientationGraph.pullFrame(config.orientationSink, config.orientationFrame) >= 0
     ) {
       this.#encodeFrame(config.orientationFrame, config, packet)
+      config.orientationFrame.unref()
     }
   }
 
@@ -448,9 +451,6 @@ class AudioFrameProcessor {
         encoder.frameSize
       )
       config.fifoFrame = new ffmpeg.Frame()
-      config.fifoFrame.format = encoder.sampleFormat
-      config.fifoFrame.channelLayout = encoder.channelLayout
-      config.fifoFrame.sampleRate = encoder.sampleRate
     }
 
     const outFrame = new ffmpeg.Frame()
@@ -470,28 +470,36 @@ class AudioFrameProcessor {
 
     const frameSize = encoder.frameSize
     while (config.fifo.size >= frameSize) {
-      config.fifoFrame.nbSamples = frameSize
-      config.fifoFrame.alloc()
-
-      config.fifo.read(config.fifoFrame, frameSize)
-
-      config.fifoFrame.pts = config.nextAudioPts
-      config.nextAudioPts += config.fifoFrame.nbSamples
-
-      this.transcoder._encodeAndWrite(encoder, config.fifoFrame, outputStream, packet)
+      const fifoFrame = this.#readFifo(config, frameSize)
+      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
     }
   }
 
   flush(config, packet) {
     if (config.fifo && config.fifo.size > 0) {
-      const remaining = config.fifo.size
-      config.fifoFrame.nbSamples = remaining
-      config.fifoFrame.alloc()
-      config.fifo.read(config.fifoFrame, remaining)
-      config.fifoFrame.pts = config.nextAudioPts
-      config.nextAudioPts += config.fifoFrame.nbSamples
-      this.transcoder._encodeAndWrite(config.encoder, config.fifoFrame, config.outputStream, packet)
+      const fifoFrame = this.#readFifo(config, config.fifo.size)
+      this.transcoder._encodeAndWrite(config.encoder, fifoFrame, config.outputStream, packet)
     }
+  }
+
+  // av_frame_get_buffer() leaks if the frame still holds a buffer, so unref
+  // before every realloc. Unref also resets the frame properties.
+  #readFifo(config, nbSamples) {
+    const { encoder, fifoFrame } = config
+
+    fifoFrame.unref()
+    fifoFrame.format = encoder.sampleFormat
+    fifoFrame.channelLayout = encoder.channelLayout
+    fifoFrame.sampleRate = encoder.sampleRate
+    fifoFrame.nbSamples = nbSamples
+    fifoFrame.alloc()
+
+    config.fifo.read(fifoFrame, nbSamples)
+
+    fifoFrame.pts = config.nextAudioPts
+    config.nextAudioPts += fifoFrame.nbSamples
+
+    return fifoFrame
   }
 }
 
@@ -547,18 +555,18 @@ class Transcoder {
 
     this.inputFormatContext = new ffmpeg.InputFormatContext(inIO)
 
+    this.containerFormat = this.outputParameters?.format || 'mp4'
+
+    if (!formatRegistry.hasFormat(this.containerFormat)) {
+      throw new Error(`Unsupported output format: ${this.containerFormat}`)
+    }
+
     const outIO = new ffmpeg.IOContext(this.bufferSize, {
       onwrite: (chunk) => {
         this.chunks.push(b4a.from(chunk))
         return chunk.length
       }
     })
-
-    this.containerFormat = this.outputParameters?.format || 'mp4'
-
-    if (!formatRegistry.hasFormat(this.containerFormat)) {
-      throw new Error(`Unsupported output format: ${this.containerFormat}`)
-    }
 
     this.outputFormatContext = new ffmpeg.OutputFormatContext(this.containerFormat, outIO)
   }
