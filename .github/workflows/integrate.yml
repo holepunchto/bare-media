@@ -30,3 +30,25 @@ jobs:
     steps:
       - uses: holepunchto/actions/bare-base@v1
       - run: npm test
+  test-samples:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: darwin
+          - os: windows-latest
+            platform: win32
+    runs-on: ${{ matrix.os }}
+    name: Test Samples / ${{ matrix.platform }}
+    steps:
+      - uses: holepunchto/actions/bare-base@v1
+      - uses: actions/cache@v4
+        with:
+          path: test/samples/files
+          key: samples-${{ hashFiles('test/samples/suites/*.json') }}
+      - name: Download samples
+        run: npm run test:samples -- --download
+      - name: Run sample suite
+        run: npm run test:samples
