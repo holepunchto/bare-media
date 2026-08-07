@@ -258,7 +258,9 @@ class TranscodeStreamConfig {
       encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
     }
 
-    const encoderOptions = this.isVideo()
+    // avcodec_open2 only consumes the options the codec recognises; the rest
+    // stay in the dictionary and are ours to free.
+    using encoderOptions = this.isVideo()
       ? ffmpeg.Dictionary.from({
           allow_sw: '1',
           deadline: 'realtime',
@@ -553,18 +555,18 @@ class Transcoder {
 
     this.inputFormatContext = new ffmpeg.InputFormatContext(inIO)
 
+    this.containerFormat = this.outputParameters?.format || 'mp4'
+
+    if (!formatRegistry.hasFormat(this.containerFormat)) {
+      throw new Error(`Unsupported output format: ${this.containerFormat}`)
+    }
+
     const outIO = new ffmpeg.IOContext(this.bufferSize, {
       onwrite: (chunk) => {
         this.chunks.push(b4a.from(chunk))
         return chunk.length
       }
     })
-
-    this.containerFormat = this.outputParameters?.format || 'mp4'
-
-    if (!formatRegistry.hasFormat(this.containerFormat)) {
-      throw new Error(`Unsupported output format: ${this.containerFormat}`)
-    }
 
     this.outputFormatContext = new ffmpeg.OutputFormatContext(this.containerFormat, outIO)
   }
