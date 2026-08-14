@@ -1,0 +1,286 @@
+{
+  "catalog": {
+    "path": "files/samples/videos",
+    "samples": [
+      {
+        "path": "h264-aac.mp4",
+        "sha256": "25b50909ccd0de8a368c8fe3afd81c6c0df66cdf750a45da1bec6f4b422d0701"
+      },
+      {
+        "path": "vp8-vorbis.webm",
+        "sha256": "9c9e32d3a37802582e30549efa06129c4769ac3c4629fba3e2d854efd6fe7b8c"
+      },
+      {
+        "path": "mpeg4-ac3.avi",
+        "sha256": "7ec5117a78043d7e3c1546af8a904eb71f8afd3c379197e640e3827c0e30f934"
+      },
+      {
+        "path": "flv1-adpcm.flv",
+        "sha256": "b72089382edcb86244b64c541dab6ad0a832b535160becb259e8e20572be6c1d"
+      },
+      {
+        "path": "mpeg1-mp2.mpeg",
+        "sha256": "e8697a36e1279b21616bafc54dcee73070a8ce27e57feb681ec8271b0bde610d"
+      },
+      {
+        "path": "theora-vorbis.ogv",
+        "sha256": "2e7977d6a4e56fa73ada75d980985b11aed42df2ba895db94b21762bf3bc112d"
+      },
+      {
+        "path": "h264-aac.ts",
+        "sha256": "4b4977b6ddeed804fd7b8df2f5dc307e1bf44b9afc3d752c45ed9a682fbf8d3a"
+      },
+      {
+        "path": "vp9-opus.webm",
+        "sha256": "8fe502a1d21994d704828344507767e3d8db6a2349f1a46df35c43e7925526d2"
+      },
+      {
+        "path": "av1-fragmented.mp4",
+        "sha256": "24d939590dd089b4447615bb5d41fd357a6954521a01f7d286e567c79cc87ac4"
+      },
+      {
+        "path": "hevc-10bit.mp4",
+        "sha256": "a19fe0f9d7a8ae48930f289beeaa98784a6231df4183ffff471a24999b0a6d59"
+      },
+      {
+        "path": "vp9-422.webm",
+        "sha256": "d0a1763055d6f726e916275f38c5cf18a9c79224a61bb83a9390a0d93cc03aa4"
+      },
+      {
+        "path": "vp9-444.webm",
+        "sha256": "8efea0f216951df95a746e4fb22a6342c4fe32a3c6c9e61563519c5432ee0e47"
+      },
+      {
+        "path": "vp9-alpha.webm",
+        "sha256": "e659a0bffa41fca2aaf16962a7f7a109ab730d02006a4ea23266f12179fd7850"
+      },
+      {
+        "path": "vp9-odd-dimensions.webm",
+        "sha256": "413aa26b3e4ed161cb519bf80c4620fab553d652890dcc198c3f0b2ed61a4f72"
+      },
+      {
+        "path": "vp8-alpha-odd-dimensions.webm",
+        "sha256": "4d73bb3102a472a4a1c7759e21261b440629e10924589f79ee899d6dd85b87f0"
+      },
+      {
+        "path": "h264-aac-rotation.mp4",
+        "sha256": "dddc4636246c22f4833b5e2f00f6569f73e99f3153c5581eadb30ca50e7cb6df"
+      },
+      {
+        "path": "h264-aac-multitrack.mp4",
+        "sha256": "bf992894bd801acf4f700c100478488d45c75c7db15d0d592e8888f3b231aa46"
+      },
+      {
+        "path": "mixed-multitrack.webm",
+        "sha256": "db89fc640203baeaac2c1374ebd9b80095646561c4020cc5cad8550c2a5b4aff"
+      },
+      {
+        "path": "h264-no-durations.mkv",
+        "sha256": "7cce27f906b6927c16ed891d678b48415e31a98eaacbd63363383897d83a1c6b"
+      },
+      {
+        "path": "wmv2-vorbis.mkv",
+        "sha256": "950dbc66a092a336caadd9fcca1479a442dba16a872248a22c6e10a5509cdea9"
+      }
+    ]
+  },
+  "tests": {
+    "metadata": {
+      "durationTolerance": 0.02,
+      "samples": [
+        {
+          "path": "h264-aac.mp4",
+          "width": 160,
+          "height": 120,
+          "codec": "h264",
+          "duration": 1
+        },
+        {
+          "path": "vp8-vorbis.webm",
+          "width": 160,
+          "height": 120,
+          "codec": "vp8",
+          "duration": 1.003
+        },
+        {
+          "path": "mpeg4-ac3.avi",
+          "width": 160,
+          "height": 120,
+          "codec": "mpeg4",
+          "duration": 1
+        },
+        {
+          "path": "flv1-adpcm.flv",
+          "width": 160,
+          "height": 120,
+          "codec": "flv1",
+          "duration": 1
+        },
+        {
+          "path": "mpeg1-mp2.mpeg",
+          "width": 160,
+          "height": 120,
+          "codec": "mpeg1video",
+          "duration": 0.98
+        },
+        {
+          "path": "theora-vorbis.ogv",
+          "width": 160,
+          "height": 120,
+          "codec": "theora",
+          "duration": 1
+        },
+        {
+          "path": "h264-aac.ts",
+          "width": 160,
+          "height": 120,
+          "codec": "h264",
+          "duration": 1
+        },
+        {
+          "path": "vp9-opus.webm",
+          "width": 160,
+          "height": 120,
+          "codec": "vp9",
+          "duration": 1.008
+        },
+        {
+          "path": "av1-fragmented.mp4",
+          "width": 160,
+          "height": 120,
+          "codec": "av1",
+          "duration": 1.0214029947916667
+        },
+        {
+          "path": "hevc-10bit.mp4",
+          "width": 160,
+          "height": 120,
+          "codec": "hevc",
+          "duration": 1
+        },
+        {
+          "path": "vp9-422.webm",
+          "width": 160,
+          "height": 120,
+          "codec": "vp9",
+          "duration": 1
+        },
+        {
+          "path": "vp9-444.webm",
+          "width": 160,
+          "height": 120,
+          "codec": "vp9",
+          "duration": 1
+        },
+        {
+          "path": "vp9-alpha.webm",
+          "width": 160,
+          "height": 120,
+          "codec": "vp9",
+          "duration": 1
+        },
+        {
+          "path": "vp9-odd-dimensions.webm",
+          "width": 161,
+          "height": 121,
+          "codec": "vp9",
+          "duration": 1
+        },
+        {
+          "path": "vp8-alpha-odd-dimensions.webm",
+          "width": 161,
+          "height": 121,
+          "codec": "vp8",
+          "duration": 1
+        },
+        {
+          "path": "h264-aac-rotation.mp4",
+          "width": 160,
+          "height": 120,
+          "codec": "h264",
+          "duration": 1,
+          "displayRotation": 270,
+          "rotation": 90
+        },
+        {
+          "path": "h264-aac-multitrack.mp4",
+          "width": 160,
+          "height": 120,
+          "codec": "h264",
+          "duration": 1
+        },
+        {
+          "path": "mixed-multitrack.webm",
+          "width": 160,
+          "height": 120,
+          "codec": "vp8",
+          "duration": 1.011
+        },
+        {
+          "path": "h264-no-durations.mkv",
+          "width": 160,
+          "height": 120,
+          "codec": "h264",
+          "duration": 0
+        },
+        {
+          "path": "wmv2-vorbis.mkv",
+          "width": 160,
+          "height": 120,
+          "codec": "wmv2",
+          "duration": 1.003
+        }
+      ]
+    },
+    "extractFrames": {
+      "samples": [
+        "h264-aac.mp4",
+        "vp8-vorbis.webm",
+        "mpeg4-ac3.avi",
+        "flv1-adpcm.flv",
+        "mpeg1-mp2.mpeg",
+        "theora-vorbis.ogv",
+        "h264-aac.ts",
+        "vp9-opus.webm",
+        "av1-fragmented.mp4",
+        "hevc-10bit.mp4",
+        "vp9-422.webm",
+        "vp9-444.webm",
+        "vp9-alpha.webm",
+        "vp9-odd-dimensions.webm",
+        "vp8-alpha-odd-dimensions.webm",
+        "h264-aac-rotation.mp4",
+        "h264-aac-multitrack.mp4",
+        "mixed-multitrack.webm",
+        "h264-no-durations.mkv",
+        "wmv2-vorbis.mkv"
+      ]
+    },
+    "transcode": {
+      "samples": [
+        "h264-aac.mp4",
+        "vp8-vorbis.webm",
+        "mpeg4-ac3.avi",
+        "flv1-adpcm.flv",
+        "mpeg1-mp2.mpeg",
+        "theora-vorbis.ogv",
+        "h264-aac.ts",
+        "vp9-opus.webm",
+        "av1-fragmented.mp4",
+        "hevc-10bit.mp4",
+        "vp9-422.webm",
+        "vp9-444.webm",
+        "vp9-alpha.webm",
+        "vp9-odd-dimensions.webm",
+        "vp8-alpha-odd-dimensions.webm",
+        "h264-aac-multitrack.mp4",
+        "mixed-multitrack.webm",
+        "h264-no-durations.mkv",
+        "h264-aac-rotation.mp4",
+        "wmv2-vorbis.mkv"
+      ],
+      "formats": ["mp4", "webm", "matroska"],
+      "rotated": ["h264-aac-rotation.mp4"]
+    }
+  }
+}

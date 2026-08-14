@@ -7,6 +7,13 @@ function isExifSupported(buffer) {
   return supportedExifMimetypes.has(detectMimeType(buffer))
 }
 
+// entry.read() can return a Buffer viewing libexif memory rather than a copy,
+// so detach it before the owning exif.Data is destroyed.
+function readEntry(entry) {
+  const value = entry.read()
+  return Buffer.isBuffer(value) ? Buffer.from(value) : value
+}
+
 function resolveExifTag(exif, tag) {
   if (typeof tag === 'number') return tag
 
@@ -24,9 +31,9 @@ function resolveExifTag(exif, tag) {
 async function exifValue(buffer, tag) {
   try {
     const exif = await import('bare-exif')
-    const exifData = new exif.Data(buffer)
+    using exifData = new exif.Data(buffer)
     const entry = exifData.entry(resolveExifTag(exif, tag))
-    return entry?.read()
+    return entry ? readEntry(entry) : undefined
   } catch {
     return null
   }
@@ -39,11 +46,11 @@ async function exifMetadata(buffer) {
 
   try {
     const exif = await import('bare-exif')
-    const exifData = new exif.Data(buffer)
+    using exifData = new exif.Data(buffer)
     for (const [name, tag] of Object.entries(exif.constants.tags)) {
       const entry = exifData.entry(tag)
       if (!entry) continue
-      data[name] = entry.read()
+      data[name] = readEntry(entry)
     }
   } finally {
     return data
@@ -91,7 +98,7 @@ async function stripJPEG(buffer, opts = {}) {
   if (keepOrientation) {
     const exif = await import('bare-exif')
     const tags = exif.constants.tags
-    const data = new exif.Data(buffer)
+    using data = new exif.Data(buffer)
 
     for (const tag of Object.values(tags)) {
       if (tag !== tags.ORIENTATION) {

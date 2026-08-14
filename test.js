@@ -1,3 +1,5 @@
 import('./test/image')
 import('./test/video')
 import('./test/common')
+import('./test/samples/image')
+import('./test/samples/video')
