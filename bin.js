@@ -171,6 +171,12 @@ async function head(filePath, byteLength = 4100) {
 
 function validateInput(input) {
   const file = path.resolve(input)
+  const cwd = path.resolve('.')
+  const rel = path.relative(cwd, file)
+  if (rel.startsWith('..') || path.isAbsolute(rel)) {
+    console.error(`Access denied: path must be within the current directory`)
+    Bare.exit(1)
+  }
   if (!fs.existsSync(file)) {
     console.error(`File not found: ${file}`)
     Bare.exit(1)
