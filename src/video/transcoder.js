@@ -254,31 +254,40 @@ class TranscodeStreamConfig {
   #createEncoder(outputStream, decoder) {
     const config = this.getConfig()
     const encoder = new ffmpeg.CodecContext(new ffmpeg.Encoder(config.encoder))
-    outputStream.codecParameters.toContext(encoder)
 
-    if (this.isVideo()) {
-      this.#configureVideoEncoder(encoder, outputStream, decoder)
-    } else {
-      this.#configureAudioEncoder(encoder, outputStream)
+    // The caller only owns the encoder once it is returned, so anything that
+    // throws before that has to release it.
+    try {
+      outputStream.codecParameters.toContext(encoder)
+
+      if (this.isVideo()) {
+        this.#configureVideoEncoder(encoder, outputStream, decoder)
+      } else {
+        this.#configureAudioEncoder(encoder, outputStream)
+      }
+
+      if (this.outputFormatContext.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
+        encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
+      }
+
+      // avcodec_open2 only consumes the options the codec recognises; the rest
+      // stay in the dictionary and are ours to free.
+      using encoderOptions = this.isVideo()
+        ? ffmpeg.Dictionary.from({
+            allow_sw: '1',
+            deadline: 'realtime',
+            'cpu-used': '6',
+            crf: '34',
+            b: '0'
+          })
+        : new ffmpeg.Dictionary()
+
+      encoder.open(encoderOptions)
+    } catch (err) {
+      encoder.destroy()
+      throw err
     }
 
-    if (this.outputFormatContext.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
-      encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
-    }
-
-    // avcodec_open2 only consumes the options the codec recognises; the rest
-    // stay in the dictionary and are ours to free.
-    using encoderOptions = this.isVideo()
-      ? ffmpeg.Dictionary.from({
-          allow_sw: '1',
-          deadline: 'realtime',
-          'cpu-used': '6',
-          crf: '34',
-          b: '0'
-        })
-      : new ffmpeg.Dictionary()
-
-    encoder.open(encoderOptions)
     return encoder
   }
 

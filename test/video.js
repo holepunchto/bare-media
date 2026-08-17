@@ -283,10 +283,11 @@ test('video.transcode() - Throws if an unsupported track is primary', async (t) 
   }, /Input audio stream is not decodable/)
 })
 
-// The decoder is already open when the encoder is created, so an encoder that
-// fails to open could leak it. 65536x65536 exceeds ffmpeg's pixel limit, which is
-// enough to make avcodec_open2 reject it.
-test('video.transcode() - releases the decoder when the encoder fails to open', async (t) => {
+// The decoder is already open when the encoder is created, and the encoder is
+// only owned by its caller once returned, so an encoder that fails to open could
+// leak both. 65536x65536 exceeds ffmpeg's pixel limit, which is enough to make
+// avcodec_open2 reject it.
+test('video.transcode() - releases both codecs when the encoder fails to open', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
   await t.exception(async () => {
