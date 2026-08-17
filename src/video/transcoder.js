@@ -176,13 +176,21 @@ class TranscodeStreamConfig {
     this.decoder = this.#createDecoder()
     if (!this.decoder) return false
 
-    if (this.isVideo()) this.orientation = this.#resolveOrientation()
+    // A config that fails to initialise never reaches Transcoder#configs, so
+    // cleanup will never see it: release the decoder before giving up.
+    try {
+      if (this.isVideo()) this.orientation = this.#resolveOrientation()
 
-    this.outputStream = this.outputFormatContext.createStream()
-    this.#configureOutputStream(this.outputStream, this.decoder)
+      this.outputStream = this.outputFormatContext.createStream()
+      this.#configureOutputStream(this.outputStream, this.decoder)
 
-    this.encoder = this.#createEncoder(this.outputStream, this.decoder)
-    this.outputStream.codecParameters.fromContext(this.encoder)
+      this.encoder = this.#createEncoder(this.outputStream, this.decoder)
+      this.outputStream.codecParameters.fromContext(this.encoder)
+    } catch (err) {
+      this.decoder.destroy()
+      this.decoder = null
+      throw err
+    }
 
     return true
   }
