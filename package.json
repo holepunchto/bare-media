@@ -1,6 +1,6 @@
 {
   "name": "bare-media",
-  "version": "2.10.4",
+  "version": "2.10.5",
   "description": "A set of media APIs for Bare",
   "main": "index.js",
   "type": "module",
