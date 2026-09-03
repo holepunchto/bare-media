@@ -275,6 +275,14 @@ import { detectMimeType } from 'bare-media'
 const mimetype = detectMimeType(buffer)
 ```
 
+Detect the MIME type of a file with deeper inspection:
+
+```js
+const mimetype = await detectMimeType.fromPath(path)
+```
+
+This returns `null` when the MIME type cannot be determined confidently.
+
 > This may return non-media MIME types, use `isMediaSupported()` to validate support.
 
 ## License

@@ -48,3 +48,15 @@ export function supportsQuality(mimetype) {
 export function detectMimeType(buffer) {
   return getMimeType(getFileFormat(buffer))
 }
+
+detectMimeType.fromPath = async function (path) {
+  const { format, tracks } = await getFileFormat.fromPath(path, { inspect: true })
+  const mimetype = getMimeType(format)
+
+  // Only return the mimetype when the detection reliable enough
+  if (mimetype === 'application/octet-stream') return null
+  if (tracks && mimetype?.startsWith('audio/') && !tracks.audio) return null
+  if (tracks && mimetype?.startsWith('video/') && !tracks.video) return null
+
+  return mimetype
+}
