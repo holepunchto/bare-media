@@ -24,20 +24,20 @@ async function extractFrames(fd, opts = {}) {
 
   let frame = frameA
   let lastFrame = null
-  let currentFrame = 0
+  let currentFrameIndex = 0
   let result = null
 
   while (inputFormat.readFrame(packet)) {
     if (packet.streamIndex === stream.index) {
       if (decoder.sendPacket(packet)) {
         while (decoder.receiveFrame(frame)) {
-          if (currentFrame === frameIndex) {
+          if (currentFrameIndex === frameIndex) {
             result = convertToRGBA(ffmpeg, frame)
             break
           }
           lastFrame = frame
           frame = frame === frameA ? frameB : frameA
-          currentFrame++
+          currentFrameIndex++
         }
       }
     }
@@ -49,22 +49,22 @@ async function extractFrames(fd, opts = {}) {
     using flushPacket = new ffmpeg.Packet()
     decoder.sendPacket(flushPacket)
     while (decoder.receiveFrame(frame)) {
-      if (currentFrame === frameIndex) {
+      if (currentFrameIndex === frameIndex) {
         result = convertToRGBA(ffmpeg, frame)
         break
       }
       lastFrame = frame
       frame = frame === frameA ? frameB : frameA
-      currentFrame++
+      currentFrameIndex++
     }
   }
 
-  if (!result && outOfRangeLast && lastFrame && frameIndex >= currentFrame) {
+  if (!result && outOfRangeLast && lastFrame && frameIndex >= currentFrameIndex) {
     result = convertToRGBA(ffmpeg, lastFrame)
   }
 
   if (!result) {
-    throw new Error(`Frame ${frameIndex} not found (video only has ${currentFrame} frames)`)
+    throw new Error(`Frame ${frameIndex} not found (video only has ${currentFrameIndex} frames)`)
   }
 
   return result
