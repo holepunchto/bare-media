@@ -19,8 +19,8 @@ async function extractFrames(fd, opts = {}) {
   // receiveFrame unrefs the frame it is given before writing into it, so
   // alternate between two frames to keep the previous one intact for the
   // outOfRangeLast fallback
-  using frameA = new ffmpeg.Frame()
-  using frameB = new ffmpeg.Frame()
+  using frame = new ffmpeg.Frame()
+  using prevFrame = new ffmpeg.Frame()
 
   let frame = frameA
   let lastFrame = null
