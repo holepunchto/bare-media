@@ -9,6 +9,7 @@ const HEIF_METADATA_TYPE = {
   MIME: 'mime',
   URI: 'uri '
 }
+const HEIF_EXIF_OFFSET_SIZE = 4
 const XMP_CONTENT_TYPE = 'application/rdf+xml'
 
 async function readHeifMetadata(buffer, filter) {
@@ -20,11 +21,13 @@ async function readHeifMetadata(buffer, filter) {
     for (const item of metadata) {
       switch (item.type) {
         case HEIF_METADATA_TYPE.EXIF: {
-          if (item.data.byteLength < 4) break
+          if (item.data.byteLength < HEIF_EXIF_OFFSET_SIZE) break
 
-          const offset = 4 + item.data.readUInt32BE(0)
+          const offset = HEIF_EXIF_OFFSET_SIZE + item.data.readUInt32BE(0)
           const tiff = item.data.subarray(offset)
-          if (tiff.byteLength) data.exifRaw = Buffer.concat([EXIF_HEADER, tiff])
+          if (tiff.byteLength) {
+            data.exifRaw = Buffer.concat([EXIF_HEADER, tiff])
+          }
           break
         }
         case HEIF_METADATA_TYPE.MIME:
