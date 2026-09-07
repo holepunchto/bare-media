@@ -47,6 +47,8 @@ test('video extractFrames() with outOfRangeLast falls back to the last frame', a
   const rgba = await video(path).extractFrames({
     frameIndex: 999999,
     outOfRangeLast: true
+  const rgba = await video(path).extractFrames({
+    frameIndex: 'last',
   })
 
   t.is(rgba.width, 320)
