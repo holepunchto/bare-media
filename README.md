@@ -155,11 +155,21 @@ const data = await image(path).metadata()
 const orientation = await image(path).metadata({ tag: 'orientation' })
 ```
 
-| Parameter  | Type   | Description                         |
-| ---------- | ------ | ----------------------------------- |
-| `opts.tag` | string | Optional. Read a single tag by name |
+| Parameter  | Type   | Description                              |
+| ---------- | ------ | ---------------------------------------- |
+| `opts.tag` | string | Optional. Read a single EXIF tag by name |
 
-**Supported formats**: `jpeg`, `tiff`.
+Returns:
+
+| Field         | Type   | Description                                    |
+| ------------- | ------ | ---------------------------------------------- |
+| `exif`        | object | EXIF tags by name                              |
+| `orientation` | number | EXIF orientation, when present                 |
+| `xmp`         | string | HEIF only. The raw XMP packet, when present    |
+| `mime`        | array  | HEIF only. Any other `mime` item, when present |
+| `uri`         | array  | HEIF only. Every `uri ` item, when present     |
+
+**Supported formats**: `jpeg`, `tiff`, `heic`, `heif`, `avif`
 
 ### metadata.strip()
 
