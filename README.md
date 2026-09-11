@@ -195,9 +195,10 @@ Check with `isStripMetadataSupported()` for supported types, only `jpeg` at the 
 
 Extracts frames from a video in RGBA
 
-| Parameter         | Type   | Description                    |
-| ----------------- | ------ | ------------------------------ |
-| `opts.frameIndex` | number | Number of the frame to extract |
+| Parameter             | Type    | Description                                                                      |
+| --------------------- | ------- | -------------------------------------------------------------------------------- |
+| `opts.frameIndex`     | number  | Number of the frame to extract                                                   |
+| `opts.outOfRangeLast` | boolean | Fall back to the last frame when `frameIndex` is beyond the end. Default `false` |
 
 ### metadata()
 
