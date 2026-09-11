@@ -133,6 +133,14 @@ test('image.metadata() xmp - heic', async (t) => {
   t.absent(metadata.uri)
 })
 
+test('image.metadata() single entry filters HEIF metadata blocks', async (t) => {
+  const path = './test/fixtures/metadata-xmp.heic'
+
+  const orientation = await image(path).metadata({ tag: 'orientation' })
+
+  t.is(orientation, 1)
+})
+
 test('image.metadata() xmp - avif', async (t) => {
   const path = './test/fixtures/metadata-xmp.avif'
 

@@ -11,10 +11,10 @@ const HEIF_METADATA_TYPE = {
 }
 const XMP_CONTENT_TYPE = 'application/rdf+xml'
 
-async function readHeifMetadata(buffer, filter) {
+async function readHeifMetadata(buffer, type) {
   try {
     const heif = await import('bare-heif')
-    const metadata = heif.getMetadata(buffer, filter)
+    const metadata = heif.getMetadata(buffer, { type })
     const data = {}
 
     for (const item of metadata) {
