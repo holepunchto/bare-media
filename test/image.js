@@ -47,7 +47,7 @@ test('image read() buffer', async (t) => {
   t.alike(buffer.slice(0, 2), b4a.from([0xff, 0xd8]), 'jpeg')
 })
 
-test('image.metadata() all entries', async (t) => {
+test('image.metadata() all entries - jpg', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
 
   const metadata = await image(path).metadata()
@@ -63,12 +63,114 @@ test('image.metadata() all entries', async (t) => {
   t.is(metadata.orientation, 6)
 })
 
-test('image.metadata() single entry', async (t) => {
+test('image.metadata() single entry - jpg', async (t) => {
   const path = './test/fixtures/exif-orientation.jpg'
 
   const orientation = await image(path).metadata({ tag: 'orientation' })
 
   t.is(orientation, 6)
+})
+
+test('image.metadata() all entries - heic', async (t) => {
+  const path = './test/fixtures/exif-orientation.heic'
+
+  const metadata = await image(path).metadata()
+
+  t.is(metadata.exif.COLOR_SPACE, 65535)
+  t.is(metadata.exif.EXIF_VERSION.toString(), '0210')
+  t.is(metadata.exif.FLASH_PIX_VERSION.toString(), '0100')
+  t.is(metadata.exif.MAKE, 'bare-media')
+  t.is(metadata.exif.ARTIST, 'bare-media')
+  t.is(metadata.exif.ORIENTATION, 6)
+  t.is(metadata.exif.RESOLUTION_UNIT, 2)
+  t.alike(metadata.exif.X_RESOLUTION, { numerator: 72, denominator: 1 })
+  t.alike(metadata.exif.Y_RESOLUTION, { numerator: 72, denominator: 1 })
+  t.is(metadata.orientation, 6)
+})
+
+test('image.metadata() single entry - heic', async (t) => {
+  const path = './test/fixtures/exif-orientation.heic'
+
+  const orientation = await image(path).metadata({ tag: 'orientation' })
+
+  t.is(orientation, 6)
+})
+
+test('image.metadata() all entries - avif', async (t) => {
+  const path = './test/fixtures/exif-orientation.avif'
+
+  const metadata = await image(path).metadata()
+
+  t.is(metadata.exif.COLOR_SPACE, 65535)
+  t.is(metadata.exif.EXIF_VERSION.toString(), '0210')
+  t.is(metadata.exif.FLASH_PIX_VERSION.toString(), '0100')
+  t.is(metadata.exif.MAKE, 'bare-media')
+  t.is(metadata.exif.ARTIST, 'bare-media')
+  t.is(metadata.exif.ORIENTATION, 6)
+  t.is(metadata.exif.RESOLUTION_UNIT, 2)
+  t.alike(metadata.exif.X_RESOLUTION, { numerator: 72, denominator: 1 })
+  t.alike(metadata.exif.Y_RESOLUTION, { numerator: 72, denominator: 1 })
+  t.is(metadata.orientation, 6)
+})
+
+test('image.metadata() single entry - avif', async (t) => {
+  const path = './test/fixtures/exif-orientation.avif'
+
+  const orientation = await image(path).metadata({ tag: 'orientation' })
+
+  t.is(orientation, 6)
+})
+
+test('image.metadata() xmp - heic', async (t) => {
+  const path = './test/fixtures/metadata-xmp.heic'
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.xmp.includes('<x:xmpmeta'), 'xmp packet')
+  t.ok(metadata.xmp.includes('<dc:creator>'), 'xmp entries')
+  t.is(metadata.exif.ORIENTATION, 1, 'still reads the exif item')
+  t.absent(metadata.mime, 'xmp is not repeated as a mime item')
+  t.absent(metadata.uri)
+})
+
+test('image.metadata() single entry filters HEIF metadata blocks', async (t) => {
+  const path = './test/fixtures/metadata-xmp.heic'
+
+  const orientation = await image(path).metadata({ tag: 'orientation' })
+
+  t.is(orientation, 1)
+})
+
+test('image.metadata() xmp - avif', async (t) => {
+  const path = './test/fixtures/metadata-xmp.avif'
+
+  const metadata = await image(path).metadata()
+
+  t.ok(metadata.xmp.includes('<x:xmpmeta'), 'xmp packet')
+  t.ok(metadata.xmp.includes('<dc:creator>'), 'xmp entries')
+  t.absent(metadata.mime)
+  t.absent(metadata.uri)
+})
+
+test('image.metadata() uri - heic', async (t) => {
+  const path = './test/fixtures/metadata-uri.heic'
+
+  const metadata = await image(path).metadata()
+
+  t.is(metadata.uri.length, 1)
+  t.is(metadata.uri[0].uriType, 'https://example.com/bare-media/test')
+  t.ok(metadata.uri[0].data.includes('bare-media uri metadata fixture'))
+  t.alike(metadata.exif, {})
+  t.absent(metadata.xmp)
+})
+
+test('image.metadata() no metadata - avif', async (t) => {
+  const path = './test/fixtures/sample.avif'
+
+  const metadata = await image(path).metadata()
+
+  t.alike(metadata, { exif: {} })
+  t.is(await image(path).metadata({ tag: 'orientation' }), null)
 })
 
 test('image.metadata.strip() strips all metadata', async (t) => {

@@ -11,7 +11,7 @@ import {
 } from 'bare-media/types'
 import getMimeType from 'get-mime-type'
 
-import { cleanMetadata, formatMetadata } from './lib/bin'
+import { summarizeMetadata, formatMetadata } from './lib/bin'
 import { detectMimeType } from './src/codecs'
 import pkg from './package'
 
@@ -85,7 +85,7 @@ async function metadata(parsed) {
     }
 
     const data = (await image(input).metadata()) || { mimetype }
-    const output = parsed.flags.raw ? data : cleanMetadata(data)
+    const output = parsed.flags.raw ? data : summarizeMetadata(data)
     const text = formatMetadata(output, { json: parsed.flags.json })
     if (text) console.log(text)
     return
@@ -93,7 +93,7 @@ async function metadata(parsed) {
 
   if (mimetype.startsWith('video/')) {
     const data = await video(input).metadata()
-    const output = parsed.flags.raw ? data : cleanMetadata(data)
+    const output = parsed.flags.raw ? data : summarizeMetadata(data)
     const text = formatMetadata(output, { json: parsed.flags.json })
     if (text) console.log(text)
     return

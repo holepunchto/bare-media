@@ -6,7 +6,7 @@ import process from 'bare-process'
 import { spawnSync } from 'bare-subprocess'
 
 import { image } from '..'
-import { cleanMetadata, formatMetadata } from '../lib/bin'
+import { summarizeMetadata, formatMetadata } from '../lib/bin'
 import { randomFileName } from './helpers'
 
 test('CLI metadata command', (t) => {
@@ -137,24 +137,30 @@ test('CLI types command', (t) => {
   t.ok(stdout.includes('  video/mp4'))
 })
 
-test('cleanMetadata() summarizes binary buffers', (t) => {
-  t.is(cleanMetadata(Buffer.alloc(0)), '<binary data: 0 bytes>')
-  t.is(cleanMetadata(Buffer.from([0x00])), '<binary data: 1 byte>')
-  t.is(cleanMetadata(Buffer.from([0xff, 0x00])), '<binary data: 2 bytes>')
+test('summarizeMetadata() summarizes binary buffers', (t) => {
+  t.is(summarizeMetadata(Buffer.alloc(0)), '<binary data: 0 bytes>')
+  t.is(summarizeMetadata(Buffer.from([0x00])), '<binary data: 1 byte>')
+  t.is(summarizeMetadata(Buffer.from([0xff, 0x00])), '<binary data: 2 bytes>')
 })
 
-test('cleanMetadata() keeps readable buffers', (t) => {
-  t.is(cleanMetadata(Buffer.from('0210')), '0210')
-  t.is(cleanMetadata(Buffer.from('CameraBrand')), 'CameraBrand')
+test('summarizeMetadata() keeps readable buffers', (t) => {
+  t.is(summarizeMetadata(Buffer.from('0210')), '0210')
+  t.is(summarizeMetadata(Buffer.from('CameraBrand')), 'CameraBrand')
 })
 
-test('cleanMetadata() recursively cleans metadata', (t) => {
+test('summarizeMetadata() summarizes long or multiline text', (t) => {
+  t.is(summarizeMetadata('first\nsecond'), '<text data: 12 bytes>')
+  t.is(summarizeMetadata('x'.repeat(257)), '<text data: 257 bytes>')
+  t.is(summarizeMetadata(Buffer.from('first\nsecond')), '<text data: 12 bytes>')
+})
+
+test('summarizeMetadata() recursively cleans metadata', (t) => {
   const input = {
     version: Buffer.from('0210'),
     items: [{ data: Buffer.from([0xff]) }]
   }
 
-  const clean = cleanMetadata(input)
+  const clean = summarizeMetadata(input)
 
   t.alike(clean, {
     version: '0210',
