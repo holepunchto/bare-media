@@ -493,9 +493,36 @@ class AudioFrameProcessor {
   }
 
   flush(config, packet) {
+    const { encoder, outputStream } = config
+
+    if (config.resampler) {
+      const outFrame = new ffmpeg.Frame()
+      outFrame.format = encoder.sampleFormat
+      outFrame.channelLayout = encoder.channelLayout
+      outFrame.sampleRate = encoder.sampleRate
+
+      const outSamples =
+        Math.ceil(
+          (config.resampler.delay * encoder.sampleRate) / config.resampler.inputSampleRate
+        ) + 32
+      outFrame.nbSamples = outSamples
+      outFrame.alloc()
+
+      const flushedSamples = config.resampler.flush(outFrame)
+      outFrame.nbSamples = flushedSamples
+      if (flushedSamples > 0) config.fifo.write(outFrame)
+
+      outFrame.destroy()
+    }
+
+    while (config.fifo && config.fifo.size >= encoder.frameSize) {
+      const fifoFrame = this.#readFifo(config, encoder.frameSize)
+      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
+    }
+
     if (config.fifo && config.fifo.size > 0) {
       const fifoFrame = this.#readFifo(config, config.fifo.size)
-      this.transcoder._encodeAndWrite(config.encoder, fifoFrame, config.outputStream, packet)
+      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
     }
   }
 
