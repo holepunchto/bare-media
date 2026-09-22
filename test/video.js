@@ -32,6 +32,30 @@ test('video extractFrames() in pipeline', async (t) => {
   t.is(rgba.height, 240)
 })
 
+test('video extractFrames() throws when frameIndex is beyond the end', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  await t.exception(async () => {
+    await video(path).extractFrames({ frameIndex: 999999 })
+  }, /Frame 999999 not found/)
+})
+
+test('video extractFrames() with outOfRangeLast falls back to the last frame', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  const lastFrame = await video(path).extractFrames({ frameIndex: 99 })
+  const rgba = await video(path).extractFrames({
+    frameIndex: 999999,
+    outOfRangeLast: true
+  const rgba = await video(path).extractFrames({
+    frameIndex: 'last',
+  })
+
+  t.is(rgba.width, 320)
+  t.is(rgba.height, 240)
+  t.ok(b4a.equals(rgba.data, lastFrame.data))
+})
+
 test('video metadata()', async (t) => {
   const path = './test/fixtures/orientation.mov'
 
