@@ -443,6 +443,20 @@ test('image.metadata.strip() rejects duplicate HEIC item information boxes', asy
   await t.exception(() => image.metadata.strip(input), /Invalid HEIF item information/)
 })
 
+test('image.metadata.strip() rejects too many Samsung sefd boxes', async (t) => {
+  const directory = Buffer.alloc(20)
+  directory.write('SEFH', 0, 'latin1') // directory signature
+  directory.writeUInt32LE(0, 8) // entry count
+  directory.writeUInt32LE(12, 12) // directory size (in the footer)
+  directory.write('SEFT', 16, 'latin1') // trailer signature
+  const sefd = encodeBox('sefd', directory)
+
+  const ftyp = encodeBox('ftyp', Buffer.from('heic\x00\x00\x00\x00heicmif1', 'latin1'))
+  const input = Buffer.concat([ftyp, ...Array(17).fill(sefd)])
+
+  await t.exception(() => image.metadata.strip(input), /Too many HEIF vendor metadata boxes/)
+})
+
 test('isStripMetadataSupported() agrees with strip()', async (t) => {
   const formats = ['avif', 'bmp', 'gif', 'heic', 'ico', 'jpg', 'png', 'svg', 'tiff', 'webp']
 

@@ -49,6 +49,7 @@ const MAX_PROPERTY_ASSOCIATION_VERSION = 1
 const LARGE_PROPERTY_INDEX_FLAG = 1
 const MAX_ITEM_EXTENTS = 4096
 const MAX_ITEMS = 4096
+const MAX_VENDOR_BOXES = 16
 
 const ITEM_TYPE_BYTES = 4
 const ITEM_LOCATION_SIZE_BYTES = 2
@@ -514,9 +515,14 @@ function parseMetaContainer(buffer) {
 
   for (const box of topLevel) {
     if (box.type === BOX_TYPE.META) {
-      if (meta) throw new Error('Invalid HEIF metadata container')
+      if (meta) {
+        throw new Error('Invalid HEIF metadata container')
+      }
       meta = box
     } else if (VENDOR_BOX_VALIDATORS.has(box.type)) {
+      if (vendorBoxes.length === MAX_VENDOR_BOXES) {
+        throw new Error('Too many HEIF vendor metadata boxes')
+      }
       VENDOR_BOX_VALIDATORS.get(box.type)(buffer, box)
       vendorBoxes.push(box)
     }
