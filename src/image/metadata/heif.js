@@ -183,6 +183,9 @@ function parseItemLocation(buffer, box) {
     fullBox.version < ITEM_LOCATION_VERSION_WITH_LONG_ID ? UINT16_BYTES : UINT32_BYTES
   const itemCount = readUInt(buffer, offset, itemCountSize)
   offset += itemCountSize
+  if (itemCount > MAX_ITEMS) {
+    throw new Error('Invalid HEIF item location box')
+  }
 
   const items = []
   let totalExtents = 0
