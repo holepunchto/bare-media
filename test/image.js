@@ -386,6 +386,36 @@ test('image.metadata.strip() rejects HEIC with too many item extents', async (t)
   )
 })
 
+test('image.metadata.strip() rejects HEIC with too many property associations', async (t) => {
+  const entry = encodeBox('infe', Buffer.from([2, 0, 0, 0, 0, 1, 0, 0, 69, 120, 105, 102, 0]))
+  const iinf = encodeBox('iinf', Buffer.concat([Buffer.alloc(4), Buffer.from([0, 1]), entry]))
+
+  const location = Buffer.alloc(14 + 8) // one item, one extent
+  location[4] = 0x44
+  location.writeUInt16BE(1, 6) // item count
+  location.writeUInt16BE(1, 8) // item ID
+  location.writeUInt16BE(1, 12) // extent count
+  location.writeUInt32BE(4, 18) // extent length
+
+  const ipmaPayload = Buffer.alloc(8 + 4097 * 3)
+  ipmaPayload.writeUInt32BE(4097, 4) // entry count
+  const ipma = encodeBox('ipma', ipmaPayload)
+  const iprp = encodeBox('iprp', ipma)
+
+  const ftyp = encodeBox('ftyp', Buffer.from('heic\x00\x00\x00\x00heicmif1', 'latin1'))
+  const metaLen = 8 + 4 + iinf.byteLength + (8 + location.byteLength) + iprp.byteLength
+  location.writeUInt32BE(ftyp.byteLength + metaLen + 8, 14) // extent offset: start of mdat's payload
+
+  const iloc = encodeBox('iloc', location)
+  const meta = encodeBox('meta', Buffer.concat([Buffer.alloc(4), iinf, iloc, iprp]))
+  const mdat = encodeBox('mdat', Buffer.alloc(4))
+
+  await t.exception(
+    () => image.metadata.strip(Buffer.concat([ftyp, meta, mdat])),
+    /Invalid HEIF property association box/
+  )
+})
+
 test('image.metadata.strip() rejects duplicate HEIC item information boxes', async (t) => {
   const source = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
   const meta = parseBoxes(source).find((box) => box.type === 'meta')

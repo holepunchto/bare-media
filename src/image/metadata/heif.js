@@ -48,6 +48,7 @@ const MAX_ITEM_REFERENCE_VERSION = 1
 const MAX_PROPERTY_ASSOCIATION_VERSION = 1
 const LARGE_PROPERTY_INDEX_FLAG = 1
 const MAX_ITEM_EXTENTS = 4096
+const MAX_ITEMS = 4096
 
 const ITEM_TYPE_BYTES = 4
 const ITEM_LOCATION_SIZE_BYTES = 2
@@ -338,6 +339,9 @@ function rewritePropertyAssociations(buffer, box, metadataItemIds) {
   let offset = fullBox.dataStart
   const entryCount = readUInt(buffer, offset, UINT32_BYTES)
   offset += UINT32_BYTES
+  if (entryCount > MAX_ITEMS) {
+    throw new Error('Invalid HEIF property association box')
+  }
   const entries = []
 
   for (let i = 0; i < entryCount; i++) {
