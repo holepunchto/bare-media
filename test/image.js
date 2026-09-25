@@ -386,6 +386,21 @@ test('image.metadata.strip() rejects HEIC with too many item extents', async (t)
   )
 })
 
+test('image.metadata.strip() rejects HEIC with a non-standard iloc field width', async (t) => {
+  const entry = encodeBox('infe', Buffer.from([2, 0, 0, 0, 0, 1, 0, 0, 69, 120, 105, 102, 0]))
+  const iinf = encodeBox('iinf', Buffer.concat([Buffer.alloc(4), Buffer.from([0, 1]), entry]))
+  const location = Buffer.alloc(6)
+  location[4] = 0x24 // offset_size = 2, length_size = 4 (2 is not 0, 4 or 8)
+  const iloc = encodeBox('iloc', location)
+  const meta = encodeBox('meta', Buffer.concat([Buffer.alloc(4), iinf, iloc]))
+  const ftyp = encodeBox('ftyp', Buffer.from('heic\x00\x00\x00\x00heicmif1', 'latin1'))
+
+  await t.exception(
+    () => image.metadata.strip(Buffer.concat([ftyp, meta])),
+    /Invalid HEIF item location box/
+  )
+})
+
 test('image.metadata.strip() rejects HEIC with too many item location entries', async (t) => {
   const entry = encodeBox('infe', Buffer.from([2, 0, 0, 0, 0, 1, 0, 0, 69, 120, 105, 102, 0]))
   const iinf = encodeBox('iinf', Buffer.concat([Buffer.alloc(4), Buffer.from([0, 1]), entry]))

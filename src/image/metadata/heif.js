@@ -178,6 +178,12 @@ function parseItemLocation(buffer, box) {
   const lengthSize = sizes & SIZE_NIBBLE_MASK
   const baseOffsetSize = sizes2 >> SIZE_NIBBLE_SHIFT
   const indexSize = fullBox.version > 0 ? sizes2 & SIZE_NIBBLE_MASK : 0
+  // ISO/IEC 14496-12 limits these fields to 0, 4 or 8 bytes
+  for (const size of [offsetSize, lengthSize, baseOffsetSize, indexSize]) {
+    if (size !== 0 && size !== UINT32_BYTES && size !== 2 * UINT32_BYTES) {
+      throw new Error('Invalid HEIF item location box')
+    }
+  }
   const itemIdSize =
     fullBox.version < ITEM_LOCATION_VERSION_WITH_LONG_ID ? UINT16_BYTES : UINT32_BYTES
   const itemCountSize =
