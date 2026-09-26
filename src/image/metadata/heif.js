@@ -466,8 +466,13 @@ function assertNoMetadataOverlap(items, metadataItemIds, constructionMethod, sou
 }
 
 function assertRangesAreInBoxes(ranges, boxes) {
+  let boxIndex = 0
+
   for (const range of ranges) {
-    if (!boxes.some((box) => range.start >= box.dataStart && range.end <= box.end)) {
+    while (boxIndex < boxes.length && boxes[boxIndex].end < range.end) boxIndex++
+
+    const box = boxes[boxIndex]
+    if (!box || range.start < box.dataStart) {
       throw new Error('HEIF metadata is stored outside a media data box')
     }
   }
