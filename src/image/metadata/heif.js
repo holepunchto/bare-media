@@ -79,6 +79,234 @@ const METADATA_ITEM_TYPES = new Set([ITEM_TYPE.EXIF, ITEM_TYPE.MIME, ITEM_TYPE.U
 const MIME_IMAGE_CONTENT_TYPE = 'image/jpeg'
 const VENDOR_BOX_VALIDATORS = new Map([[BOX_TYPE.SAMSUNG_METADATA, validateSamsungBox]])
 
+class HEIFFile {
+  constructor(buffer) {
+    this.buffer = buffer
+    this.container = parseMetaContainer(buffer)
+    this.metadataItemIds = collectMetadataItemIds(buffer, this.container.itemInfo)
+  }
+
+  async stripMetadata(opts = {}) {
+    const { buffer, container, metadataItemIds } = this
+    const { vendorBoxes, children } = container
+    if (metadataItemIds.size === 0 && vendorBoxes.length === 0) return
+
+    const primaryItemBox = children.find((box) => box.type === BOX_TYPE.PRIMARY_ITEM)
+    if (primaryItemBox && metadataItemIds.has(parsePrimaryItem(buffer, primaryItemBox))) {
+      throw new Error('Cannot remove the primary HEIF item')
+    }
+
+    const itemLocationBox = children.find((box) => box.type === BOX_TYPE.ITEM_LOCATION)
+    this.itemLocation = itemLocationBox ? parseItemLocation(buffer, itemLocationBox) : null
+    assertMetadataItemLocations(metadataItemIds, this.itemLocation)
+
+    const { mdatMetadataRanges, idatMetadataRanges, vendorMetadataRanges } =
+      this.#resolveMetadataRanges()
+
+    this.metadataRanges = mergeRanges([
+      ...mdatMetadataRanges,
+      ...vendorMetadataRanges,
+      ...idatMetadataRanges
+    ])
+
+    if (opts.keepOrientation) {
+      const item = this.#readPrimaryExifItem()
+      if (item) {
+        this.primaryExif = { item, data: await stripExif(item.data, opts) }
+        metadataItemIds.delete(item.location.id)
+      }
+    }
+  }
+
+  serialize() {
+    const { buffer, container, metadataItemIds } = this
+    const { vendorBoxes, meta } = container
+    if (!this.metadataRanges) return Buffer.from(buffer)
+
+    const output = copyWithZeroedRanges(buffer, this.metadataRanges)
+    for (const box of vendorBoxes) {
+      rewriteAsZeroFilledBox(box, BOX_TYPE.FREE).copy(output, box.start)
+    }
+
+    if (metadataItemIds.size === 0 && !this.primaryExif) return output
+
+    if (this.primaryExif) {
+      const { item, data } = this.primaryExif
+      replaceExifItem(output, item, data)
+    }
+
+    const paddedMeta = this.#rewriteMetaBox(output)
+    paddedMeta.copy(output, meta.start)
+    return output
+  }
+
+  #resolveMetadataRanges() {
+    const { buffer, container, metadataItemIds, itemLocation } = this
+    const itemLocations = itemLocation ? itemLocation.items : []
+    const { topLevel, vendorBoxes, children } = container
+
+    const mdatBoxes = topLevel.filter((box) => box.type === BOX_TYPE.MEDIA_DATA)
+    const vendorMetadataRanges = vendorBoxes.map((box) => ({ start: box.start, end: box.end }))
+    const mdatMetadataRanges = metadataItemRanges(
+      itemLocations,
+      metadataItemIds,
+      FILE_OFFSET_CONSTRUCTION_METHOD,
+      buffer.byteLength
+    )
+    assertNoMetadataOverlap(
+      itemLocations,
+      metadataItemIds,
+      FILE_OFFSET_CONSTRUCTION_METHOD,
+      buffer.byteLength,
+      vendorMetadataRanges
+    )
+    assertRangesAreInBoxes(mdatMetadataRanges, mdatBoxes)
+
+    const idatBoxes = children.filter((box) => box.type === BOX_TYPE.ITEM_DATA)
+    const idatPayloadLength =
+      idatBoxes.length === 1 ? idatBoxes[0].end - idatBoxes[0].dataStart : null
+    const idatMetadataRanges = metadataItemRanges(
+      itemLocations,
+      metadataItemIds,
+      ITEM_DATA_CONSTRUCTION_METHOD,
+      idatPayloadLength
+    )
+
+    if (idatMetadataRanges.length > 0 && idatBoxes.length !== 1) {
+      throw new Error('Invalid HEIF item data storage')
+    }
+
+    if (idatMetadataRanges.some((range) => range.start < 0 || range.end > idatPayloadLength)) {
+      throw new Error('Invalid HEIF item data location')
+    }
+
+    const idatMetadataAbsRanges = idatMetadataRanges.map(({ start, end }) => ({
+      start: idatBoxes[0].dataStart + start,
+      end: idatBoxes[0].dataStart + end
+    }))
+
+    return {
+      mdatMetadataRanges,
+      idatMetadataRanges: idatMetadataAbsRanges,
+      vendorMetadataRanges
+    }
+  }
+
+  #readPrimaryExifItem() {
+    const { buffer, container, itemLocation } = this
+    const primary = container.children.find((box) => box.type === BOX_TYPE.PRIMARY_ITEM)
+    if (!primary) return null
+
+    const primaryId = parsePrimaryItem(buffer, primary)
+
+    const exifIds = new Set()
+    for (const entry of container.itemInfo.entries) {
+      const item = itemInfoEntry(buffer, entry)
+      if (item?.type === ITEM_TYPE.EXIF) {
+        exifIds.add(item.id)
+      }
+    }
+
+    let primaryExifItemId
+
+    for (const box of container.children) {
+      if (box.type !== BOX_TYPE.ITEM_REFERENCE) continue
+
+      const fullBox = parseFullBox(buffer, box)
+      if (fullBox.version > MAX_ITEM_REFERENCE_VERSION) {
+        throw new Error('Unsupported HEIF item reference version')
+      }
+
+      const idSize = fullBox.version === 0 ? UINT16_BYTES : UINT32_BYTES
+
+      for (const reference of parseBoxes(buffer, fullBox.dataStart, box.end)) {
+        if (reference.type !== ITEM_REFERENCE_TYPE.CONTENT_DESCRIPTION) continue
+        const from = readUInt(buffer, reference.dataStart, idSize)
+        const count = readUInt(buffer, reference.dataStart + idSize, UINT16_BYTES)
+        const start = reference.dataStart + idSize + UINT16_BYTES
+        if (start + count * idSize !== reference.end) {
+          throw new Error('Invalid HEIF item reference')
+        }
+        for (let i = 0; i < count; i++) {
+          if (exifIds.has(from) && readUInt(buffer, start + i * idSize, idSize) === primaryId) {
+            primaryExifItemId = from
+          }
+        }
+      }
+    }
+
+    if (primaryExifItemId === undefined) return null
+
+    const location = itemLocation.items.find((item) => item.id === primaryExifItemId)
+    if (
+      location.dataReferenceIndex !== 0 ||
+      location.constructionMethod > ITEM_DATA_CONSTRUCTION_METHOD
+    ) {
+      throw new Error('Unsupported HEIF Exif storage')
+    }
+
+    const source =
+      location.constructionMethod === ITEM_DATA_CONSTRUCTION_METHOD
+        ? container.children.find((box) => box.type === BOX_TYPE.ITEM_DATA)
+        : { dataStart: 0, end: buffer.byteLength }
+
+    const ranges = location.extents.map(({ offset, length }) => {
+      const start = source.dataStart + location.baseOffset + offset
+      return { start, end: length ? start + length : source.end }
+    })
+
+    const payload = Buffer.concat(ranges.map(({ start, end }) => buffer.subarray(start, end)))
+    const tiffStart = UINT32_BYTES + readUInt(payload, 0, UINT32_BYTES)
+    if (tiffStart >= payload.byteLength) throw new Error('Invalid HEIF Exif offset')
+    const data = Buffer.concat([EXIF_HEADER, payload.subarray(tiffStart)])
+
+    return { location, ranges, data, lengthSize: itemLocation.lengthSize }
+  }
+
+  #rewriteMetaBox(buffer) {
+    const { container, itemLocation, metadataItemIds } = this
+    const { meta, metaFullBox, children, itemInfo } = container
+    const retainedItemLocations = (itemLocation?.items ?? []).filter(
+      (item) => !metadataItemIds.has(item.id)
+    )
+
+    const rewrittenChildren = rewriteBoxes(buffer, children, (box) => {
+      switch (box.type) {
+        case BOX_TYPE.ITEM_INFO:
+          return rewriteItemInfo(buffer, box, itemInfo, metadataItemIds)
+        case BOX_TYPE.ITEM_LOCATION:
+          return rewriteItemLocation(buffer, box, itemLocation, retainedItemLocations)
+        case BOX_TYPE.ITEM_REFERENCE:
+          return rewriteItemReferences(buffer, box, metadataItemIds)
+        case BOX_TYPE.ITEM_PROPERTIES:
+          return rewriteItemProperties(buffer, box, metadataItemIds)
+        default:
+          return box.extendsToEnd
+            ? rewriteBox(box, buffer.subarray(box.dataStart, box.end), { extendsToEnd: false })
+            : undefined
+      }
+    })
+
+    const padding =
+      meta.size - meta.headerSize - FULL_BOX_FIELDS_BYTES - rewrittenChildren.byteLength
+    if (padding !== 0 && padding < FREE_BOX_HEADER_BYTES) {
+      throw new Error('Cannot preserve the HEIF metadata box size')
+    }
+
+    const free =
+      padding === 0
+        ? Buffer.alloc(0)
+        : encodeBox(BOX_TYPE.FREE, Buffer.alloc(padding - FREE_BOX_HEADER_BYTES))
+
+    return rewriteFullBox(
+      meta,
+      metaFullBox.version,
+      metaFullBox.flags,
+      Buffer.concat([rewrittenChildren, free])
+    )
+  }
+}
+
 function readString(buffer, offset, end) {
   const nullIndex = buffer.indexOf(0, offset)
   if (nullIndex === -1 || nullIndex >= end) {
@@ -586,126 +814,6 @@ function collectMetadataItemIds(buffer, itemInfo) {
   return metadataItemIds
 }
 
-function resolveMetadataRanges(buffer, container, itemLocations, metadataItemIds) {
-  const { topLevel, vendorBoxes, children } = container
-
-  const mdatBoxes = topLevel.filter((box) => box.type === BOX_TYPE.MEDIA_DATA)
-  const vendorMetadataRanges = vendorBoxes.map((box) => ({ start: box.start, end: box.end }))
-  const mdatMetadataRanges = metadataItemRanges(
-    itemLocations,
-    metadataItemIds,
-    FILE_OFFSET_CONSTRUCTION_METHOD,
-    buffer.byteLength
-  )
-  assertNoMetadataOverlap(
-    itemLocations,
-    metadataItemIds,
-    FILE_OFFSET_CONSTRUCTION_METHOD,
-    buffer.byteLength,
-    vendorMetadataRanges
-  )
-  assertRangesAreInBoxes(mdatMetadataRanges, mdatBoxes)
-
-  const idatBoxes = children.filter((box) => box.type === BOX_TYPE.ITEM_DATA)
-  const idatPayloadLength =
-    idatBoxes.length === 1 ? idatBoxes[0].end - idatBoxes[0].dataStart : null
-  const idatMetadataRanges = metadataItemRanges(
-    itemLocations,
-    metadataItemIds,
-    ITEM_DATA_CONSTRUCTION_METHOD,
-    idatPayloadLength
-  )
-
-  if (idatMetadataRanges.length > 0 && idatBoxes.length !== 1) {
-    throw new Error('Invalid HEIF item data storage')
-  }
-
-  if (idatMetadataRanges.some((range) => range.start < 0 || range.end > idatPayloadLength)) {
-    throw new Error('Invalid HEIF item data location')
-  }
-
-  const idatMetadataAbsRanges = idatMetadataRanges.map(({ start, end }) => ({
-    start: idatBoxes[0].dataStart + start,
-    end: idatBoxes[0].dataStart + end
-  }))
-
-  return {
-    mdatMetadataRanges,
-    idatMetadataRanges: idatMetadataAbsRanges,
-    vendorMetadataRanges
-  }
-}
-
-function readPrimaryExifItem(buffer, container, itemLocation) {
-  const primary = container.children.find((box) => box.type === BOX_TYPE.PRIMARY_ITEM)
-  if (!primary) return null
-
-  const primaryId = parsePrimaryItem(buffer, primary)
-
-  const exifIds = new Set()
-  for (const entry of container.itemInfo.entries) {
-    const item = itemInfoEntry(buffer, entry)
-    if (item?.type === ITEM_TYPE.EXIF) {
-      exifIds.add(item.id)
-    }
-  }
-
-  let primaryExifItemId
-
-  for (const box of container.children) {
-    if (box.type !== BOX_TYPE.ITEM_REFERENCE) continue
-
-    const fullBox = parseFullBox(buffer, box)
-    if (fullBox.version > MAX_ITEM_REFERENCE_VERSION) {
-      throw new Error('Unsupported HEIF item reference version')
-    }
-
-    const idSize = fullBox.version === 0 ? UINT16_BYTES : UINT32_BYTES
-
-    for (const reference of parseBoxes(buffer, fullBox.dataStart, box.end)) {
-      if (reference.type !== ITEM_REFERENCE_TYPE.CONTENT_DESCRIPTION) continue
-      const from = readUInt(buffer, reference.dataStart, idSize)
-      const count = readUInt(buffer, reference.dataStart + idSize, UINT16_BYTES)
-      const start = reference.dataStart + idSize + UINT16_BYTES
-      if (start + count * idSize !== reference.end) {
-        throw new Error('Invalid HEIF item reference')
-      }
-      for (let i = 0; i < count; i++) {
-        if (exifIds.has(from) && readUInt(buffer, start + i * idSize, idSize) === primaryId) {
-          primaryExifItemId = from
-        }
-      }
-    }
-  }
-
-  if (primaryExifItemId === undefined) return null
-
-  const location = itemLocation.items.find((item) => item.id === primaryExifItemId)
-  if (
-    location.dataReferenceIndex !== 0 ||
-    location.constructionMethod > ITEM_DATA_CONSTRUCTION_METHOD
-  ) {
-    throw new Error('Unsupported HEIF Exif storage')
-  }
-
-  const source =
-    location.constructionMethod === ITEM_DATA_CONSTRUCTION_METHOD
-      ? container.children.find((box) => box.type === BOX_TYPE.ITEM_DATA)
-      : { dataStart: 0, end: buffer.byteLength }
-
-  const ranges = location.extents.map(({ offset, length }) => {
-    const start = source.dataStart + location.baseOffset + offset
-    return { start, end: length ? start + length : source.end }
-  })
-
-  const payload = Buffer.concat(ranges.map(({ start, end }) => buffer.subarray(start, end)))
-  const tiffStart = UINT32_BYTES + readUInt(payload, 0, UINT32_BYTES)
-  if (tiffStart >= payload.byteLength) throw new Error('Invalid HEIF Exif offset')
-  const data = Buffer.concat([EXIF_HEADER, payload.subarray(tiffStart)])
-
-  return { location, ranges, data, lengthSize: itemLocation.lengthSize }
-}
-
 function replaceExifItem(buffer, item, exifBuffer) {
   const data = Buffer.concat([
     Buffer.alloc(UINT32_BYTES),
@@ -738,102 +846,10 @@ function replaceExifItem(buffer, item, exifBuffer) {
   writeUInt(buffer, count, item.location.extentCountOffset, UINT16_BYTES)
 }
 
-function rewriteMetaBox(buffer, container, rewrites) {
-  const { meta, metaFullBox, children, itemInfo } = container
-  const { itemLocation, metadataItemIds } = rewrites
-  const retainedItemLocations = (itemLocation?.items ?? []).filter(
-    (item) => !metadataItemIds.has(item.id)
-  )
-
-  const rewrittenChildren = rewriteBoxes(buffer, children, (box) => {
-    switch (box.type) {
-      case BOX_TYPE.ITEM_INFO:
-        return rewriteItemInfo(buffer, box, itemInfo, metadataItemIds)
-      case BOX_TYPE.ITEM_LOCATION:
-        return rewriteItemLocation(buffer, box, itemLocation, retainedItemLocations)
-      case BOX_TYPE.ITEM_REFERENCE:
-        return rewriteItemReferences(buffer, box, metadataItemIds)
-      case BOX_TYPE.ITEM_PROPERTIES:
-        return rewriteItemProperties(buffer, box, metadataItemIds)
-      default:
-        return box.extendsToEnd
-          ? rewriteBox(box, buffer.subarray(box.dataStart, box.end), { extendsToEnd: false })
-          : undefined
-    }
-  })
-
-  const padding = meta.size - meta.headerSize - FULL_BOX_FIELDS_BYTES - rewrittenChildren.byteLength
-  if (padding !== 0 && padding < FREE_BOX_HEADER_BYTES) {
-    throw new Error('Cannot preserve the HEIF metadata box size')
-  }
-
-  const free =
-    padding === 0
-      ? Buffer.alloc(0)
-      : encodeBox(BOX_TYPE.FREE, Buffer.alloc(padding - FREE_BOX_HEADER_BYTES))
-
-  return rewriteFullBox(
-    meta,
-    metaFullBox.version,
-    metaFullBox.flags,
-    Buffer.concat([rewrittenChildren, free])
-  )
-}
-
 async function stripHEIFMetadata(buffer, opts = {}) {
-  const container = parseMetaContainer(buffer)
-  const { vendorBoxes, meta, children, itemInfo } = container
-
-  const metadataItemIds = collectMetadataItemIds(buffer, itemInfo)
-  if (metadataItemIds.size === 0 && vendorBoxes.length === 0) {
-    return Buffer.from(buffer)
-  }
-
-  const primaryItemBox = children.find((box) => box.type === BOX_TYPE.PRIMARY_ITEM)
-  if (primaryItemBox && metadataItemIds.has(parsePrimaryItem(buffer, primaryItemBox))) {
-    throw new Error('Cannot remove the primary HEIF item')
-  }
-
-  const itemLocationBox = children.find((box) => box.type === BOX_TYPE.ITEM_LOCATION)
-  const itemLocation = itemLocationBox ? parseItemLocation(buffer, itemLocationBox) : null
-  const itemLocations = itemLocation ? itemLocation.items : []
-  assertMetadataItemLocations(metadataItemIds, itemLocation)
-
-  const { mdatMetadataRanges, idatMetadataRanges, vendorMetadataRanges } = resolveMetadataRanges(
-    buffer,
-    container,
-    itemLocations,
-    metadataItemIds
-  )
-
-  const fileMetadataRanges = mergeRanges([
-    ...mdatMetadataRanges,
-    ...vendorMetadataRanges,
-    ...idatMetadataRanges
-  ])
-  const output = copyWithZeroedRanges(buffer, fileMetadataRanges)
-  for (const box of vendorBoxes) {
-    rewriteAsZeroFilledBox(box, BOX_TYPE.FREE).copy(output, box.start)
-  }
-
-  if (metadataItemIds.size === 0) return output
-
-  if (opts.keepOrientation) {
-    const exifItem = readPrimaryExifItem(buffer, container, itemLocation)
-    if (exifItem) {
-      const exifData = await stripExif(exifItem.data, opts)
-      replaceExifItem(output, exifItem, exifData)
-      metadataItemIds.delete(exifItem.location.id)
-    }
-  }
-
-  const paddedMeta = rewriteMetaBox(output, container, {
-    itemLocation,
-    metadataItemIds
-  })
-
-  paddedMeta.copy(output, meta.start)
-  return output
+  const file = new HEIFFile(buffer)
+  await file.stripMetadata(opts)
+  return file.serialize()
 }
 
 export { stripHEIFMetadata }
