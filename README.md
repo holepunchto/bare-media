@@ -182,12 +182,10 @@ Strip metadata from an image returning a new image buffer.
 await image(path).metadata.strip().save(outPath)
 ```
 
-| Parameter              | Type    | Description                                                   |
-| ---------------------- | ------- | ------------------------------------------------------------- |
-| `opts.keepColor`       | boolean | JPEG only. Keep color-transform metadata. Default `true`      |
-| `opts.keepOrientation` | boolean | JPEG only. Preserve the Exif orientation tag. Default `false` |
-
-For HEIC, HEIF, and AVIF, existing container rotation and mirroring properties are preserved. Exif orientation is removed regardless of this option.
+| Parameter              | Type    | Description                                              |
+| ---------------------- | ------- | -------------------------------------------------------- |
+| `opts.keepColor`       | boolean | JPEG only. Keep color-transform metadata. Default `true` |
+| `opts.keepOrientation` | boolean | Preserve the Exif orientation tag. Default `false`       |
 
 Check with `isStripMetadataSupported()` for supported types: `jpeg`, `heic`, `heif`, and `avif`.
 

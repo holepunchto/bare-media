@@ -1,3 +1,5 @@
+import { stripExif } from './exif'
+
 async function stripJPEGMetadata(buffer, opts = {}) {
   const { keepColor = true, keepOrientation = false } = opts
 
@@ -14,22 +16,10 @@ async function stripJPEGMetadata(buffer, opts = {}) {
   }
 
   if (keepOrientation) {
-    const exif = await import('bare-exif')
-    const tags = exif.constants.tags
-    using data = new exif.Data(buffer)
-
-    for (const tag of Object.values(tags)) {
-      if (tag !== tags.ORIENTATION) {
-        data.removeEntry(tag)
-      }
+    const data = await stripExif(buffer, opts)
+    if (data) {
+      newMarkers.push({ marker: APP1, data })
     }
-
-    const rawExif = data.saveData()
-
-    newMarkers.push({
-      marker: APP1,
-      data: rawExif
-    })
   }
 
   return jpeg.replaceMarkers(buffer, newMarkers)

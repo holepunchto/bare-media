@@ -131,7 +131,7 @@ async function strip(buffer, opts = {}) {
   }
 
   if (HEIF_MIMETYPES.has(mimetype)) {
-    return stripHEIFMetadata(buffer)
+    return await stripHEIFMetadata(buffer, opts)
   }
 
   throw new Error(`metadata strip(): unsupported type ${mimetype}`)

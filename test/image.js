@@ -278,6 +278,52 @@ test('image.metadata.strip() strips AVIF metadata', async (t) => {
   t.absent(stripped.includes('<x:xmpmeta'))
 })
 
+test(`image.metadata.strip() keeps Exif orientation - heic`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-orientation.heic')
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+  const metadata = await image.metadata(stripped)
+
+  t.absent(metadata.exif.MAKE)
+  t.absent(metadata.exif.ARTIST)
+  t.is(metadata.orientation, 6)
+})
+
+test(`image.metadata.strip() keeps Exif orientation - avif`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-orientation.avif')
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+  const metadata = await image.metadata(stripped)
+
+  t.absent(metadata.exif.MAKE)
+  t.absent(metadata.exif.ARTIST)
+  t.is(metadata.orientation, 6)
+})
+
+test('image.metadata.strip() keeps orientation while removing XMP', async (t) => {
+  const stripped = await image('./test/fixtures/metadata-xmp.heic').metadata.strip({
+    keepOrientation: true
+  })
+  t.is(await image.metadata(stripped, { tag: 'orientation' }), 1)
+  t.absent(stripped.includes('<x:xmpmeta'))
+})
+
+test('image.metadata.strip() rejects an Exif replacement larger than its storage', async (t) => {
+  const source = await image('./test/fixtures/exif-orientation.heic').metadata.strip({
+    keepOrientation: true
+  })
+  source.writeUInt32BE(26, source.indexOf('iloc') + 36)
+  await t.exception(
+    () => image(source).metadata.strip({ keepOrientation: true }),
+    /does not fit its original storage/
+  )
+})
+
+test('image.metadata.strip() with keepOrientation and no Exif item', async (t) => {
+  const stripped = await image('./test/fixtures/metadata-uri.heic').metadata.strip({
+    keepOrientation: true
+  })
+  t.alike(await image.metadata(stripped), { exif: {} })
+})
+
 test('image.metadata.strip() rejects HEIC without a meta box', async (t) => {
   const missingMeta = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
   missingMeta.write('free', missingMeta.indexOf('meta'))

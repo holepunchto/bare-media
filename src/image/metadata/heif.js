@@ -10,6 +10,7 @@ import {
   writeUInt,
   copyWithZeroedRanges
 } from '../../container/isobmff'
+import { EXIF_HEADER, stripExif } from './exif'
 
 const BOX_TYPE = {
   FREE: 'free',
@@ -30,6 +31,10 @@ const ITEM_TYPE = {
   EXIF: 'Exif',
   MIME: 'mime',
   URI: 'uri '
+}
+
+const ITEM_REFERENCE_TYPE = {
+  CONTENT_DESCRIPTION: 'cdsc'
 }
 
 const SAMSUNG_SIGNATURE = {
@@ -222,6 +227,7 @@ function parseItemLocation(buffer, box) {
     offset += UINT16_BYTES
     const baseOffset = readUInt(buffer, offset, baseOffsetSize)
     offset += baseOffsetSize
+    const extentCountOffset = offset
     const extentCount = readUInt(buffer, offset, UINT16_BYTES)
     offset += UINT16_BYTES
     totalExtents += extentCount
@@ -241,9 +247,10 @@ function parseItemLocation(buffer, box) {
 
       const extentOffset = readUInt(buffer, offset, offsetSize)
       offset += offsetSize
+      const lengthOffset = offset
       const length = readUInt(buffer, offset, lengthSize)
       offset += lengthSize
-      extents.push({ offset: extentOffset, length })
+      extents.push({ offset: extentOffset, length, lengthOffset })
     }
 
     items.push({
@@ -253,6 +260,7 @@ function parseItemLocation(buffer, box) {
       constructionMethod: constructionField & CONSTRUCTION_METHOD_MASK,
       dataReferenceIndex,
       baseOffset,
+      extentCountOffset,
       extents
     })
   }
@@ -262,6 +270,7 @@ function parseItemLocation(buffer, box) {
   return {
     ...fullBox,
     itemCountSize,
+    lengthSize,
     items
   }
 }
@@ -615,12 +624,123 @@ function resolveMetadataRanges(buffer, container, itemLocations, metadataItemIds
     throw new Error('Invalid HEIF item data location')
   }
 
-  return { mdatMetadataRanges, idatMetadataRanges, vendorMetadataRanges }
+  const idatMetadataAbsRanges = idatMetadataRanges.map(({ start, end }) => ({
+    start: idatBoxes[0].dataStart + start,
+    end: idatBoxes[0].dataStart + end
+  }))
+
+  return {
+    mdatMetadataRanges,
+    idatMetadataRanges: idatMetadataAbsRanges,
+    vendorMetadataRanges
+  }
+}
+
+function readPrimaryExifItem(buffer, container, itemLocation) {
+  const primary = container.children.find((box) => box.type === BOX_TYPE.PRIMARY_ITEM)
+  if (!primary) return null
+
+  const primaryId = parsePrimaryItem(buffer, primary)
+
+  const exifIds = new Set()
+  for (const entry of container.itemInfo.entries) {
+    const item = itemInfoEntry(buffer, entry)
+    if (item?.type === ITEM_TYPE.EXIF) {
+      exifIds.add(item.id)
+    }
+  }
+
+  let primaryExifItemId
+
+  for (const box of container.children) {
+    if (box.type !== BOX_TYPE.ITEM_REFERENCE) continue
+
+    const fullBox = parseFullBox(buffer, box)
+    if (fullBox.version > MAX_ITEM_REFERENCE_VERSION) {
+      throw new Error('Unsupported HEIF item reference version')
+    }
+
+    const idSize = fullBox.version === 0 ? UINT16_BYTES : UINT32_BYTES
+
+    for (const reference of parseBoxes(buffer, fullBox.dataStart, box.end)) {
+      if (reference.type !== ITEM_REFERENCE_TYPE.CONTENT_DESCRIPTION) continue
+      const from = readUInt(buffer, reference.dataStart, idSize)
+      const count = readUInt(buffer, reference.dataStart + idSize, UINT16_BYTES)
+      const start = reference.dataStart + idSize + UINT16_BYTES
+      if (start + count * idSize !== reference.end) {
+        throw new Error('Invalid HEIF item reference')
+      }
+      for (let i = 0; i < count; i++) {
+        if (exifIds.has(from) && readUInt(buffer, start + i * idSize, idSize) === primaryId) {
+          primaryExifItemId = from
+        }
+      }
+    }
+  }
+
+  if (primaryExifItemId === undefined) return null
+
+  const location = itemLocation.items.find((item) => item.id === primaryExifItemId)
+  if (
+    location.dataReferenceIndex !== 0 ||
+    location.constructionMethod > ITEM_DATA_CONSTRUCTION_METHOD
+  ) {
+    throw new Error('Unsupported HEIF Exif storage')
+  }
+
+  const source =
+    location.constructionMethod === ITEM_DATA_CONSTRUCTION_METHOD
+      ? container.children.find((box) => box.type === BOX_TYPE.ITEM_DATA)
+      : { dataStart: 0, end: buffer.byteLength }
+
+  const ranges = location.extents.map(({ offset, length }) => {
+    const start = source.dataStart + location.baseOffset + offset
+    return { start, end: length ? start + length : source.end }
+  })
+
+  const payload = Buffer.concat(ranges.map(({ start, end }) => buffer.subarray(start, end)))
+  const tiffStart = UINT32_BYTES + readUInt(payload, 0, UINT32_BYTES)
+  if (tiffStart >= payload.byteLength) throw new Error('Invalid HEIF Exif offset')
+  const data = Buffer.concat([EXIF_HEADER, payload.subarray(tiffStart)])
+
+  return { location, ranges, data, lengthSize: itemLocation.lengthSize }
+}
+
+function replaceExifItem(buffer, item, exifBuffer) {
+  const data = Buffer.concat([
+    Buffer.alloc(UINT32_BYTES),
+    exifBuffer.subarray(EXIF_HEADER.byteLength)
+  ])
+
+  const capacity = item.ranges.reduce((size, range) => size + range.end - range.start, 0)
+  if (data.byteLength > capacity) {
+    throw new Error('HEIF Exif orientation does not fit its original storage')
+  }
+  if (item.lengthSize === 0) {
+    throw new Error('Cannot update an implicit HEIF Exif length')
+  }
+
+  let offset = 0
+  let count = 0
+  for (const { start, end } of item.ranges) {
+    const length = Math.min(data.byteLength - offset, end - start)
+    const extent = item.location.extents[count++]
+
+    data.copy(buffer, start, offset, offset + length)
+    writeUInt(buffer, length, extent.lengthOffset, item.lengthSize)
+    offset += length
+
+    if (offset === data.byteLength) {
+      item.location.end = extent.lengthOffset + item.lengthSize
+      break
+    }
+  }
+  writeUInt(buffer, count, item.location.extentCountOffset, UINT16_BYTES)
 }
 
 function rewriteMetaBox(buffer, container, rewrites) {
   const { meta, metaFullBox, children, itemInfo } = container
-  const { itemLocation, metadataItemIds, idatMetadataRanges } = rewrites
+  const { itemLocation, metadataItemIds } = rewrites
   const retainedItemLocations = (itemLocation?.items ?? []).filter(
     (item) => !metadataItemIds.has(item.id)
   )
@@ -635,12 +755,6 @@ function rewriteMetaBox(buffer, container, rewrites) {
         return rewriteItemReferences(buffer, box, metadataItemIds)
       case BOX_TYPE.ITEM_PROPERTIES:
         return rewriteItemProperties(buffer, box, metadataItemIds)
-      case BOX_TYPE.ITEM_DATA: {
-        const payload = buffer.subarray(box.dataStart, box.end)
-        return rewriteBox(box, copyWithZeroedRanges(payload, idatMetadataRanges), {
-          extendsToEnd: false
-        })
-      }
       default:
         return box.extendsToEnd
           ? rewriteBox(box, buffer.subarray(box.dataStart, box.end), { extendsToEnd: false })
@@ -649,11 +763,15 @@ function rewriteMetaBox(buffer, container, rewrites) {
   })
 
   const padding = meta.size - meta.headerSize - FULL_BOX_FIELDS_BYTES - rewrittenChildren.byteLength
-  if (padding < FREE_BOX_HEADER_BYTES) {
+  if (padding !== 0 && padding < FREE_BOX_HEADER_BYTES) {
     throw new Error('Cannot preserve the HEIF metadata box size')
   }
 
-  const free = encodeBox(BOX_TYPE.FREE, Buffer.alloc(padding - FREE_BOX_HEADER_BYTES))
+  const free =
+    padding === 0
+      ? Buffer.alloc(0)
+      : encodeBox(BOX_TYPE.FREE, Buffer.alloc(padding - FREE_BOX_HEADER_BYTES))
+
   return rewriteFullBox(
     meta,
     metaFullBox.version,
@@ -662,7 +780,7 @@ function rewriteMetaBox(buffer, container, rewrites) {
   )
 }
 
-function stripHEIFMetadata(buffer) {
+async function stripHEIFMetadata(buffer, opts = {}) {
   const container = parseMetaContainer(buffer)
   const { vendorBoxes, meta, children, itemInfo } = container
 
@@ -688,7 +806,11 @@ function stripHEIFMetadata(buffer) {
     metadataItemIds
   )
 
-  const fileMetadataRanges = mergeRanges([...mdatMetadataRanges, ...vendorMetadataRanges])
+  const fileMetadataRanges = mergeRanges([
+    ...mdatMetadataRanges,
+    ...vendorMetadataRanges,
+    ...idatMetadataRanges
+  ])
   const output = copyWithZeroedRanges(buffer, fileMetadataRanges)
   for (const box of vendorBoxes) {
     rewriteAsZeroFilledBox(box, BOX_TYPE.FREE).copy(output, box.start)
@@ -696,10 +818,18 @@ function stripHEIFMetadata(buffer) {
 
   if (metadataItemIds.size === 0) return output
 
-  const paddedMeta = rewriteMetaBox(buffer, container, {
+  if (opts.keepOrientation) {
+    const exifItem = readPrimaryExifItem(buffer, container, itemLocation)
+    if (exifItem) {
+      const exifData = await stripExif(exifItem.data, opts)
+      replaceExifItem(output, exifItem, exifData)
+      metadataItemIds.delete(exifItem.location.id)
+    }
+  }
+
+  const paddedMeta = rewriteMetaBox(output, container, {
     itemLocation,
-    metadataItemIds,
-    idatMetadataRanges
+    metadataItemIds
   })
 
   paddedMeta.copy(output, meta.start)
