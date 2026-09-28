@@ -112,8 +112,11 @@ class HEIFFile {
     if (opts.keepOrientation) {
       const item = this.#readPrimaryExifItem()
       if (item) {
-        this.primaryExif = { item, data: await stripExif(item.data, opts) }
-        metadataItemIds.delete(item.location.id)
+        const data = await stripExif(item.data, opts)
+        if (data) {
+          this.primaryExif = { item, data }
+          metadataItemIds.delete(item.location.id)
+        }
       }
     }
   }

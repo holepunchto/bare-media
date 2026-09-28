@@ -298,6 +298,42 @@ test(`image.metadata.strip() keeps Exif orientation - avif`, async (t) => {
   t.is(metadata.orientation, 6)
 })
 
+test(`image.metadata.strip() removes Exif without orientation - jpg`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-no-orientation.jpg')
+
+  t.absent(await image.metadata(source, { tag: 'orientation' }))
+  t.ok(source.includes('Exif'))
+
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('Exif'), 'removes the Exif item or marker')
+})
+
+test(`image.metadata.strip() removes Exif without orientation - heic`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-no-orientation.heic')
+
+  t.absent(await image.metadata(source, { tag: 'orientation' }))
+  t.ok(source.includes('Exif'))
+
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('Exif'), 'removes the Exif item or marker')
+})
+
+test(`image.metadata.strip() removes Exif without orientation - avif`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-no-orientation.avif')
+
+  t.absent(await image.metadata(source, { tag: 'orientation' }))
+  t.ok(source.includes('Exif'))
+
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('Exif'), 'removes the Exif item or marker')
+})
+
 test('image.metadata.strip() keeps orientation while removing XMP', async (t) => {
   const stripped = await image('./test/fixtures/metadata-xmp.heic').metadata.strip({
     keepOrientation: true
