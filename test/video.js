@@ -614,6 +614,49 @@ test('video.getFormatRegistry() - getMuxerOptions returns muxer config', async (
   t.ok(mp4Muxer.movflags, 'mp4 muxer has movflags')
 })
 
+test('video.getFormatRegistry() - getContainer defaults to the format name', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.is(registry.getContainer('webm'), 'webm')
+  t.is(registry.getContainer('mp4'), 'mp4')
+})
+
+test('video.getFormatRegistry() - getContainer returns the registered container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('vp9-mp4-container', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  t.is(registry.getContainer('vp9-mp4-container'), 'mp4')
+})
+
+test('video.transcode() - custom format name muxes into its container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('small-mp4', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4'),
+    muxer: registry.getMuxerOptions('mp4')
+  })
+
+  const chunks = []
+  for await (const chunk of video('./test/fixtures/sample.webm').transcode({
+    format: 'small-mp4',
+    width: 320,
+    height: 240
+  })) {
+    chunks.push(chunk)
+  }
+
+  const totalOutputBuffer = assertChunks(t, chunks)
+  const header = b4a.toString(totalOutputBuffer.subarray(4, 8))
+  t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
+})
+
 test('video.getFormatRegistry() - getMuxerOptions returns empty object for unknown format', async (t) => {
   const registry = await video.getFormatRegistry()
 
