@@ -100,6 +100,8 @@ class HEIFFile {
     this.itemLocation = itemLocationBox ? parseItemLocation(buffer, itemLocationBox) : null
     assertMetadataItemLocations(metadataItemIds, this.itemLocation)
 
+    clearMetadataPlaceholderExtents(this.itemLocation, metadataItemIds)
+
     const { mdatMetadataRanges, idatMetadataRanges, vendorMetadataRanges } =
       this.#resolveMetadataRanges()
 
@@ -241,6 +243,8 @@ class HEIFFile {
     if (primaryExifItemId === undefined) return null
 
     const location = itemLocation.items.find((item) => item.id === primaryExifItemId)
+    if (location.extents.length === 0) return null
+
     if (
       location.dataReferenceIndex !== 0 ||
       location.constructionMethod > ITEM_DATA_CONSTRUCTION_METHOD
@@ -639,6 +643,43 @@ function mergeRanges(ranges) {
 
 function overlaps(left, right) {
   return left.start < right.end && right.start < left.end
+}
+
+function retainedExtentStartKey(item, extent) {
+  return `${item.constructionMethod}:${item.dataReferenceIndex}:${item.baseOffset + extent.offset}`
+}
+
+// Edge case: Some HEIC files contain apparently empty metadata entries that point to
+// image data. Erasing those bytes would damage the image.
+//
+// Look for metadata entries that:
+// - Have one extent with an explicit length of zero.
+// - Point to the same starting bytes as image data we're keeping.
+// Treat these entries as empty by clearing their extents so we can remove
+// them without deleting the shared image bytes.
+function clearMetadataPlaceholderExtents(itemLocation, metadataItemIds) {
+  if (!itemLocation?.lengthSize) return
+
+  const retainedStarts = new Set()
+  for (const item of itemLocation.items) {
+    if (metadataItemIds.has(item.id)) continue
+    for (const extent of item.extents) {
+      if (extent.length > 0) {
+        retainedStarts.add(retainedExtentStartKey(item, extent))
+      }
+    }
+  }
+
+  for (const item of itemLocation.items) {
+    if (
+      metadataItemIds.has(item.id) &&
+      item.extents.length === 1 &&
+      item.extents[0].length === 0 &&
+      retainedStarts.has(retainedExtentStartKey(item, item.extents[0]))
+    ) {
+      item.extents = []
+    }
+  }
 }
 
 function metadataItemRanges(

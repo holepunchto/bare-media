@@ -416,6 +416,29 @@ test('image.metadata.strip() rejects HEIC metadata sharing image storage', async
   )
 })
 
+test('image.metadata.strip() removes empty HEIC Exif and XMP placeholders', async (t) => {
+  const source = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
+  const iloc = source.indexOf('iloc')
+  const imageOffset = source.readUInt32BE(iloc + 18)
+  // Point both metadata items at the image with explicit zero lengths
+  for (const offset of [32, 46]) {
+    source.writeUInt32BE(imageOffset, iloc + offset)
+    source.writeUInt32BE(0, iloc + offset + 4)
+  }
+  const mdat = parseBoxes(source).find((box) => box.type === 'mdat')
+
+  for (const keepOrientation of [false, true]) {
+    const stripped = await image(source).metadata.strip({ keepOrientation })
+
+    t.alike(await image.metadata(stripped), { exif: {} })
+    t.alike(
+      stripped.subarray(mdat.start, mdat.end),
+      source.subarray(mdat.start, mdat.end),
+      'preserves all image payload bytes'
+    )
+  }
+})
+
 test('image.metadata.strip() rejects HEIC metadata outside a media data box', async (t) => {
   const outsideMdat = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
   outsideMdat.writeUInt32BE(8, outsideMdat.indexOf('iloc') + 32)
