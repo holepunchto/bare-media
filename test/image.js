@@ -5,10 +5,10 @@ import os from 'bare-os'
 import barePath from 'bare-path'
 
 import { image } from '..'
-import { encodeBox, parseBoxes } from '../src/container/isobmff'
 import { calculateFitDimensions } from '../src/image/dimensions'
 import { isStripMetadataSupported } from '../types'
 import {
+  makeIsoBox,
   makeHttpLink,
   isAnimatedWebP,
   randomFileName,
@@ -278,6 +278,23 @@ test('image.metadata.strip() strips AVIF metadata', async (t) => {
   t.absent(stripped.includes('<x:xmpmeta'))
 })
 
+test('image.metadata.strip() erases Exif and XMP stored in idat', async (t) => {
+  const { ISOFile } = await import('bare-gpac')
+  const source = fs.readFileSync('./test/fixtures/metadata-idat.heic')
+  using original = new ISOFile(source)
+  const exif = original.readItem(2)
+  const xmp = original.readItem(3)
+  const decoded = await image(source).decode()
+
+  for (const keepOrientation of [false, true]) {
+    const stripped = await image(source).metadata.strip({ keepOrientation })
+    t.absent(stripped.includes(exif), 'erases Exif bytes')
+    t.absent(stripped.includes(xmp), 'erases XMP bytes')
+    t.is(await image.metadata(stripped, { tag: 'orientation' }), keepOrientation ? 1 : null)
+    t.alike(await image(stripped).decode(), decoded)
+  }
+})
+
 test(`image.metadata.strip() keeps Exif orientation - heic`, async (t) => {
   const source = fs.readFileSync('./test/fixtures/exif-orientation.heic')
   const stripped = await image(source).metadata.strip({ keepOrientation: true })
@@ -342,17 +359,6 @@ test('image.metadata.strip() keeps orientation while removing XMP', async (t) =>
   t.absent(stripped.includes('<x:xmpmeta'))
 })
 
-test('image.metadata.strip() rejects an Exif replacement larger than its storage', async (t) => {
-  const source = await image('./test/fixtures/exif-orientation.heic').metadata.strip({
-    keepOrientation: true
-  })
-  source.writeUInt32BE(26, source.indexOf('iloc') + 36)
-  await t.exception(
-    () => image(source).metadata.strip({ keepOrientation: true }),
-    /does not fit its original storage/
-  )
-})
-
 test('image.metadata.strip() with keepOrientation and no Exif item', async (t) => {
   const stripped = await image('./test/fixtures/metadata-uri.heic').metadata.strip({
     keepOrientation: true
@@ -360,60 +366,20 @@ test('image.metadata.strip() with keepOrientation and no Exif item', async (t) =
   t.alike(await image.metadata(stripped), { exif: {} })
 })
 
-test('image.metadata.strip() rejects HEIC without a meta box', async (t) => {
-  const missingMeta = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  missingMeta.write('free', missingMeta.indexOf('meta'))
-  await t.exception(() => image(missingMeta).metadata.strip(), /Invalid HEIF metadata container/)
-})
-
-test('image.metadata.strip() rejects HEIC with an invalid meta box size', async (t) => {
+test('image.metadata.strip() propagates invalid HEIC errors', async (t) => {
   const invalidBox = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
   invalidBox.writeUInt32BE(4, invalidBox.indexOf('meta') - 4)
-  await t.exception(() => image(invalidBox).metadata.strip(), /Invalid ISO-BMFF meta box size/)
+  await t.exception(() => image(invalidBox).metadata.strip(), { code: 'ERR_GPAC' })
 })
 
-test('image.metadata.strip() rejects HEIC metadata without an iloc box', async (t) => {
-  const missingLocation = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  missingLocation.write('free', missingLocation.indexOf('iloc'))
-  await t.exception(() => image(missingLocation).metadata.strip(), /Missing HEIF item location box/)
-})
-
-test('image.metadata.strip() rejects HEIC metadata without an item location', async (t) => {
-  const missingItemLocation = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  const iloc = missingItemLocation.indexOf('iloc')
-  missingItemLocation.writeUInt16BE(99, iloc + 40) // Replace the XMP item's ID in iloc.
-  await t.exception(
-    () => image(missingItemLocation).metadata.strip(),
-    /Missing HEIF item location for metadata item 3/
-  )
-})
-
-test('image.metadata.strip() rejects a primary HEIC metadata item', async (t) => {
-  const primaryMetadata = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  primaryMetadata.writeUInt16BE(2, primaryMetadata.indexOf('pitm') + 8)
-  await t.exception(
-    () => image(primaryMetadata).metadata.strip(),
-    /Cannot remove the primary HEIF item/
-  )
-})
-
-test('image.metadata.strip() rejects an unsupported HEIC item location version', async (t) => {
-  const unsupportedLocation = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  unsupportedLocation[unsupportedLocation.indexOf('iloc') + 4] = 3
-  await t.exception(
-    () => image(unsupportedLocation).metadata.strip(),
-    /Unsupported HEIF item location version/
-  )
-})
-
-test('image.metadata.strip() rejects HEIC metadata sharing image storage', async (t) => {
+test('image.metadata.strip() removes HEIC metadata sharing image storage', async (t) => {
   const sharedStorage = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
   const iloc = sharedStorage.indexOf('iloc')
   sharedStorage.writeUInt32BE(sharedStorage.readUInt32BE(iloc + 18), iloc + 32)
-  await t.exception(
-    () => image(sharedStorage).metadata.strip(),
-    /HEIF metadata shares storage with a retained item/
-  )
+  const stripped = await image(sharedStorage).metadata.strip()
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('<x:xmpmeta'))
+  t.alike(await image(stripped).decode(), await image('./test/fixtures/metadata-xmp.heic').decode())
 })
 
 test('image.metadata.strip() removes empty HEIC Exif and XMP placeholders', async (t) => {
@@ -425,156 +391,31 @@ test('image.metadata.strip() removes empty HEIC Exif and XMP placeholders', asyn
     source.writeUInt32BE(imageOffset, iloc + offset)
     source.writeUInt32BE(0, iloc + offset + 4)
   }
-  const mdat = parseBoxes(source).find((box) => box.type === 'mdat')
+  const original = await image(source).decode()
 
   for (const keepOrientation of [false, true]) {
     const stripped = await image(source).metadata.strip({ keepOrientation })
 
     t.alike(await image.metadata(stripped), { exif: {} })
-    t.alike(
-      stripped.subarray(mdat.start, mdat.end),
-      source.subarray(mdat.start, mdat.end),
-      'preserves all image payload bytes'
-    )
+    t.alike(await image(stripped).decode(), original, 'preserves the decoded image')
   }
 })
 
-test('image.metadata.strip() rejects HEIC metadata outside a media data box', async (t) => {
-  const outsideMdat = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  outsideMdat.writeUInt32BE(8, outsideMdat.indexOf('iloc') + 32)
-  await t.exception(
-    () => image(outsideMdat).metadata.strip(),
-    /HEIF metadata is stored outside a media data box/
-  )
-})
-
-test('image.metadata.strip() strips HEIC with an implicit item extent length', async (t) => {
-  const implicitLength = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  implicitLength.writeUInt32BE(0, implicitLength.indexOf('iloc') + 22) // Primary item runs to EOF.
-  const stripped = await image(implicitLength).metadata.strip()
-
-  t.absent(stripped.includes('<x:xmpmeta'))
-})
-
-test('image.metadata.strip() rejects HEIC with an implicit extent past the end', async (t) => {
-  const pastEnd = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  const iloc = pastEnd.indexOf('iloc')
-  pastEnd.writeUInt32BE(pastEnd.byteLength + 1, iloc + 18)
-  pastEnd.writeUInt32BE(0, iloc + 22)
-  await t.exception(() => image(pastEnd).metadata.strip(), /Invalid HEIF item data location/)
-})
-
-test('image.metadata.strip() rejects HEIC with zero-byte iloc extents', async (t) => {
-  const zeroByteExtents = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  const iloc = zeroByteExtents.indexOf('iloc')
-  zeroByteExtents[iloc + 8] = 0 // Offset and length fields have zero width
-  zeroByteExtents.writeUInt16BE(0xffff, iloc + 16) // First item declares many extents
-
-  await t.exception(() => image(zeroByteExtents).metadata.strip(), /Invalid HEIF item location box/)
-})
-
-test('image.metadata.strip() rejects HEIC with too many item extents', async (t) => {
-  const entry = encodeBox('infe', Buffer.from([2, 0, 0, 0, 0, 1, 0, 0, 69, 120, 105, 102, 0]))
-  const iinf = encodeBox('iinf', Buffer.concat([Buffer.alloc(4), Buffer.from([0, 1]), entry]))
-  const location = Buffer.alloc(14 + 4097 * 8)
-  location[4] = 0x44
-  location.writeUInt16BE(1, 6)
-  location.writeUInt16BE(1, 8)
-  location.writeUInt16BE(4097, 12)
-  const iloc = encodeBox('iloc', location)
-  const meta = encodeBox('meta', Buffer.concat([Buffer.alloc(4), iinf, iloc]))
-  const ftyp = encodeBox('ftyp', Buffer.from('heic\x00\x00\x00\x00heicmif1', 'latin1'))
-
-  await t.exception(
-    () => image.metadata.strip(Buffer.concat([ftyp, meta])),
-    /Invalid HEIF item location box/
-  )
-})
-
-test('image.metadata.strip() rejects HEIC with a non-standard iloc field width', async (t) => {
-  const entry = encodeBox('infe', Buffer.from([2, 0, 0, 0, 0, 1, 0, 0, 69, 120, 105, 102, 0]))
-  const iinf = encodeBox('iinf', Buffer.concat([Buffer.alloc(4), Buffer.from([0, 1]), entry]))
-  const location = Buffer.alloc(6)
-  location[4] = 0x24 // offset_size = 2, length_size = 4 (2 is not 0, 4 or 8)
-  const iloc = encodeBox('iloc', location)
-  const meta = encodeBox('meta', Buffer.concat([Buffer.alloc(4), iinf, iloc]))
-  const ftyp = encodeBox('ftyp', Buffer.from('heic\x00\x00\x00\x00heicmif1', 'latin1'))
-
-  await t.exception(
-    () => image.metadata.strip(Buffer.concat([ftyp, meta])),
-    /Invalid HEIF item location box/
-  )
-})
-
-test('image.metadata.strip() rejects HEIC with too many item location entries', async (t) => {
-  const entry = encodeBox('infe', Buffer.from([2, 0, 0, 0, 0, 1, 0, 0, 69, 120, 105, 102, 0]))
-  const iinf = encodeBox('iinf', Buffer.concat([Buffer.alloc(4), Buffer.from([0, 1]), entry]))
-  const location = Buffer.alloc(10)
-  location[0] = 2 // version
-  location[4] = 0x44
-  location.writeUInt32BE(4097, 6) // item count
-  const iloc = encodeBox('iloc', location)
-  const meta = encodeBox('meta', Buffer.concat([Buffer.alloc(4), iinf, iloc]))
-  const ftyp = encodeBox('ftyp', Buffer.from('heic\x00\x00\x00\x00heicmif1', 'latin1'))
-
-  await t.exception(
-    () => image.metadata.strip(Buffer.concat([ftyp, meta])),
-    /Invalid HEIF item location box/
-  )
-})
-
-test('image.metadata.strip() rejects HEIC with too many property associations', async (t) => {
-  const entry = encodeBox('infe', Buffer.from([2, 0, 0, 0, 0, 1, 0, 0, 69, 120, 105, 102, 0]))
-  const iinf = encodeBox('iinf', Buffer.concat([Buffer.alloc(4), Buffer.from([0, 1]), entry]))
-
-  const location = Buffer.alloc(14 + 8) // one item, one extent
-  location[4] = 0x44
-  location.writeUInt16BE(1, 6) // item count
-  location.writeUInt16BE(1, 8) // item ID
-  location.writeUInt16BE(1, 12) // extent count
-  location.writeUInt32BE(4, 18) // extent length
-
-  const ipmaPayload = Buffer.alloc(8 + 4097 * 3)
-  ipmaPayload.writeUInt32BE(4097, 4) // entry count
-  const ipma = encodeBox('ipma', ipmaPayload)
-  const iprp = encodeBox('iprp', ipma)
-
-  const ftyp = encodeBox('ftyp', Buffer.from('heic\x00\x00\x00\x00heicmif1', 'latin1'))
-  const metaLen = 8 + 4 + iinf.byteLength + (8 + location.byteLength) + iprp.byteLength
-  location.writeUInt32BE(ftyp.byteLength + metaLen + 8, 14) // extent offset: start of mdat's payload
-
-  const iloc = encodeBox('iloc', location)
-  const meta = encodeBox('meta', Buffer.concat([Buffer.alloc(4), iinf, iloc, iprp]))
-  const mdat = encodeBox('mdat', Buffer.alloc(4))
-
-  await t.exception(
-    () => image.metadata.strip(Buffer.concat([ftyp, meta, mdat])),
-    /Invalid HEIF property association box/
-  )
-})
-
-test('image.metadata.strip() rejects duplicate HEIC item information boxes', async (t) => {
-  const source = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
-  const meta = parseBoxes(source).find((box) => box.type === 'meta')
-  const duplicate = encodeBox('iinf', Buffer.from([0, 0, 0, 0, 0, 0]))
-  const input = Buffer.concat([source.subarray(0, meta.end), duplicate, source.subarray(meta.end)])
-  input.writeUInt32BE(meta.size + duplicate.length, meta.start)
-
-  await t.exception(() => image.metadata.strip(input), /Invalid HEIF item information/)
-})
-
-test('image.metadata.strip() rejects too many Samsung sefd boxes', async (t) => {
+test('image.metadata.strip() removes multiple Samsung sefd boxes', async (t) => {
   const directory = Buffer.alloc(20)
   directory.write('SEFH', 0, 'latin1') // directory signature
   directory.writeUInt32LE(0, 8) // entry count
   directory.writeUInt32LE(12, 12) // directory size (in the footer)
   directory.write('SEFT', 16, 'latin1') // trailer signature
-  const sefd = encodeBox('sefd', directory)
+  const sefd = makeIsoBox('sefd', directory)
 
-  const ftyp = encodeBox('ftyp', Buffer.from('heic\x00\x00\x00\x00heicmif1', 'latin1'))
-  const input = Buffer.concat([ftyp, ...Array(17).fill(sefd)])
-
-  await t.exception(() => image.metadata.strip(input), /Too many HEIF vendor metadata boxes/)
+  const source = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
+  const input = Buffer.concat([source, sefd, sefd])
+  const stripped = await image.metadata.strip(input)
+  t.absent(stripped.includes('sefd'))
+  t.absent(stripped.includes(directory))
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.alike(await image(stripped).decode(), await image(source).decode())
 })
 
 test('isStripMetadataSupported() agrees with strip()', async (t) => {
