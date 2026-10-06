@@ -1,21 +1,28 @@
 import { EXIF_HEADER, stripExif } from './exif'
 
 const UINT32_BYTES = 4
+const TIFF_LE_SIGNATURE = '49492a00'
+const TIFF_BE_SIGNATURE = '4d4d002a'
 
 async function stripHEIFExif(payload, opts) {
   if (payload.byteLength < UINT32_BYTES) return null
 
-  // HEIF stores an offset to the TIFF data instead of an Exif header.
   const tiffStart = UINT32_BYTES + payload.readUInt32BE(0)
-  if (tiffStart + UINT32_BYTES > payload.byteLength) return null
-  const signature = payload.toString('hex', tiffStart, tiffStart + UINT32_BYTES)
-  if (signature !== '49492a00' && signature !== '4d4d002a') return null
+  const tiffHeaderEnd = tiffStart + UINT32_BYTES
+  if (tiffHeaderEnd > payload.byteLength) return null
+
+  const signature = payload.toString('hex', tiffStart, tiffHeaderEnd)
+  if (signature !== TIFF_LE_SIGNATURE && signature !== TIFF_BE_SIGNATURE) {
+    return null
+  }
 
   const exif = Buffer.concat([EXIF_HEADER, payload.subarray(tiffStart)])
   const stripped = await stripExif(exif, opts)
   if (!stripped) return null
 
-  return Buffer.concat([Buffer.alloc(UINT32_BYTES), stripped.subarray(EXIF_HEADER.byteLength)])
+  const strippedTiff = stripped.subarray(EXIF_HEADER.byteLength)
+
+  return Buffer.concat([Buffer.alloc(UINT32_BYTES), strippedTiff])
 }
 
 async function stripHEIFMetadata(buffer, opts = {}) {
