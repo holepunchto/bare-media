@@ -37,6 +37,19 @@ for (const sample of suite.tests.metadata.samples) {
   })
 }
 
+for (const sample of suite.tests.strip.samples) {
+  test(`samples: image metadata.strip() ${sample.path}`, async (t) => {
+    const source = fs.readFileSync(pathFor(sample.path))
+    const stripped = await image.metadata.strip(source)
+
+    for (const payload of sample.payloads || []) {
+      t.ok(source.includes(payload), `sample contains ${payload}`)
+      t.absent(stripped.includes(payload), `removes ${payload}`)
+    }
+    t.alike(await image.metadata(stripped), { exif: {} }, 'metadata is empty')
+  })
+}
+
 for (const sample of suite.tests.decode.samples) {
   test(`samples: image decode ${sample.path}`, async (t) => {
     const path = pathFor(sample.path)

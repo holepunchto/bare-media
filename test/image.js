@@ -8,6 +8,7 @@ import { image } from '..'
 import { calculateFitDimensions } from '../src/image/dimensions'
 import { isStripMetadataSupported } from '../types'
 import {
+  makeIsoBox,
   makeHttpLink,
   isAnimatedWebP,
   randomFileName,
@@ -261,6 +262,160 @@ test('image.metadata.strip().save() strips all metadata and saves the file', asy
   t.teardown(() => {
     fs.rm(outPath, { force: true })
   })
+})
+
+test('image.metadata.strip() strips HEIC metadata', async (t) => {
+  const stripped = await image('./test/fixtures/metadata-xmp.heic').metadata.strip()
+
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('<x:xmpmeta'))
+})
+
+test('image.metadata.strip() strips AVIF metadata', async (t) => {
+  const stripped = await image('./test/fixtures/metadata-xmp.avif').metadata.strip()
+
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('<x:xmpmeta'))
+})
+
+test('image.metadata.strip() erases Exif and XMP stored in idat', async (t) => {
+  const { ISOFile } = await import('bare-gpac')
+  const source = fs.readFileSync('./test/fixtures/metadata-idat.heic')
+  using original = new ISOFile(source)
+  const exif = original.readItem(2)
+  const xmp = original.readItem(3)
+  const decoded = await image(source).decode()
+
+  for (const keepOrientation of [false, true]) {
+    const stripped = await image(source).metadata.strip({ keepOrientation })
+    t.absent(stripped.includes(exif), 'erases Exif bytes')
+    t.absent(stripped.includes(xmp), 'erases XMP bytes')
+    t.is(await image.metadata(stripped, { tag: 'orientation' }), keepOrientation ? 1 : null)
+    t.alike(await image(stripped).decode(), decoded)
+  }
+})
+
+test(`image.metadata.strip() keeps Exif orientation - heic`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-orientation.heic')
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+  const metadata = await image.metadata(stripped)
+
+  t.absent(metadata.exif.MAKE)
+  t.absent(metadata.exif.ARTIST)
+  t.is(metadata.orientation, 6)
+})
+
+test(`image.metadata.strip() keeps Exif orientation - avif`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-orientation.avif')
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+  const metadata = await image.metadata(stripped)
+
+  t.absent(metadata.exif.MAKE)
+  t.absent(metadata.exif.ARTIST)
+  t.is(metadata.orientation, 6)
+})
+
+test(`image.metadata.strip() removes Exif without orientation - jpg`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-no-orientation.jpg')
+
+  t.absent(await image.metadata(source, { tag: 'orientation' }))
+  t.ok(source.includes('Exif'))
+
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('Exif'), 'removes the Exif item or marker')
+})
+
+test(`image.metadata.strip() removes Exif without orientation - heic`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-no-orientation.heic')
+
+  t.absent(await image.metadata(source, { tag: 'orientation' }))
+  t.ok(source.includes('Exif'))
+
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('Exif'), 'removes the Exif item or marker')
+})
+
+test(`image.metadata.strip() removes Exif without orientation - avif`, async (t) => {
+  const source = fs.readFileSync('./test/fixtures/exif-no-orientation.avif')
+
+  t.absent(await image.metadata(source, { tag: 'orientation' }))
+  t.ok(source.includes('Exif'))
+
+  const stripped = await image(source).metadata.strip({ keepOrientation: true })
+
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('Exif'), 'removes the Exif item or marker')
+})
+
+test('image.metadata.strip() keeps orientation while removing XMP', async (t) => {
+  const stripped = await image('./test/fixtures/metadata-xmp.heic').metadata.strip({
+    keepOrientation: true
+  })
+  t.is(await image.metadata(stripped, { tag: 'orientation' }), 1)
+  t.absent(stripped.includes('<x:xmpmeta'))
+})
+
+test('image.metadata.strip() with keepOrientation and no Exif item', async (t) => {
+  const stripped = await image('./test/fixtures/metadata-uri.heic').metadata.strip({
+    keepOrientation: true
+  })
+  t.alike(await image.metadata(stripped), { exif: {} })
+})
+
+test('image.metadata.strip() propagates invalid HEIC errors', async (t) => {
+  const invalidBox = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
+  invalidBox.writeUInt32BE(4, invalidBox.indexOf('meta') - 4)
+  await t.exception(() => image(invalidBox).metadata.strip(), { code: 'ERR_GPAC' })
+})
+
+test('image.metadata.strip() removes HEIC metadata sharing image storage', async (t) => {
+  const sharedStorage = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
+  const iloc = sharedStorage.indexOf('iloc')
+  sharedStorage.writeUInt32BE(sharedStorage.readUInt32BE(iloc + 18), iloc + 32)
+  const stripped = await image(sharedStorage).metadata.strip()
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.absent(stripped.includes('<x:xmpmeta'))
+  t.alike(await image(stripped).decode(), await image('./test/fixtures/metadata-xmp.heic').decode())
+})
+
+test('image.metadata.strip() removes empty HEIC Exif and XMP placeholders', async (t) => {
+  const source = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
+  const iloc = source.indexOf('iloc')
+  const imageOffset = source.readUInt32BE(iloc + 18)
+  // Point both metadata items at the image with explicit zero lengths
+  for (const offset of [32, 46]) {
+    source.writeUInt32BE(imageOffset, iloc + offset)
+    source.writeUInt32BE(0, iloc + offset + 4)
+  }
+  const original = await image(source).decode()
+
+  for (const keepOrientation of [false, true]) {
+    const stripped = await image(source).metadata.strip({ keepOrientation })
+
+    t.alike(await image.metadata(stripped), { exif: {} })
+    t.alike(await image(stripped).decode(), original, 'preserves the decoded image')
+  }
+})
+
+test('image.metadata.strip() removes multiple Samsung sefd boxes', async (t) => {
+  const directory = Buffer.alloc(20)
+  directory.write('SEFH', 0, 'latin1') // directory signature
+  directory.writeUInt32LE(0, 8) // entry count
+  directory.writeUInt32LE(12, 12) // directory size (in the footer)
+  directory.write('SEFT', 16, 'latin1') // trailer signature
+  const sefd = makeIsoBox('sefd', directory)
+
+  const source = fs.readFileSync('./test/fixtures/metadata-xmp.heic')
+  const input = Buffer.concat([source, sefd, sefd])
+  const stripped = await image.metadata.strip(input)
+  t.absent(stripped.includes('sefd'))
+  t.absent(stripped.includes(directory))
+  t.alike(await image.metadata(stripped), { exif: {} })
+  t.alike(await image(stripped).decode(), await image(source).decode())
 })
 
 test('isStripMetadataSupported() agrees with strip()', async (t) => {

@@ -1,5 +1,7 @@
 import { IMAGE } from '../../types.js'
 import { detectMimeType } from '../codecs.js'
+import { stripHEIFMetadata } from './metadata/heif'
+import { stripJPEGMetadata } from './metadata/jpeg'
 
 const EXIF_MIMETYPES = new Set([IMAGE.JPEG, IMAGE.JPG, IMAGE.TIFF, IMAGE.TIF])
 const HEIF_MIMETYPES = new Set([IMAGE.HEIC, IMAGE.HEIF, IMAGE.AVIF])
@@ -121,48 +123,15 @@ async function metadata(buffer, opts = {}) {
   return data
 }
 
-async function stripJPEG(buffer, opts = {}) {
-  const { keepColor = true, keepOrientation = false } = opts
-
-  const jpeg = await import('bare-jpeg')
-  const APP1 = 0xe1
-  const APP14 = 0xee
-
-  const { markers } = jpeg.readHeader(buffer)
-
-  let newMarkers = []
-
-  if (keepColor) {
-    newMarkers = markers.filter((m) => m.marker === APP14)
-  }
-
-  if (keepOrientation) {
-    const exif = await import('bare-exif')
-    const tags = exif.constants.tags
-    using data = new exif.Data(buffer)
-
-    for (const tag of Object.values(tags)) {
-      if (tag !== tags.ORIENTATION) {
-        data.removeEntry(tag)
-      }
-    }
-
-    const rawExif = data.saveData()
-
-    newMarkers.push({
-      marker: APP1,
-      data: rawExif
-    })
-  }
-
-  return jpeg.replaceMarkers(buffer, newMarkers)
-}
-
-function strip(buffer, opts = {}) {
+async function strip(buffer, opts = {}) {
   const mimetype = detectMimeType(buffer)
 
   if (mimetype === IMAGE.JPEG || mimetype === IMAGE.JPG) {
-    return stripJPEG(buffer, opts)
+    return stripJPEGMetadata(buffer, opts)
+  }
+
+  if (HEIF_MIMETYPES.has(mimetype)) {
+    return await stripHEIFMetadata(buffer, opts)
   }
 
   throw new Error(`metadata strip(): unsupported type ${mimetype}`)

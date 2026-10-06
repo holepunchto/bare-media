@@ -53,6 +53,62 @@
       {
         "path": "still.heic",
         "sha256": "8aa50c7001ef9a081a929c5a30cd1886c5abc6370c2841b208ce0b2b980bca22"
+      },
+      {
+        "path": "metadata-exif.heic",
+        "sha256": "b9f2c0f12eacb06cc3f216c0a6c2a823c6e8083cd4b43a29ef6329b785b16643"
+      },
+      {
+        "path": "metadata-exif.avif",
+        "sha256": "7c15c43c208cd4b195f6126b058b0ce8c8f6a8b2d80f03c900a452d762d2990e"
+      },
+      {
+        "path": "metadata-xmp.heic",
+        "sha256": "e63ce8a6f2f803fc40fe68969f3328c38180c61721fa517d26bfd809513f9c5e"
+      },
+      {
+        "path": "metadata-xmp.avif",
+        "sha256": "d2aed025be93caeb85599bba748188c8d52b26905e552a663cf41cfd15df72b5"
+      },
+      {
+        "path": "metadata-uri.heic",
+        "sha256": "566a7a838d8e3e1b8563b4fb1c2696e8cd9594c25d9984b06ca252dfd1fde9ed"
+      },
+      {
+        "path": "metadata-uri.avif",
+        "sha256": "53aeb2d0a2a23d22bb216e913f41b8274fcc888d0717430859a03ecf9dbad5ee"
+      },
+      {
+        "path": "samsung-a32-01.heic",
+        "sha256": "1b62f2f1969d4bc04bb3e8d094dbdd7c96a070a8692bb305c517c1a78357118b"
+      },
+      {
+        "path": "samsung-a32-02.heic",
+        "sha256": "fbb59e78fac17ab72331da3f4f650a0aade2e55159ab8ac4390899e297dc9f71"
+      },
+      {
+        "path": "samsung-a32-03.heic",
+        "sha256": "eca52795e2acb6123f40ef47b59611f1c4d20762bfff443ac929a47800a11a49"
+      },
+      {
+        "path": "iphone-12-pro-01.heic",
+        "sha256": "8e2a5725aa7639678a0c10d25e1211981d81c0d94062db51e99dc002ce6ff349"
+      },
+      {
+        "path": "iphone-12-pro-02.heic",
+        "sha256": "65960bf2782cd8ebd29a958e75b6adb7dff2bbff841389e869d917438c729010"
+      },
+      {
+        "path": "iphone-12-pro-03.heic",
+        "sha256": "9fbec4990572aebe765b9c1bd4094d94ea9de98c790edb9b7c5d0077095a0087"
+      },
+      {
+        "path": "ipad-air-5-01.heic",
+        "sha256": "7c331207b67f159177675c8b2760ad6035a8dada04c12ed7f878d1c50120a9c7"
+      },
+      {
+        "path": "ipad-air-5-02.heic",
+        "sha256": "8221a26df520b6e571818aeb1608ab7112e170be58cbe362de8ced107000b1eb"
       }
     ]
   },
@@ -62,6 +118,66 @@
         {
           "path": "oriented.jpg",
           "orientation": 6
+        }
+      ]
+    },
+    "strip": {
+      "samples": [
+        {
+          "path": "metadata-exif.heic",
+          "payloads": ["bare-media sample author"]
+        },
+        {
+          "path": "metadata-exif.avif",
+          "payloads": ["bare-media sample author"]
+        },
+        {
+          "path": "metadata-xmp.heic",
+          "payloads": ["bare-media XMP sample"]
+        },
+        {
+          "path": "metadata-xmp.avif",
+          "payloads": ["bare-media XMP sample"]
+        },
+        {
+          "path": "metadata-uri.heic",
+          "payloads": ["bare-media URI metadata sample"]
+        },
+        {
+          "path": "metadata-uri.avif",
+          "payloads": ["bare-media URI metadata sample"]
+        },
+        {
+          "path": "samsung-a32-01.heic",
+          "payloads": ["SM-A326B", "Image_UTC_Data", "MCC_Data"]
+        },
+        {
+          "path": "samsung-a32-02.heic",
+          "payloads": ["SM-A326B", "Image_UTC_Data", "MCC_Data"]
+        },
+        {
+          "path": "samsung-a32-03.heic",
+          "payloads": ["SM-A326B", "Image_UTC_Data", "MCC_Data"]
+        },
+        {
+          "path": "iphone-12-pro-01.heic",
+          "payloads": ["iPhone 12 Pro"]
+        },
+        {
+          "path": "iphone-12-pro-02.heic",
+          "payloads": ["iPhone 12 Pro"]
+        },
+        {
+          "path": "iphone-12-pro-03.heic",
+          "payloads": ["iPhone 12 Pro"]
+        },
+        {
+          "path": "ipad-air-5-01.heic",
+          "payloads": ["iPad Air (5th generation)"]
+        },
+        {
+          "path": "ipad-air-5-02.heic",
+          "payloads": ["iPad Air (5th generation)"]
         }
       ]
     },
