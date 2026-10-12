@@ -758,7 +758,9 @@ test('image pipeline orientate() preserves decoded heic orientation', async (t) 
 
   t.alike(await image(buffer).decode().orientate(), rgba)
   t.alike(
-    await image(buffer).decode().orientate({ file: buffer }),
+    await image(buffer)
+      .decode()
+      .orientate({ transform: { rotate: 90 } }),
     rotate(rgba, { deg: 90 }),
     'explicit orientation still applies'
   )
@@ -909,6 +911,18 @@ test('image orientate() in pipeline', async (t) => {
   t.ok(Buffer.isBuffer(rgbaO.data))
   t.is(rgbaO.width, 150)
   t.is(rgbaO.height, 120)
+})
+
+test('image orientate() in pipeline with explicit orientation', async (t) => {
+  const buffer = await read('./test/fixtures/exif-orientation.jpg')
+  const rgba = await decode(buffer)
+
+  t.alike(
+    await image(buffer)
+      .decode()
+      .orientate({ transform: { rotate: 90 } }),
+    rotate(rgba, { deg: 90 })
+  )
 })
 
 test('image rotate()', (t) => {
