@@ -752,6 +752,18 @@ test('image orientate() reading EXIF metadata', async (t) => {
   t.is(rgbaO.height, 120)
 })
 
+test('image pipeline orientate() preserves decoded heic orientation', async (t) => {
+  const buffer = await read('./test/fixtures/exif-orientation.heic')
+  const rgba = await decode(buffer)
+
+  t.alike(await image(buffer).decode().orientate(), rgba)
+  t.alike(
+    await image(buffer).decode().orientate({ file: buffer }),
+    rotate(rgba, { deg: 90 }),
+    'explicit orientation still applies'
+  )
+})
+
 test('image orientate() without EXIF orientation', async (t) => {
   const path = './test/fixtures/exif-empty.jpg'
 

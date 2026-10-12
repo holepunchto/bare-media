@@ -2,7 +2,7 @@ import fs from 'bare-fs'
 import fetch from 'bare-fetch'
 
 import { EXIF } from '../types.js'
-import { importCodec, supportsQuality, detectMimeType } from './codecs'
+import { importCodec, supportsQuality, detectMimeType, decoderAppliesOrientation } from './codecs'
 import { calculateFitDimensions } from './image/dimensions'
 import { metadata, ImageMetadataPipeline } from './image/metadata'
 
@@ -422,6 +422,8 @@ class ImagePipeline {
         }
 
         if (step.op === 'orientate') {
+          if (!step.opts && decoderAppliesOrientation(inputBuffer)) continue
+
           buffer = await orientate(buffer, step.opts || { file: inputBuffer })
         }
 
