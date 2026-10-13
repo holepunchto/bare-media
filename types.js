@@ -39,7 +39,7 @@ export function isMediaSupported(mimetype) {
 }
 
 export function isStripMetadataSupported(mimetype) {
-  return mimetype === IMAGE.JPG || mimetype === IMAGE.JPEG
+  return [IMAGE.AVIF, IMAGE.HEIC, IMAGE.HEIF, IMAGE.JPG, IMAGE.JPEG].includes(mimetype)
 }
 
 export const EXIF = {
