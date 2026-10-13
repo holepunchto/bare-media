@@ -91,3 +91,10 @@ export function createDisplayMatrix(a, b, c, d) {
   buffer.writeInt32LE(Math.round(d * 65536), 16)
   return buffer
 }
+
+export function makeIsoBox(type, payload) {
+  const header = Buffer.alloc(8)
+  header.writeUInt32BE(8 + payload.byteLength, 0)
+  header.write(type, 4, 'ascii')
+  return Buffer.concat([header, payload])
+}
