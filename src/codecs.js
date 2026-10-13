@@ -45,6 +45,10 @@ export function supportsQuality(mimetype) {
   return { 'image/webp': true, 'image/jpeg': true }[mimetype] || false
 }
 
+export function decoderAppliesOrientation(buffer) {
+  return [IMAGE.HEIC, IMAGE.HEIF, IMAGE.AVIF].includes(detectMimeType(buffer))
+}
+
 export function detectMimeType(buffer) {
   return getMimeType(getFileFormat(buffer))
 }

@@ -9,6 +9,7 @@
     "./types": "./types.js"
   },
   "files": [
+    "lib",
     "src",
     "index.js",
     "types.js"
@@ -40,7 +41,8 @@
     "bare-ffmpeg": "^1.5.0",
     "bare-fs": "^4.1.5",
     "bare-gif": "^1.1.2",
-    "bare-heif": "^1.0.12",
+    "bare-gpac": "^0.1.0",
+    "bare-heif": "^1.1.0",
     "bare-ico": "^1.0.0",
     "bare-image-resample": "^1.0.1",
     "bare-jpeg": "^1.1.1",
