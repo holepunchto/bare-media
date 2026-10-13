@@ -11,6 +11,7 @@ import {
 } from 'bare-media/types'
 import getMimeType from 'get-mime-type'
 
+import { summarizeMetadata, formatMetadata } from './lib/bin'
 import { detectMimeType } from './src/codecs'
 import pkg from './package'
 
@@ -30,6 +31,7 @@ const cli = command(
     arg('[output]', 'Output media file'),
     flag('--strip', 'Strip image metadata'),
     flag('--json|-j', 'Print JSON'),
+    flag('--raw|-r', 'Show binary metadata values'),
     metadata
   ),
   command(
@@ -82,15 +84,18 @@ async function metadata(parsed) {
       return
     }
 
-    const data = await image(input).metadata()
-    const out = data || { mimetype }
-    print(out, { json: parsed.flags.json })
+    const data = (await image(input).metadata()) || { mimetype }
+    const output = parsed.flags.raw ? data : summarizeMetadata(data)
+    const text = formatMetadata(output, { json: parsed.flags.json })
+    if (text) console.log(text)
     return
   }
 
   if (mimetype.startsWith('video/')) {
     const data = await video(input).metadata()
-    print(data, { json: parsed.flags.json })
+    const output = parsed.flags.raw ? data : summarizeMetadata(data)
+    const text = formatMetadata(output, { json: parsed.flags.json })
+    if (text) console.log(text)
     return
   }
 
@@ -191,33 +196,6 @@ function validateFlag(value, name, type) {
     return Number.parseInt(value)
   }
   return value
-}
-
-function print(value, opts = {}) {
-  const { prefix = '', json = false } = opts
-
-  if (json) {
-    console.log(JSON.stringify(value, null, 2))
-    return
-  }
-
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry && typeof entry === 'object') {
-      if (Buffer.isBuffer(entry)) {
-        console.log(`${prefix}${key}:`, entry.toString())
-      } else if (Array.isArray(entry)) {
-        console.log(`${prefix}${key}:`)
-        for (const value of entry) {
-          print(value, { prefix: `${prefix}  ` })
-        }
-      } else {
-        console.log(`${prefix}${key}:`)
-        print(entry, { prefix: `${prefix}  ` })
-      }
-    } else {
-      console.log(`${prefix}${key}: ${String(entry)}`)
-    }
-  }
 }
 
 async function main() {

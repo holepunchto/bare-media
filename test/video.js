@@ -283,6 +283,24 @@ test('video.transcode() - Throws if an unsupported track is primary', async (t) 
   }, /Input audio stream is not decodable/)
 })
 
+// The decoder is already open when the encoder is created, and the encoder is
+// only owned by its caller once returned, so an encoder that fails to open could
+// leak both. 65536x65536 exceeds ffmpeg's pixel limit, which is enough to make
+// avcodec_open2 reject it.
+test('video.transcode() - releases both codecs when the encoder fails to open', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  await t.exception(async () => {
+    for await (const chunk of video(path).transcode({
+      format: 'webm',
+      width: 65536,
+      height: 65536
+    })) {
+      // throws
+    }
+  }, /Invalid argument/)
+})
+
 test('video.transcode() - mp4 to webm has metadata', async (t) => {
   const path = './test/fixtures/sample.mp4'
   const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))

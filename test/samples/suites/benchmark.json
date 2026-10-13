@@ -1,0 +1,63 @@
+{
+  "catalog": {
+    "path": "files/benchmark",
+    "samples": [
+      {
+        "path": "animated.gif",
+        "sha256": "674ef1b180a59b52770dca5f0380b00ccccc6fccc7cafc4c00e225acc9291b7e"
+      },
+      {
+        "path": "animated.webp",
+        "sha256": "4325d0a6ef83a09e2e07eac6959c49f874047ad4a99114582439a224bcd12ba1"
+      },
+      {
+        "path": "clip-av1.webm",
+        "sha256": "3967935980ce8b3892db4334182db259e2363f5ba0ed666adfad754052991258"
+      },
+      {
+        "path": "clip-h264.mkv",
+        "sha256": "daa1e8e489b1f3e810d3b540dce4b680f26bae1818d441d9ed42980408d17054"
+      },
+      {
+        "path": "clip-h264.mp4",
+        "sha256": "3978bdff764608147065508db0fd4d8ae5f8cefb1e38ae3def398a496f4a6d73"
+      },
+      {
+        "path": "clip-hevc.mp4",
+        "sha256": "4d4c21b24a0d2d5fd2f62af86a2bd9db8d71b236bd6789a4b2bc565f3331d519"
+      },
+      {
+        "path": "clip-vp9.webm",
+        "sha256": "8db7bff0b4f16c68c0fbf5ee9e1eb6b54b474e007f75fed4f57bae0485ee0132"
+      },
+      {
+        "path": "still.avif",
+        "sha256": "1f9b64b2a8394f321d5ae700ff6467a85eff78ea3d27903ace802a8a72d2f05a"
+      },
+      {
+        "path": "still.gif",
+        "sha256": "dfa67b43ec5bb7fd286215b9044f9850a03a0087c792d6eb22f1f772a7cea1cf"
+      },
+      {
+        "path": "still.heic",
+        "sha256": "d871555404472e2e575fa70e6630388e4eaaea3017f31e8059442a1316d74f2f"
+      },
+      {
+        "path": "still.jpg",
+        "sha256": "56a3896ef22c6539399233213d003334b6edf2433b08d52608b752dfb3c5a20b"
+      },
+      {
+        "path": "still.png",
+        "sha256": "f76c90db1b6ad91a5ba79aef6e9f031c42348e016fa1f274a1b4a5ea5e723fd0"
+      },
+      {
+        "path": "still.tif",
+        "sha256": "c242d26c8b778ad3393d302612348d9daa3570c90560ac7752e9346b0799d605"
+      },
+      {
+        "path": "still.webp",
+        "sha256": "7c8bacf7409195d53fcc050b94d5a42b9e8a97a306693f5129c9a17e5fc205a4"
+      }
+    ]
+  }
+}

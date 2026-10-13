@@ -30,6 +30,7 @@ async function download() {
   swarm.on('connection', (socket) => store.replicate(socket))
 
   try {
+    console.log('Downloading samples...\n')
     await drive.ready()
     swarm.join(drive.discoveryKey)
     const done = store.findingPeers()
@@ -77,7 +78,7 @@ async function verify() {
     }
   }
 
-  console.log(`Verified ${verified} sample files`)
+  console.log(`Verified ${verified} sample files\n`)
 }
 
 async function sha256(filename) {
