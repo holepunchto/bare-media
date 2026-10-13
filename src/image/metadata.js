@@ -1,6 +1,6 @@
 import { IMAGE } from '../../types.js'
 import { detectMimeType } from '../codecs.js'
-import { HEIF_METADATA_TYPE, readHeifMetadata, stripHEIFMetadata } from './metadata/heif'
+import { readHeifMetadata, stripHEIFMetadata } from './metadata/heif'
 import { exifValue, exifMetadata } from './metadata/exif'
 import { stripJPEGMetadata } from './metadata/jpeg'
 
@@ -15,7 +15,7 @@ async function metadata(buffer, opts = {}) {
   if (!isHeif && !isExif) return {}
 
   const { exifRaw, ...extra } = isHeif
-    ? await readHeifMetadata(buffer, opts.tag ? HEIF_METADATA_TYPE.EXIF : undefined)
+    ? await readHeifMetadata(buffer, { exifOnly: !!opts.tag })
     : { exifRaw: buffer }
 
   if (opts.tag) {

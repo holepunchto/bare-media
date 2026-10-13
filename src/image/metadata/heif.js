@@ -10,10 +10,12 @@ const UINT32_BYTES = 4
 const TIFF_LE_SIGNATURE = '49492a00'
 const TIFF_BE_SIGNATURE = '4d4d002a'
 
-async function readHeifMetadata(buffer, type) {
+async function readHeifMetadata(buffer, opts = {}) {
   try {
     const heif = await import('bare-heif')
-    const metadata = heif.getMetadata(buffer, { type })
+    const metadata = heif.getMetadata(buffer, {
+      type: opts.exifOnly ? HEIF_METADATA_TYPE.EXIF : undefined
+    })
     const data = {}
 
     for (const item of metadata) {
@@ -101,4 +103,4 @@ async function stripHEIFMetadata(buffer, opts = {}) {
   return file.write()
 }
 
-export { HEIF_METADATA_TYPE, readHeifMetadata, stripHEIFMetadata }
+export { readHeifMetadata, stripHEIFMetadata }
