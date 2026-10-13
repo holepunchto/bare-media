@@ -1,102 +1,11 @@
 import { IMAGE } from '../../types.js'
 import { detectMimeType } from '../codecs.js'
-import { stripHEIFMetadata } from './metadata/heif'
+import { HEIF_METADATA_TYPE, readHeifMetadata, stripHEIFMetadata } from './metadata/heif'
+import { exifValue, exifMetadata } from './metadata/exif'
 import { stripJPEGMetadata } from './metadata/jpeg'
 
 const EXIF_MIMETYPES = new Set([IMAGE.JPEG, IMAGE.JPG, IMAGE.TIFF, IMAGE.TIF])
 const HEIF_MIMETYPES = new Set([IMAGE.HEIC, IMAGE.HEIF, IMAGE.AVIF])
-const EXIF_HEADER = Buffer.from('Exif\0\0')
-const HEIF_METADATA_TYPE = {
-  EXIF: 'Exif',
-  MIME: 'mime',
-  URI: 'uri '
-}
-const XMP_CONTENT_TYPE = 'application/rdf+xml'
-
-async function readHeifMetadata(buffer, type) {
-  try {
-    const heif = await import('bare-heif')
-    const metadata = heif.getMetadata(buffer, { type })
-    const data = {}
-
-    for (const item of metadata) {
-      switch (item.type) {
-        case HEIF_METADATA_TYPE.EXIF: {
-          if (item.data.byteLength) {
-            data.exifRaw = Buffer.concat([EXIF_HEADER, item.data])
-          }
-          break
-        }
-        case HEIF_METADATA_TYPE.MIME:
-          if (item.contentType === XMP_CONTENT_TYPE) {
-            data.xmp = item.data.toString()
-          } else {
-            data.mime = data.mime || []
-            data.mime.push({ contentType: item.contentType, data: item.data })
-          }
-          break
-        case HEIF_METADATA_TYPE.URI:
-          data.uri = data.uri || []
-          data.uri.push({ uriType: item.uriType, data: item.data })
-          break
-        default:
-          break
-      }
-    }
-
-    return data
-  } catch {
-    return {}
-  }
-}
-
-// entry.read() can return a Buffer viewing libexif memory rather than a copy,
-// so detach it before the owning exif.Data is destroyed.
-function readEntry(entry) {
-  const value = entry.read()
-  return Buffer.isBuffer(value) ? Buffer.from(value) : value
-}
-
-function resolveExifTag(exif, tag) {
-  if (typeof tag === 'number') return tag
-
-  if (typeof tag === 'string') {
-    for (const [name, value] of Object.entries(exif.constants.tags)) {
-      if (name.toLowerCase() === tag.toLowerCase()) {
-        return value
-      }
-    }
-  }
-
-  return null
-}
-
-async function exifValue(buffer, tag) {
-  try {
-    const exif = await import('bare-exif')
-    using exifData = new exif.Data(buffer)
-    const entry = exifData.entry(resolveExifTag(exif, tag))
-    return entry ? readEntry(entry) : undefined
-  } catch {
-    return null
-  }
-}
-
-async function exifMetadata(buffer) {
-  const data = {}
-
-  try {
-    const exif = await import('bare-exif')
-    using exifData = new exif.Data(buffer)
-    for (const [name, tag] of Object.entries(exif.constants.tags)) {
-      const entry = exifData.entry(tag)
-      if (!entry) continue
-      data[name] = readEntry(entry)
-    }
-  } finally {
-    return data
-  }
-}
 
 async function metadata(buffer, opts = {}) {
   const mimetype = detectMimeType(buffer)
