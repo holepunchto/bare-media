@@ -11,6 +11,7 @@ class FormatRegistry {
 
   register(formatName, config) {
     this.#formats.set(formatName, {
+      container: config.container || formatName,
       video: config.video,
       audio: config.audio,
       muxer: config.muxer || {}
@@ -31,6 +32,10 @@ class FormatRegistry {
       throw new Error(`Unsupported audio output format: ${formatName}`)
     }
     return format.audio
+  }
+
+  getContainer(formatName) {
+    return this.#formats.get(formatName)?.container
   }
 
   getMuxerOptions(formatName) {
@@ -585,7 +590,10 @@ class Transcoder {
       }
     })
 
-    this.outputFormatContext = new ffmpeg.OutputFormatContext(this.containerFormat, outIO)
+    this.outputFormatContext = new ffmpeg.OutputFormatContext(
+      formatRegistry.getContainer(this.containerFormat),
+      outIO
+    )
   }
 
   #discoverAndConfigureStreams() {
