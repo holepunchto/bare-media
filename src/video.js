@@ -22,7 +22,7 @@ async function extractFrames(fd, opts = {}) {
   using frame = new ffmpeg.Frame()
   using prevFrame = new ffmpeg.Frame()
 
-  let frame = frameA
+  let current = frame
   let lastFrame = null
   let currentFrameIndex = 0
   let result = null
@@ -30,13 +30,13 @@ async function extractFrames(fd, opts = {}) {
   while (inputFormat.readFrame(packet)) {
     if (packet.streamIndex === stream.index) {
       if (decoder.sendPacket(packet)) {
-        while (decoder.receiveFrame(frame)) {
+        while (decoder.receiveFrame(current)) {
           if (currentFrameIndex === frameIndex) {
-            result = convertToRGBA(ffmpeg, frame)
+            result = convertToRGBA(ffmpeg, current)
             break
           }
-          lastFrame = frame
-          frame = frame === frameA ? frameB : frameA
+          lastFrame = current
+          current = current === frame ? prevFrame : frame
           currentFrameIndex++
         }
       }
@@ -48,13 +48,13 @@ async function extractFrames(fd, opts = {}) {
   if (!result) {
     using flushPacket = new ffmpeg.Packet()
     decoder.sendPacket(flushPacket)
-    while (decoder.receiveFrame(frame)) {
+    while (decoder.receiveFrame(current)) {
       if (currentFrameIndex === frameIndex) {
-        result = convertToRGBA(ffmpeg, frame)
+        result = convertToRGBA(ffmpeg, current)
         break
       }
-      lastFrame = frame
-      frame = frame === frameA ? frameB : frameA
+      lastFrame = current
+      current = current === frame ? prevFrame : frame
       currentFrameIndex++
     }
   }
