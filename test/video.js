@@ -8,6 +8,7 @@ import ffmpeg from 'bare-ffmpeg'
 import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
 import { createIOContext } from '../src/video/io'
+import { Transcoder } from '../src/video/transcoder'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
@@ -405,6 +406,62 @@ test('video.transcode() - drains delayed decoder frames at end of input', async 
   t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
 })
 
+test('video.transcode() - drains delayed audio samples at end of input', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const input = decodedAudio(path)
+  const expectedSamples = Math.round((input.samples * 48000) / input.sampleRate)
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'webm' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const output = decodedAudio(outputPath)
+
+  t.is(input.sampleRate, 44100, 'fixture exercises sample-rate conversion')
+  t.is(output.sampleRate, 48000, 'output uses the preset sample rate')
+  t.is(output.samples, expectedSamples, 'output contains every resampled audio sample')
+})
+
+test('video.transcode() - releases the temporary frame when resampler flush fails', (t) => {
+  const transcoder = new Transcoder()
+  const sampleFormat = ffmpeg.constants.sampleFormats.S16
+  const channelLayout = ffmpeg.constants.channelLayouts.STEREO
+  const encoder = { sampleRate: 48000, sampleFormat, channelLayout, frameSize: 960 }
+  using resampler = new ffmpeg.Resampler(
+    44100,
+    channelLayout,
+    sampleFormat,
+    48000,
+    channelLayout,
+    sampleFormat
+  )
+  using fifo = new ffmpeg.AudioFIFO(sampleFormat, 2, 960)
+  let outFrame = null
+
+  resampler.flush = (frame) => {
+    outFrame = frame
+    throw new Error('Resampler flush failed')
+  }
+
+  try {
+    t.exception(
+      () => transcoder.audioProcessor.flush({ encoder, resampler, fifo }),
+      /Resampler flush failed/
+    )
+    t.is(outFrame?._handle, null, 'temporary frame releases its native allocation')
+  } finally {
+    if (outFrame?._handle) outFrame.destroy()
+  }
+})
+
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
   const path = './test/fixtures/sample-stereo.mp4'
 
@@ -765,6 +822,45 @@ function countVideoFrames(path) {
   }
 
   return count
+}
+
+function decodedAudio(path) {
+  const fd = fs.openSync(path, 'r')
+  const io = createIOContext(fd, ffmpeg)
+  using format = new ffmpeg.InputFormatContext(io)
+  const stream = format.getBestStream(ffmpeg.constants.mediaTypes.AUDIO)
+  const decoder = stream.decoder()
+  decoder.open()
+
+  const packet = new ffmpeg.Packet()
+  const frame = new ffmpeg.Frame()
+  let samples = 0
+  let sampleRate = 0
+
+  try {
+    while (format.readFrame(packet)) {
+      if (packet.streamIndex === stream.index && decoder.sendPacket(packet)) {
+        while (decoder.receiveFrame(frame)) {
+          samples += frame.nbSamples
+          sampleRate = frame.sampleRate
+        }
+      }
+      packet.unref()
+    }
+
+    decoder.sendPacket(packet)
+    while (decoder.receiveFrame(frame)) {
+      samples += frame.nbSamples
+      sampleRate = frame.sampleRate
+    }
+  } finally {
+    packet.destroy()
+    frame.destroy()
+    decoder.destroy()
+    fs.closeSync(fd)
+  }
+
+  return { samples, sampleRate }
 }
 
 function isValidTime(time) {
