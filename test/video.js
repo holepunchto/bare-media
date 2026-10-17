@@ -8,6 +8,7 @@ import ffmpeg from 'bare-ffmpeg'
 import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
 import { createIOContext } from '../src/video/io'
+import { Transcoder } from '../src/video/transcoder'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
@@ -427,6 +428,38 @@ test('video.transcode() - drains delayed audio samples at end of input', async (
   t.is(input.sampleRate, 44100, 'fixture exercises sample-rate conversion')
   t.is(output.sampleRate, 48000, 'output uses the preset sample rate')
   t.is(output.samples, expectedSamples, 'output contains every resampled audio sample')
+})
+
+test('video.transcode() - releases the temporary frame when resampler flush fails', (t) => {
+  const transcoder = new Transcoder()
+  const sampleFormat = ffmpeg.constants.sampleFormats.S16
+  const channelLayout = ffmpeg.constants.channelLayouts.STEREO
+  const encoder = { sampleRate: 48000, sampleFormat, channelLayout, frameSize: 960 }
+  using resampler = new ffmpeg.Resampler(
+    44100,
+    channelLayout,
+    sampleFormat,
+    48000,
+    channelLayout,
+    sampleFormat
+  )
+  using fifo = new ffmpeg.AudioFIFO(sampleFormat, 2, 960)
+  let outFrame = null
+
+  resampler.flush = (frame) => {
+    outFrame = frame
+    throw new Error('Resampler flush failed')
+  }
+
+  try {
+    t.exception(
+      () => transcoder.audioProcessor.flush({ encoder, resampler, fifo }),
+      /Resampler flush failed/
+    )
+    t.is(outFrame?._handle, null, 'temporary frame releases its native allocation')
+  } finally {
+    if (outFrame?._handle) outFrame.destroy()
+  }
 })
 
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
