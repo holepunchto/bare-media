@@ -495,8 +495,8 @@ class AudioFrameProcessor {
   flush(config, packet) {
     const { encoder, outputStream } = config
 
-    if (config.resampler) {
-      const outFrame = new ffmpeg.Frame()
+    if (config.resampler && config.fifo) {
+      using outFrame = new ffmpeg.Frame()
       outFrame.format = encoder.sampleFormat
       outFrame.channelLayout = encoder.channelLayout
       outFrame.sampleRate = encoder.sampleRate
@@ -511,8 +511,6 @@ class AudioFrameProcessor {
       const flushedSamples = config.resampler.flush(outFrame)
       outFrame.nbSamples = flushedSamples
       if (flushedSamples > 0) config.fifo.write(outFrame)
-
-      outFrame.destroy()
     }
 
     while (config.fifo && config.fifo.size >= encoder.frameSize) {
