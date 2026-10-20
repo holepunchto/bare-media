@@ -26,6 +26,7 @@ export const supportedAudioMimetypes = [
   'audio/x-wav',
   'audio/aac',
   'audio/mp4',
+  'audio/x-m4a',
   'audio/ogg',
   'audio/opus',
   'audio/webm'
