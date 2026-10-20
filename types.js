@@ -18,6 +18,19 @@ export const IMAGE = {
 
 export const supportedImageMimetypes = Object.values(IMAGE)
 
+export const supportedAudioMimetypes = [
+  'audio/flac',
+  'audio/x-flac',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/aac',
+  'audio/mp4',
+  'audio/ogg',
+  'audio/opus',
+  'audio/webm'
+]
+
 export const supportedVideoMimetypes = [
   'video/mp4',
   'video/webm',
@@ -34,8 +47,12 @@ export function isVideoSupported(mimetype) {
   return supportedVideoMimetypes.includes(mimetype)
 }
 
+export function isAudioSupported(mimetype) {
+  return supportedAudioMimetypes.includes(mimetype)
+}
+
 export function isMediaSupported(mimetype) {
-  return isImageSupported(mimetype) || isVideoSupported(mimetype)
+  return isImageSupported(mimetype) || isVideoSupported(mimetype) || isAudioSupported(mimetype)
 }
 
 export function isStripMetadataSupported(mimetype) {

@@ -1,7 +1,7 @@
-import fs from 'bare-fs'
 import b4a from 'b4a'
 import ffmpeg from 'bare-ffmpeg'
 
+import { createIOContext } from '../ffmpeg'
 import { parseDisplayMatrix } from './metadata'
 
 const { VIDEO, AUDIO } = ffmpeg.constants.mediaTypes
@@ -550,25 +550,7 @@ class Transcoder {
   }
 
   #setupIOContexts() {
-    const fileSize = fs.fstatSync(this.fd).size
-    let offset = 0
-
-    const inIO = new ffmpeg.IOContext(4096, {
-      onread: (buffer, requested) => {
-        const read = fs.readSync(this.fd, buffer, 0, requested, offset)
-        if (read === 0) return 0
-        offset += read
-        return read
-      },
-      onseek: (o, whence) => {
-        if (whence === ffmpeg.constants.seek.SIZE) return fileSize
-        if (whence === ffmpeg.constants.seek.SET) offset = o
-        else if (whence === ffmpeg.constants.seek.CUR) offset += o
-        else if (whence === ffmpeg.constants.seek.END) offset = fileSize + o
-        else return -1
-        return offset
-      }
-    })
+    const inIO = createIOContext(this.fd, ffmpeg)
 
     this.inputFormatContext = new ffmpeg.InputFormatContext(inIO)
 

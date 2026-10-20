@@ -32,14 +32,8 @@ export async function importCodec(mimetype) {
   }
 }
 
-export async function importFFmpeg() {
-  try {
-    return await import('bare-ffmpeg')
-  } catch (err) {
-    console.log(err)
-    throw new Error('Failed to import bare-ffmpeg', { cause: err })
-  }
-}
+/** @deprecated */
+export { importFFmpeg } from './ffmpeg'
 
 export function supportsQuality(mimetype) {
   return { 'image/webp': true, 'image/jpeg': true }[mimetype] || false

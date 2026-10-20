@@ -9,13 +9,35 @@ import { image } from '..'
 import { summarizeMetadata, formatMetadata } from '../lib/bin'
 import { randomFileName } from './helpers'
 
-test('CLI metadata command', (t) => {
+test('CLI metadata - image', (t) => {
   const result = runCli(['metadata', '--json', 'test/fixtures/exif-orientation.jpg'])
   const metadata = JSON.parse(output(result))
 
   t.is(result.status, 0)
   t.is(metadata.exif.EXIF_VERSION, '0210')
   t.is(metadata.orientation, 6)
+})
+
+test('CLI metadata - video', (t) => {
+  const result = runCli(['metadata', '--json', 'test/fixtures/orientation.mov'])
+  const metadata = JSON.parse(output(result))
+
+  t.is(result.status, 0)
+  t.is(metadata.codec.name, 'h264')
+  t.is(metadata.width, 120)
+  t.is(metadata.height, 160)
+  t.is(metadata.duration, 10)
+  t.is(metadata.rotation, 90)
+})
+
+test('CLI metadata - audio', (t) => {
+  const result = runCli(['metadata', '--json', 'test/fixtures/audio.flac'])
+  const metadata = JSON.parse(output(result))
+
+  t.is(result.status, 0)
+  t.is(metadata.codec.name, 'flac')
+  t.is(metadata.sampleRate, 48000)
+  t.is(metadata.channels, 2)
 })
 
 test('CLI metadata --raw', (t) => {
