@@ -1,0 +1,107 @@
+{
+  "catalog": {
+    "path": "files/samples/audio",
+    "samples": [
+      {
+        "path": "440hz-stereo-48khz.flac",
+        "sha256": "733a88b19ccdad9cf6e700f969987c68398114ddad780b15e540284728adb444"
+      },
+      {
+        "path": "440hz-stereo-48khz.mp3",
+        "sha256": "7643bbc98648193613d8b2dfb7d16cdd92219363a9a5f4db37d9421c93def999"
+      },
+      {
+        "path": "440hz-stereo-48khz.wav",
+        "sha256": "6a3f467fe95967eb6aea2145db808df86c8b6235b39cf79ae9dcd7af625b78fd"
+      },
+      {
+        "path": "440hz-stereo-48khz.aac",
+        "sha256": "1c35e55768796321a51fb8f0380299b78f6a926608832037f92c9198d00d38ec"
+      },
+      {
+        "path": "440hz-stereo-48khz.m4a",
+        "sha256": "6cc28fdd4b69e60183320aec375720983f38835d4260cc2aaec0939d86fe9e31"
+      },
+      {
+        "path": "440hz-stereo-48khz.ogg",
+        "sha256": "4fc636fc7f3623827a81752276d64954da009554579d216dfffcc69dc0efa781"
+      },
+      {
+        "path": "440hz-stereo-48khz.opus",
+        "sha256": "b5dd94dbf2b8b60330d35c23e740f4c80c04195aaec47beed7e547b7ecb29c64"
+      },
+      {
+        "path": "440hz-stereo-48khz.webm",
+        "sha256": "fe2d67eb2c9cfe5450abac3db2baebb9e84998e1ed8ab6349a5842d6af64169b"
+      }
+    ]
+  },
+  "tests": {
+    "metadata": {
+      "durationTolerance": 0.01,
+      "samples": [
+        {
+          "path": "440hz-stereo-48khz.flac",
+          "codec": "flac",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 0.25
+        },
+        {
+          "path": "440hz-stereo-48khz.mp3",
+          "codec": "mp3",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 0.25,
+          "bitRate": 128000
+        },
+        {
+          "path": "440hz-stereo-48khz.wav",
+          "codec": "pcm_s16le",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 0.25,
+          "bitRate": 1536000
+        },
+        {
+          "path": "440hz-stereo-48khz.aac",
+          "codec": "aac",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 0.277336,
+          "bitRate": 128912
+        },
+        {
+          "path": "440hz-stereo-48khz.m4a",
+          "codec": "aac",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 0.25,
+          "bitRate": 129081
+        },
+        {
+          "path": "440hz-stereo-48khz.ogg",
+          "codec": "vorbis",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 0.25,
+          "bitRate": 112000
+        },
+        {
+          "path": "440hz-stereo-48khz.opus",
+          "codec": "opus",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 0.2565
+        },
+        {
+          "path": "440hz-stereo-48khz.webm",
+          "codec": "opus",
+          "sampleRate": 48000,
+          "channels": 2,
+          "duration": 0.258
+        }
+      ]
+    }
+  }
+}

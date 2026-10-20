@@ -29,6 +29,14 @@ import { video } from 'bare-media'
 const frames = video(path).extractFrames({ frameIndex })
 ```
 
+Audio:
+
+```js
+import { audio } from 'bare-media'
+
+const metadata = await audio('recording.flac').metadata()
+```
+
 Each method can also be used independently:
 
 ```js
@@ -250,6 +258,35 @@ for await (const chunk of video('input.mkv').transcode({
 }
 ```
 
+## Audio API
+
+### metadata()
+
+Basic metadata for the primary audio stream
+
+```js
+import { audio } from 'bare-media'
+
+const metadata = await audio('recording.flac').metadata()
+```
+
+Also for video files, taking their primary audio stream
+
+```js
+const metadata = await audio('video.mp4').metadata()
+```
+
+Returns:
+
+| Field      | Type   | Description                                     |
+| ---------- | ------ | ----------------------------------------------- |
+| codec.id   | number | FFmpeg codec id                                 |
+| codec.name | string | Codec name                                      |
+| duration   | number | Duration in seconds, or 0 when unavailable      |
+| sampleRate | number | Sample rate in Hz                               |
+| channels   | number | Number of audio channels                        |
+| bitRate    | number | Stream bitrate in bits/s, or 0 when unavailable |
+
 ## CLI
 
 `bare-media [flags] [command]`
@@ -260,7 +297,7 @@ Flags:
   --help|-h      Show help
 
 Commands:
-  metadata       Print image or video metadata (experimental)
+  metadata       Print image, video or audio metadata (experimental)
   convert        Convert an image
   transcode      Transcode a video
   types          List supported MIME types
@@ -272,9 +309,11 @@ Helpers to check supported media types are exposed in `bare-media/types`:
 
 - `supportedImageMimetypes`: list of supported image mimetypes.
 - `supportedVideoMimetypes`: list of supported video mimetypes.
+- `supportedAudioMimetypes`: list of common audio mimetypes supported for metadata.
 - `isImageSupported(mimetype)`: returns `true` if the mimetype is a supported image format.
 - `isVideoSupported(mimetype)`: returns `true` if the mimetype is a supported video format.
-- `isMediaSupported(mimetype)`: returns `true` if the mimetype is either a supported image or video format.
+- `isAudioSupported(mimetype)`: returns `true` if the mimetype is a supported audio format.
+- `isMediaSupported(mimetype)`: returns `true` for a supported image, video or audio format.
 - `isStripMetadataSupported(mimetype)`: returns `true` if `metadata.strip()` supports the mimetype.
 
 Detect the MIME type of a buffer:

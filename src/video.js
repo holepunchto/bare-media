@@ -1,6 +1,5 @@
 import fs from 'bare-fs'
-import { importFFmpeg } from './codecs'
-import { createIOContext } from './video/io'
+import { importFFmpeg, createIOContext } from './ffmpeg'
 import { metadata } from './video/metadata'
 
 async function extractFrames(fd, opts = {}) {

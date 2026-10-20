@@ -7,7 +7,7 @@ import ffmpeg from 'bare-ffmpeg'
 
 import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
-import { createIOContext } from '../src/video/io'
+import { createIOContext } from '../src/ffmpeg'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {

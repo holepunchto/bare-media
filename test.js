@@ -1,6 +1,8 @@
 import('./test/image')
 import('./test/video')
+import('./test/audio')
 import('./test/common')
 import('./test/bin')
 import('./test/samples/image')
 import('./test/samples/video')
+import('./test/samples/audio')
