@@ -10,11 +10,12 @@ class FormatRegistry {
   #formats = new Map()
 
   register(formatName, config) {
+    const container = config.container || formatName
     this.#formats.set(formatName, {
-      container: config.container || formatName,
+      container,
       video: config.video,
       audio: config.audio,
-      muxer: config.muxer || {}
+      muxer: config.muxer || (container === formatName ? {} : this.getMuxerOptions(container))
     })
   }
 

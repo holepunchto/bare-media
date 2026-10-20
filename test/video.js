@@ -633,14 +633,31 @@ test('video.getFormatRegistry() - getContainer returns the registered container'
   t.is(registry.getContainer('vp9-mp4-container'), 'mp4')
 })
 
+test('video.getFormatRegistry() - a format without muxer options inherits them from its container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('mp4-container-muxer', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  registry.register('own-name-no-muxer', {
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  t.alike(registry.getMuxerOptions('mp4-container-muxer'), registry.getMuxerOptions('mp4'))
+  t.alike(registry.getMuxerOptions('own-name-no-muxer'), {})
+})
+
 test('video.transcode() - custom format name muxes into its container', async (t) => {
   const registry = await video.getFormatRegistry()
 
   registry.register('small-mp4', {
     container: 'mp4',
     video: registry.getVideoConfig('mp4'),
-    audio: registry.getAudioConfig('mp4'),
-    muxer: registry.getMuxerOptions('mp4')
+    audio: registry.getAudioConfig('mp4')
   })
 
   const chunks = []
