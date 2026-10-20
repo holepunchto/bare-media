@@ -35,7 +35,7 @@ Audio:
 import { audio } from 'bare-media'
 
 const metadata = await audio('recording.flac').metadata()
-````
+```
 
 Each method can also be used independently:
 
