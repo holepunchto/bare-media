@@ -72,7 +72,7 @@ async function metadata(parsed) {
 
   if (!mimetype) {
     console.log('Unable to determine mimetype')
-    return
+    Bare.exit(1)
   }
 
   if (mimetype.startsWith('image/')) {
