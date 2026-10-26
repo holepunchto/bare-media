@@ -50,7 +50,7 @@
     "bare-svg": "^1.0.2",
     "bare-tiff": "^1.0.1",
     "bare-webp": "^1.0.3",
-    "get-file-format": "^1.1.0",
+    "get-file-format": "^1.2.0",
     "get-mime-type": "^2.0.1",
     "paparam": "^1.10.1"
   },
