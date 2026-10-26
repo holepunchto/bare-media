@@ -614,14 +614,15 @@ test('video.getFormatRegistry() - getMuxerOptions returns muxer config', async (
   t.ok(mp4Muxer.movflags, 'mp4 muxer has movflags')
 })
 
-test('video.getFormatRegistry() - getContainer defaults to the format name', async (t) => {
+test('video.getFormatRegistry() - get() returns the container, defaulting to the format name', async (t) => {
   const registry = await video.getFormatRegistry()
 
-  t.is(registry.getContainer('webm'), 'webm')
-  t.is(registry.getContainer('mp4'), 'mp4')
+  t.is(registry.get('webm').container, 'webm')
+  t.is(registry.get('mp4').container, 'mp4')
+  t.is(registry.get('nope'), undefined)
 })
 
-test('video.getFormatRegistry() - getContainer returns the registered container', async (t) => {
+test('video.getFormatRegistry() - get() returns the registered container', async (t) => {
   const registry = await video.getFormatRegistry()
 
   registry.register('vp9-mp4-container', {
@@ -630,7 +631,7 @@ test('video.getFormatRegistry() - getContainer returns the registered container'
     audio: registry.getAudioConfig('mp4')
   })
 
-  t.is(registry.getContainer('vp9-mp4-container'), 'mp4')
+  t.is(registry.get('vp9-mp4-container').container, 'mp4')
 })
 
 test('video.getFormatRegistry() - a format without muxer options inherits them from its container', async (t) => {

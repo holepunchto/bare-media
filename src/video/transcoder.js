@@ -30,6 +30,10 @@ class FormatRegistry {
     })
   }
 
+  get(formatName) {
+    return this.#formats.get(formatName)
+  }
+
   #resolve(table, value, label) {
     if (typeof value !== 'string') return value
     if (!Object.hasOwn(table, value)) throw new Error(`Unknown ${label}: ${value}`)
@@ -50,10 +54,6 @@ class FormatRegistry {
       throw new Error(`Unsupported audio output format: ${formatName}`)
     }
     return format.audio
-  }
-
-  getContainer(formatName) {
-    return this.#formats.get(formatName)?.container
   }
 
   getMuxerOptions(formatName) {
@@ -609,7 +609,7 @@ class Transcoder {
     })
 
     this.outputFormatContext = new ffmpeg.OutputFormatContext(
-      formatRegistry.getContainer(this.containerFormat),
+      formatRegistry.get(this.containerFormat).container,
       outIO
     )
   }
