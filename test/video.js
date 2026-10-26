@@ -32,6 +32,28 @@ test('video extractFrames() in pipeline', async (t) => {
   t.is(rgba.height, 240)
 })
 
+test('video extractFrames() throws when frameIndex is beyond the end', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  await t.exception(async () => {
+    await video(path).extractFrames({ frameIndex: 999999 })
+  }, /Frame 999999 not found/)
+})
+
+test('video extractFrames() with outOfRangeLast falls back to the last frame', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  const lastFrame = await video(path).extractFrames({ frameIndex: 99 })
+  const rgba = await video(path).extractFrames({
+    frameIndex: 999999,
+    outOfRangeLast: true
+  })
+
+  t.is(rgba.width, 320)
+  t.is(rgba.height, 240)
+  t.ok(b4a.equals(rgba.data, lastFrame.data))
+})
+
 test('video metadata()', async (t) => {
   const path = './test/fixtures/orientation.mov'
 
@@ -614,6 +636,67 @@ test('video.getFormatRegistry() - getMuxerOptions returns muxer config', async (
   t.ok(mp4Muxer.movflags, 'mp4 muxer has movflags')
 })
 
+test('video.getFormatRegistry() - get() returns the container, defaulting to the format name', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.is(registry.get('webm').container, 'webm')
+  t.is(registry.get('mp4').container, 'mp4')
+  t.is(registry.get('nope'), undefined)
+})
+
+test('video.getFormatRegistry() - get() returns the registered container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('vp9-mp4-container', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  t.is(registry.get('vp9-mp4-container').container, 'mp4')
+})
+
+test('video.getFormatRegistry() - a format without muxer options inherits them from its container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('mp4-container-muxer', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  registry.register('own-name-no-muxer', {
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  t.alike(registry.getMuxerOptions('mp4-container-muxer'), registry.getMuxerOptions('mp4'))
+  t.alike(registry.getMuxerOptions('own-name-no-muxer'), {})
+})
+
+test('video.transcode() - custom format name muxes into its container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('small-mp4', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  const chunks = []
+  for await (const chunk of video('./test/fixtures/sample.webm').transcode({
+    format: 'small-mp4',
+    width: 320,
+    height: 240
+  })) {
+    chunks.push(chunk)
+  }
+
+  const totalOutputBuffer = assertChunks(t, chunks)
+  const header = b4a.toString(totalOutputBuffer.subarray(4, 8))
+  t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
+})
+
 test('video.getFormatRegistry() - getMuxerOptions returns empty object for unknown format', async (t) => {
   const registry = await video.getFormatRegistry()
 
@@ -659,6 +742,46 @@ test('video.getFormatRegistry() - register custom format', async (t) => {
   t.is(registry.getAudioConfig('mp4-ios').encoder, 'aac')
   t.is(registry.getAudioConfig('mp4-ios').sampleRate, 48000)
   t.ok(registry.getMuxerOptions('mp4-ios').movflags, 'mp4-ios has movflags')
+})
+
+test('video.getFormatRegistry() - register resolves codec and format names', async (t) => {
+  const registry = await video.getFormatRegistry()
+  const constants = await video.getConstants()
+
+  const config = {
+    video: { id: 'H264', format: 'YUV420P', encoder: 'libx264' },
+    audio: { id: 'AAC', format: 'S16', sampleRate: 48000, encoder: 'aac' }
+  }
+
+  registry.register('h264-names', config)
+
+  const videoConfig = registry.getVideoConfig('h264-names')
+  const audioConfig = registry.getAudioConfig('h264-names')
+
+  t.is(videoConfig.id, constants.codecs.H264)
+  t.is(videoConfig.format, constants.pixelFormats.YUV420P)
+  t.is(videoConfig.encoder, 'libx264')
+  t.is(audioConfig.id, constants.codecs.AAC)
+  t.is(audioConfig.format, constants.sampleFormats.S16)
+  t.is(audioConfig.sampleRate, 48000)
+  t.is(audioConfig.encoder, 'aac')
+  t.alike(config, {
+    video: { id: 'H264', format: 'YUV420P', encoder: 'libx264' },
+    audio: { id: 'AAC', format: 'S16', sampleRate: 48000, encoder: 'aac' }
+  })
+})
+
+test('video.getFormatRegistry() - register throws for unknown codec name', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.exception(
+    () =>
+      registry.register('unknown-codec', {
+        video: { id: 'NOPE', format: 'YUV420P', encoder: 'libx264' }
+      }),
+    /NOPE/
+  )
+  t.absent(registry.hasFormat('unknown-codec'))
 })
 
 test('video.getFormatRegistry() - returns same instance', async (t) => {

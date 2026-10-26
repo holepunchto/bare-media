@@ -10,11 +10,34 @@ class FormatRegistry {
   #formats = new Map()
 
   register(formatName, config) {
+    const { codecs, pixelFormats, sampleFormats } = ffmpeg.constants
+    const { video, audio } = config
+    const container = config.container || formatName
+
     this.#formats.set(formatName, {
-      video: config.video,
-      audio: config.audio,
-      muxer: config.muxer || {}
+      container,
+      video: video && {
+        ...video,
+        id: this.#resolve(codecs, video.id, 'codec'),
+        format: this.#resolve(pixelFormats, video.format, 'pixel format')
+      },
+      audio: audio && {
+        ...audio,
+        id: this.#resolve(codecs, audio.id, 'codec'),
+        format: this.#resolve(sampleFormats, audio.format, 'sample format')
+      },
+      muxer: config.muxer || (container === formatName ? {} : this.getMuxerOptions(container))
     })
+  }
+
+  get(formatName) {
+    return this.#formats.get(formatName)
+  }
+
+  #resolve(table, value, label) {
+    if (typeof value !== 'string') return value
+    if (!Object.hasOwn(table, value)) throw new Error(`Unknown ${label}: ${value}`)
+    return table[value]
   }
 
   getVideoConfig(formatName) {
@@ -585,7 +608,10 @@ class Transcoder {
       }
     })
 
-    this.outputFormatContext = new ffmpeg.OutputFormatContext(this.containerFormat, outIO)
+    this.outputFormatContext = new ffmpeg.OutputFormatContext(
+      formatRegistry.get(this.containerFormat).container,
+      outIO
+    )
   }
 
   #discoverAndConfigureStreams() {
