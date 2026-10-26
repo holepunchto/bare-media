@@ -721,6 +721,46 @@ test('video.getFormatRegistry() - register custom format', async (t) => {
   t.ok(registry.getMuxerOptions('mp4-ios').movflags, 'mp4-ios has movflags')
 })
 
+test('video.getFormatRegistry() - register resolves codec and format names', async (t) => {
+  const registry = await video.getFormatRegistry()
+  const constants = await video.getConstants()
+
+  const config = {
+    video: { id: 'H264', format: 'YUV420P', encoder: 'libx264' },
+    audio: { id: 'AAC', format: 'S16', sampleRate: 48000, encoder: 'aac' }
+  }
+
+  registry.register('h264-names', config)
+
+  const videoConfig = registry.getVideoConfig('h264-names')
+  const audioConfig = registry.getAudioConfig('h264-names')
+
+  t.is(videoConfig.id, constants.codecs.H264)
+  t.is(videoConfig.format, constants.pixelFormats.YUV420P)
+  t.is(videoConfig.encoder, 'libx264')
+  t.is(audioConfig.id, constants.codecs.AAC)
+  t.is(audioConfig.format, constants.sampleFormats.S16)
+  t.is(audioConfig.sampleRate, 48000)
+  t.is(audioConfig.encoder, 'aac')
+  t.alike(config, {
+    video: { id: 'H264', format: 'YUV420P', encoder: 'libx264' },
+    audio: { id: 'AAC', format: 'S16', sampleRate: 48000, encoder: 'aac' }
+  })
+})
+
+test('video.getFormatRegistry() - register throws for unknown codec name', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.exception(
+    () =>
+      registry.register('unknown-codec', {
+        video: { id: 'NOPE', format: 'YUV420P', encoder: 'libx264' }
+      }),
+    /NOPE/
+  )
+  t.absent(registry.hasFormat('unknown-codec'))
+})
+
 test('video.getFormatRegistry() - returns same instance', async (t) => {
   const registry1 = await video.getFormatRegistry()
   const registry2 = await video.getFormatRegistry()
