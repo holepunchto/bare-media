@@ -46,8 +46,8 @@ async function extractFrames(fd, opts = {}) {
   }
 
   if (!result) {
-    using flushPacket = new ffmpeg.Packet()
-    decoder.sendPacket(flushPacket)
+    packet.unref()
+    decoder.sendPacket(packet)
     while (decoder.receiveFrame(current)) {
       if (currentFrameIndex === frameIndex) {
         result = convertToRGBA(ffmpeg, current)
