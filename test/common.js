@@ -4,7 +4,7 @@ import path from 'bare-path'
 import tmp from 'test-tmp'
 
 import { detectMimeType } from '..'
-import { isImageSupported, isVideoSupported, isMediaSupported } from '../types'
+import { isImageSupported, isVideoSupported, isAudioSupported, isMediaSupported } from '../types'
 
 test('detectMimeType()', (t) => {
   t.is(detectMimeType(Buffer.from([0xff, 0xd8, 0xff])), 'image/jpeg')
@@ -60,7 +60,12 @@ test('codecs support flags', (t) => {
   t.ok(isVideoSupported('video/mp4'))
   t.absent(isVideoSupported('image/jpeg'))
 
+  t.ok(isAudioSupported('audio/flac'))
+  t.ok(isAudioSupported('audio/mpeg'))
+  t.absent(isAudioSupported('video/mp4'))
+
   t.ok(isMediaSupported('image/jpeg'))
   t.ok(isMediaSupported('video/mp4'))
+  t.ok(isMediaSupported('audio/flac'))
   t.absent(isMediaSupported('application/pdf'))
 })
