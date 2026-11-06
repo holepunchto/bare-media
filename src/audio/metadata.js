@@ -15,7 +15,7 @@ export async function metadata(fd) {
     codec: { id: codec.id, name: codec.name },
     duration: getDuration(inputFormat, stream),
     sampleRate: codecParameters.sampleRate,
-    channels: codecParameters.channelLayout.nbChannels,
+    channels: codecParameters.nbChannels,
     bitRate: codecParameters.bitRate
   }
 }
