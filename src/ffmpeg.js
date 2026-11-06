@@ -49,7 +49,7 @@ export function getDuration(inputFormat, stream) {
 
 function getStreamDuration(stream) {
   if (!Number.isFinite(stream.duration) || stream.timeBase.denominator === 0) {
-    return stream.duration
+    return 0
   }
 
   return (stream.duration * stream.timeBase.numerator) / stream.timeBase.denominator
