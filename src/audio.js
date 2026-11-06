@@ -1,4 +1,4 @@
-import fs from 'bare-fs'
+import { withFileDescriptor } from './ffmpeg'
 import { metadata } from './audio/metadata'
 
 class AudioPipeline {
@@ -7,12 +7,7 @@ class AudioPipeline {
   }
 
   async metadata() {
-    const fd = fs.openSync(this.input, 'r')
-    try {
-      return await metadata(fd)
-    } finally {
-      fs.closeSync(fd)
-    }
+    return withFileDescriptor(this.input, metadata)
   }
 }
 

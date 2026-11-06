@@ -47,6 +47,24 @@ export function getDuration(inputFormat, stream) {
   return 0
 }
 
+export async function withFileDescriptor(input, fn) {
+  const fd = fs.openSync(input, 'r')
+  try {
+    return await fn(fd)
+  } finally {
+    fs.closeSync(fd)
+  }
+}
+
+export async function* withFileDescriptorStream(input, fn) {
+  const fd = fs.openSync(input, 'r')
+  try {
+    yield* fn(fd)
+  } finally {
+    fs.closeSync(fd)
+  }
+}
+
 function getStreamDuration(stream) {
   if (!Number.isFinite(stream.duration) || stream.timeBase.denominator === 0) {
     return 0

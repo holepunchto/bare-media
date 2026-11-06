@@ -1,5 +1,9 @@
-import fs from 'bare-fs'
-import { importFFmpeg, createIOContext } from './ffmpeg'
+import {
+  importFFmpeg,
+  createIOContext,
+  withFileDescriptor,
+  withFileDescriptorStream
+} from './ffmpeg'
 import { metadata } from './video/metadata'
 
 async function extractFrames(fd, opts = {}) {
@@ -93,40 +97,15 @@ class VideoPipeline {
   }
 
   async extractFrames(opts) {
-    let fd
-    let result
-
-    try {
-      fd = fs.openSync(this.input, 'r')
-      result = await extractFrames(fd, opts)
-    } finally {
-      fs.closeSync(fd)
-    }
-
-    return result
+    return withFileDescriptor(this.input, (fd) => extractFrames(fd, opts))
   }
 
   async metadata() {
-    let fd
-    let result
-
-    try {
-      fd = fs.openSync(this.input, 'r')
-      result = await metadata(fd)
-    } finally {
-      fs.closeSync(fd)
-    }
-
-    return result
+    return withFileDescriptor(this.input, metadata)
   }
 
   async *transcode(opts) {
-    const fd = fs.openSync(this.input, 'r')
-    try {
-      yield* transcode(fd, opts)
-    } finally {
-      fs.closeSync(fd)
-    }
+    yield* withFileDescriptorStream(this.input, (fd) => transcode(fd, opts))
   }
 }
 
