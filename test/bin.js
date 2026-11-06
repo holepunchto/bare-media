@@ -8,6 +8,7 @@ import { spawnSync } from 'bare-subprocess'
 import { image } from '..'
 import { summarizeMetadata, formatMetadata } from '../lib/bin'
 import { randomFileName } from './helpers'
+import { detectMimeType } from '../src/codecs'
 
 test('CLI metadata - image', (t) => {
   const result = runCli(['metadata', '--json', 'test/fixtures/exif-orientation.jpg'])
@@ -28,6 +29,19 @@ test('CLI metadata - video', (t) => {
   t.is(metadata.height, 160)
   t.is(metadata.duration, 10)
   t.is(metadata.rotation, 90)
+})
+
+test('CLI metadata - video falls back to audio metadata for audio-only containers', (t) => {
+  const input = 'test/fixtures/audio-only.webm'
+  t.is(detectMimeType(fs.readFileSync(input)), 'video/webm')
+
+  const result = runCli(['metadata', '--json', input])
+  t.is(result.status, 0, result.stderr.toString())
+
+  const metadata = JSON.parse(output(result))
+  t.is(metadata.codec.name, 'opus')
+  t.is(metadata.sampleRate, 48000)
+  t.is(metadata.channels, 1)
 })
 
 test('CLI metadata - audio', (t) => {

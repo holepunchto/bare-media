@@ -1,4 +1,5 @@
 import { importFFmpeg, createIOContext, getDuration } from '../ffmpeg'
+import { ERR_NO_VIDEO_STREAM } from '../errors'
 
 export async function metadata(fd) {
   const ffmpeg = await importFFmpeg()
@@ -7,7 +8,11 @@ export async function metadata(fd) {
   using inputFormat = new ffmpeg.InputFormatContext(io)
   const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
 
-  if (!stream) throw new Error('No video stream found')
+  if (!stream) {
+    const error = new Error('No video stream found')
+    error.code = ERR_NO_VIDEO_STREAM
+    throw error
+  }
 
   let displayRotation = 0
   let correctiveRotation = 0

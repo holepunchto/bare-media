@@ -14,6 +14,7 @@ import getMimeType from 'get-mime-type'
 
 import { summarizeMetadata, formatMetadata } from './lib/bin'
 import { detectMimeType } from './src/codecs'
+import { ERR_NO_VIDEO_STREAM } from './src/errors'
 import pkg from './package'
 
 const cli = command(
@@ -98,8 +99,16 @@ async function metadata(parsed) {
   }
 
   if (mimetype.startsWith('video/') || mimetype.startsWith('audio/')) {
-    const pipeline = mimetype.startsWith('audio/') ? audio : video
-    const data = await pipeline(input).metadata()
+    const data = mimetype.startsWith('audio/')
+      ? await audio(input).metadata()
+      : await video(input)
+          .metadata()
+          .catch((err) => {
+            if (err.code === ERR_NO_VIDEO_STREAM) {
+              return audio(input).metadata()
+            }
+            throw err
+          })
     const output = parsed.flags.raw ? data : summarizeMetadata(data)
     const text = formatMetadata(output, { json: parsed.flags.json })
     if (text) console.log(text)
