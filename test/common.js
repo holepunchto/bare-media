@@ -21,10 +21,14 @@ test('codecs support flags', (t) => {
 
   t.ok(isAudioSupported('audio/flac'))
   t.ok(isAudioSupported('audio/mpeg'))
+  t.ok(isAudioSupported('audio/mp3'))
+  t.ok(isAudioSupported('audio/x-matroska'))
   t.absent(isAudioSupported('video/mp4'))
 
   t.ok(isMediaSupported('image/jpeg'))
   t.ok(isMediaSupported('video/mp4'))
   t.ok(isMediaSupported('audio/flac'))
+  t.ok(isMediaSupported('audio/mp3'))
+  t.ok(isMediaSupported('audio/x-matroska'))
   t.absent(isMediaSupported('application/pdf'))
 })

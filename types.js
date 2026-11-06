@@ -22,6 +22,7 @@ export const supportedAudioMimetypes = [
   'audio/flac',
   'audio/x-flac',
   'audio/mpeg',
+  'audio/mp3',
   'audio/wav',
   'audio/x-wav',
   'audio/aac',
@@ -29,7 +30,8 @@ export const supportedAudioMimetypes = [
   'audio/x-m4a',
   'audio/ogg',
   'audio/opus',
-  'audio/webm'
+  'audio/webm',
+  'audio/x-matroska'
 ]
 
 export const supportedVideoMimetypes = [
