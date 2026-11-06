@@ -7,7 +7,7 @@ import {
 import { metadata } from './video/metadata'
 
 async function extractFrames(fd, opts = {}) {
-  const { frameIndex } = opts
+  const { frameIndex, outOfRangeLast = false } = opts
 
   const ffmpeg = await importFFmpeg()
   const io = createIOContext(fd, ffmpeg)
@@ -18,49 +18,29 @@ async function extractFrames(fd, opts = {}) {
   decoder.open()
 
   using packet = new ffmpeg.Packet()
-  using frame = new ffmpeg.Frame()
 
-  let currentFrame = 0
+  // receiveFrame unrefs the frame it is given before writing into it, so
+  // alternate between two frames to keep the previous one intact for the
+  // outOfRangeLast fallback
+  using frame = new ffmpeg.Frame()
+  using prevFrame = new ffmpeg.Frame()
+
+  let current = frame
+  let lastFrame = null
+  let currentFrameIndex = 0
   let result = null
 
   while (inputFormat.readFrame(packet)) {
     if (packet.streamIndex === stream.index) {
       if (decoder.sendPacket(packet)) {
-        while (decoder.receiveFrame(frame)) {
-          if (currentFrame === frameIndex) {
-            // Convert to RGBA
-            using scaler = new ffmpeg.Scaler(
-              frame.format,
-              frame.width,
-              frame.height,
-              ffmpeg.constants.pixelFormats.RGBA,
-              frame.width,
-              frame.height
-            )
-
-            using rgbaFrame = new ffmpeg.Frame()
-            rgbaFrame.width = frame.width
-            rgbaFrame.height = frame.height
-            rgbaFrame.format = ffmpeg.constants.pixelFormats.RGBA
-            rgbaFrame.alloc()
-
-            scaler.scale(frame, rgbaFrame)
-
-            const image = new ffmpeg.Image(
-              ffmpeg.constants.pixelFormats.RGBA,
-              rgbaFrame.width,
-              rgbaFrame.height
-            )
-            image.read(rgbaFrame)
-
-            result = {
-              width: rgbaFrame.width,
-              height: rgbaFrame.height,
-              data: image.data
-            }
+        while (decoder.receiveFrame(current)) {
+          if (currentFrameIndex === frameIndex) {
+            result = convertToRGBA(ffmpeg, current)
             break
           }
-          currentFrame++
+          lastFrame = current
+          current = current === frame ? prevFrame : frame
+          currentFrameIndex++
         }
       }
     }
@@ -69,10 +49,60 @@ async function extractFrames(fd, opts = {}) {
   }
 
   if (!result) {
-    throw new Error(`Frame ${frameIndex} not found (video only has ${currentFrame} frames)`)
+    packet.unref()
+    decoder.sendPacket(packet)
+    while (decoder.receiveFrame(current)) {
+      if (currentFrameIndex === frameIndex) {
+        result = convertToRGBA(ffmpeg, current)
+        break
+      }
+      lastFrame = current
+      current = current === frame ? prevFrame : frame
+      currentFrameIndex++
+    }
+  }
+
+  if (!result && outOfRangeLast && lastFrame && frameIndex >= currentFrameIndex) {
+    result = convertToRGBA(ffmpeg, lastFrame)
+  }
+
+  if (!result) {
+    throw new Error(`Frame ${frameIndex} not found (video only has ${currentFrameIndex} frames)`)
   }
 
   return result
+}
+
+function convertToRGBA(ffmpeg, frame) {
+  using scaler = new ffmpeg.Scaler(
+    frame.format,
+    frame.width,
+    frame.height,
+    ffmpeg.constants.pixelFormats.RGBA,
+    frame.width,
+    frame.height
+  )
+
+  using rgbaFrame = new ffmpeg.Frame()
+  rgbaFrame.width = frame.width
+  rgbaFrame.height = frame.height
+  rgbaFrame.format = ffmpeg.constants.pixelFormats.RGBA
+  rgbaFrame.alloc()
+
+  scaler.scale(frame, rgbaFrame)
+
+  const image = new ffmpeg.Image(
+    ffmpeg.constants.pixelFormats.RGBA,
+    rgbaFrame.width,
+    rgbaFrame.height
+  )
+  image.read(rgbaFrame)
+
+  return {
+    width: rgbaFrame.width,
+    height: rgbaFrame.height,
+    data: image.data
+  }
 }
 
 async function* transcode(fd, opts = {}) {
