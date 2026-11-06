@@ -12,6 +12,10 @@ export async function importFFmpeg() {
 }
 
 export function createIOContext(fd, ffmpeg) {
+  if (fd === undefined || fd === null) {
+    throw new Error('File descriptor is required')
+  }
+
   const fileSize = fs.fstatSync(fd).size
   let offset = 0
 

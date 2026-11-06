@@ -678,6 +678,11 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
   }, /Unsupported.*output format/)
 })
 
+test('createIOContext() rejects missing file descriptors', (t) => {
+  t.exception(() => createIOContext(undefined, ffmpeg), /File descriptor is required/)
+  t.exception(() => createIOContext(null, ffmpeg), /File descriptor is required/)
+})
+
 function firstMediaPacketTimestamps(path) {
   const fd = fs.openSync(path, 'r')
   const io = createIOContext(fd, ffmpeg)
