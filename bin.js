@@ -71,11 +71,6 @@ async function metadata(parsed) {
   const input = validateInput(parsed.args.input)
   const mimetype = detectMimeType(await head(input)) || getMimeType(input)
 
-  if (!mimetype) {
-    console.log('Unable to determine mimetype')
-    Bare.exit(1)
-  }
-
   if (mimetype.startsWith('image/')) {
     if (parsed.flags.strip) {
       if (!isStripMetadataSupported(mimetype)) {
