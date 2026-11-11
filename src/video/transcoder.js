@@ -714,7 +714,7 @@ class Transcoder {
         }
 
         this.#trackTime(inputPacket, config)
-        this._decodePacket(config, inputPacket, frame, outputPacket)
+        this.#decodePacket(config, inputPacket, frame, outputPacket)
         inputPacket.unref()
         yield* this.#drainChunks()
       }
@@ -725,7 +725,7 @@ class Transcoder {
     }
   }
 
-  _decodePacket(config, inputPacket, frame, outputPacket) {
+  #decodePacket(config, inputPacket, frame, outputPacket) {
     while (!config.decoder.sendPacket(inputPacket)) {
       if (!this.#receiveDecodedFrames(config, frame, outputPacket)) {
         throw new Error(

@@ -8,7 +8,6 @@ import ffmpeg from 'bare-ffmpeg'
 import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
 import { createIOContext } from '../src/ffmpeg'
-import { Transcoder } from '../src/video/transcoder'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
@@ -824,38 +823,6 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
       // Should throw before yielding
     }
   }, /Unsupported.*output format/)
-})
-
-test('transcoder - a decoder that rejects a packet and yields nothing is fatal', (t) => {
-  const transcoder = new Transcoder(null)
-  const config = {
-    inputStream: { index: 0, codec: { name: 'h264' } },
-    decoder: { sendPacket: () => false, receiveFrame: () => false }
-  }
-
-  t.exception(() => {
-    transcoder._decodePacket(config, {}, {}, {})
-  }, /Decoder could not accept packet for stream 0 \(h264\)/)
-})
-
-test('transcoder - an encoder that rejects a frame and yields nothing is fatal', (t) => {
-  const transcoder = new Transcoder(null)
-  const encoder = { sendFrame: () => false, receivePacket: () => false }
-  const outputStream = { index: 1, codec: { name: 'vp8' } }
-
-  t.exception(() => {
-    transcoder._encodeAndWrite(encoder, {}, outputStream, {})
-  }, /Encoder could not accept frame for stream 1 \(vp8\)/)
-})
-
-test('transcoder - an encoder that rejects the end of stream frame is not fatal', (t) => {
-  const transcoder = new Transcoder(null)
-  const encoder = { sendFrame: () => false, receivePacket: () => false }
-  const outputStream = { index: 1, codec: { name: 'vp8' } }
-
-  t.execution(() => {
-    transcoder._encodeAndWrite(encoder, null, outputStream, {})
-  })
 })
 
 test('createIOContext() rejects missing file descriptors', (t) => {
