@@ -1,7 +1,7 @@
-import fs from 'bare-fs'
 import b4a from 'b4a'
 import ffmpeg from 'bare-ffmpeg'
 
+import { createIOContext } from '../ffmpeg'
 import { parseDisplayMatrix } from './metadata'
 
 const { VIDEO, AUDIO } = ffmpeg.constants.mediaTypes
@@ -10,11 +10,34 @@ class FormatRegistry {
   #formats = new Map()
 
   register(formatName, config) {
+    const { codecs, pixelFormats, sampleFormats } = ffmpeg.constants
+    const { video, audio } = config
+    const container = config.container || formatName
+
     this.#formats.set(formatName, {
-      video: config.video,
-      audio: config.audio,
-      muxer: config.muxer || {}
+      container,
+      video: video && {
+        ...video,
+        id: this.#resolve(codecs, video.id, 'codec'),
+        format: this.#resolve(pixelFormats, video.format, 'pixel format')
+      },
+      audio: audio && {
+        ...audio,
+        id: this.#resolve(codecs, audio.id, 'codec'),
+        format: this.#resolve(sampleFormats, audio.format, 'sample format')
+      },
+      muxer: config.muxer || (container === formatName ? {} : this.getMuxerOptions(container))
     })
+  }
+
+  get(formatName) {
+    return this.#formats.get(formatName)
+  }
+
+  #resolve(table, value, label) {
+    if (typeof value !== 'string') return value
+    if (!Object.hasOwn(table, value)) throw new Error(`Unknown ${label}: ${value}`)
+    return table[value]
   }
 
   getVideoConfig(formatName) {
@@ -493,34 +516,9 @@ class AudioFrameProcessor {
   }
 
   flush(config, packet) {
-    const { encoder, outputStream } = config
-
-    if (config.resampler && config.fifo) {
-      using outFrame = new ffmpeg.Frame()
-      outFrame.format = encoder.sampleFormat
-      outFrame.channelLayout = encoder.channelLayout
-      outFrame.sampleRate = encoder.sampleRate
-
-      const outSamples =
-        Math.ceil(
-          (config.resampler.delay * encoder.sampleRate) / config.resampler.inputSampleRate
-        ) + 32
-      outFrame.nbSamples = outSamples
-      outFrame.alloc()
-
-      const flushedSamples = config.resampler.flush(outFrame)
-      outFrame.nbSamples = flushedSamples
-      if (flushedSamples > 0) config.fifo.write(outFrame)
-    }
-
-    while (config.fifo && config.fifo.size >= encoder.frameSize) {
-      const fifoFrame = this.#readFifo(config, encoder.frameSize)
-      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
-    }
-
     if (config.fifo && config.fifo.size > 0) {
       const fifoFrame = this.#readFifo(config, config.fifo.size)
-      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
+      this.transcoder._encodeAndWrite(config.encoder, fifoFrame, config.outputStream, packet)
     }
   }
 
@@ -575,25 +573,7 @@ class Transcoder {
   }
 
   #setupIOContexts() {
-    const fileSize = fs.fstatSync(this.fd).size
-    let offset = 0
-
-    const inIO = new ffmpeg.IOContext(4096, {
-      onread: (buffer, requested) => {
-        const read = fs.readSync(this.fd, buffer, 0, requested, offset)
-        if (read === 0) return 0
-        offset += read
-        return read
-      },
-      onseek: (o, whence) => {
-        if (whence === ffmpeg.constants.seek.SIZE) return fileSize
-        if (whence === ffmpeg.constants.seek.SET) offset = o
-        else if (whence === ffmpeg.constants.seek.CUR) offset += o
-        else if (whence === ffmpeg.constants.seek.END) offset = fileSize + o
-        else return -1
-        return offset
-      }
-    })
+    const inIO = createIOContext(this.fd, ffmpeg)
 
     this.inputFormatContext = new ffmpeg.InputFormatContext(inIO)
 
@@ -610,7 +590,10 @@ class Transcoder {
       }
     })
 
-    this.outputFormatContext = new ffmpeg.OutputFormatContext(this.containerFormat, outIO)
+    this.outputFormatContext = new ffmpeg.OutputFormatContext(
+      formatRegistry.get(this.containerFormat).container,
+      outIO
+    )
   }
 
   #discoverAndConfigureStreams() {

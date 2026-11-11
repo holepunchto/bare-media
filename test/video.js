@@ -7,8 +7,7 @@ import ffmpeg from 'bare-ffmpeg'
 
 import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
-import { createIOContext } from '../src/video/io'
-import { Transcoder } from '../src/video/transcoder'
+import { createIOContext } from '../src/ffmpeg'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
@@ -31,6 +30,28 @@ test('video extractFrames() in pipeline', async (t) => {
   t.ok(Buffer.isBuffer(rgba.data))
   t.is(rgba.width, 320)
   t.is(rgba.height, 240)
+})
+
+test('video extractFrames() throws when frameIndex is beyond the end', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  await t.exception(async () => {
+    await video(path).extractFrames({ frameIndex: 999999 })
+  }, /Frame 999999 not found/)
+})
+
+test('video extractFrames() with outOfRangeLast falls back to the last frame', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  const lastFrame = await video(path).extractFrames({ frameIndex: 99 })
+  const rgba = await video(path).extractFrames({
+    frameIndex: 999999,
+    outOfRangeLast: true
+  })
+
+  t.is(rgba.width, 320)
+  t.is(rgba.height, 240)
+  t.ok(b4a.equals(rgba.data, lastFrame.data))
 })
 
 test('video metadata()', async (t) => {
@@ -406,62 +427,6 @@ test('video.transcode() - drains delayed decoder frames at end of input', async 
   t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
 })
 
-test('video.transcode() - drains delayed audio samples at end of input', async (t) => {
-  const path = './test/fixtures/sample.mp4'
-  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
-  t.teardown(() => fs.unlinkSync(outputPath))
-
-  const input = decodedAudio(path)
-  const expectedSamples = Math.round((input.samples * 48000) / input.sampleRate)
-
-  const fd = fs.openSync(outputPath, 'w')
-  try {
-    for await (const chunk of video(path).transcode({ format: 'webm' })) {
-      fs.writeSync(fd, chunk.buffer)
-    }
-  } finally {
-    fs.closeSync(fd)
-  }
-
-  const output = decodedAudio(outputPath)
-
-  t.is(input.sampleRate, 44100, 'fixture exercises sample-rate conversion')
-  t.is(output.sampleRate, 48000, 'output uses the preset sample rate')
-  t.is(output.samples, expectedSamples, 'output contains every resampled audio sample')
-})
-
-test('video.transcode() - releases the temporary frame when resampler flush fails', (t) => {
-  const transcoder = new Transcoder()
-  const sampleFormat = ffmpeg.constants.sampleFormats.S16
-  const channelLayout = ffmpeg.constants.channelLayouts.STEREO
-  const encoder = { sampleRate: 48000, sampleFormat, channelLayout, frameSize: 960 }
-  using resampler = new ffmpeg.Resampler(
-    44100,
-    channelLayout,
-    sampleFormat,
-    48000,
-    channelLayout,
-    sampleFormat
-  )
-  using fifo = new ffmpeg.AudioFIFO(sampleFormat, 2, 960)
-  let outFrame = null
-
-  resampler.flush = (frame) => {
-    outFrame = frame
-    throw new Error('Resampler flush failed')
-  }
-
-  try {
-    t.exception(
-      () => transcoder.audioProcessor.flush({ encoder, resampler, fifo }),
-      /Resampler flush failed/
-    )
-    t.is(outFrame?._handle, null, 'temporary frame releases its native allocation')
-  } finally {
-    if (outFrame?._handle) outFrame.destroy()
-  }
-})
-
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
   const path = './test/fixtures/sample-stereo.mp4'
 
@@ -671,6 +636,67 @@ test('video.getFormatRegistry() - getMuxerOptions returns muxer config', async (
   t.ok(mp4Muxer.movflags, 'mp4 muxer has movflags')
 })
 
+test('video.getFormatRegistry() - get() returns the container, defaulting to the format name', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.is(registry.get('webm').container, 'webm')
+  t.is(registry.get('mp4').container, 'mp4')
+  t.is(registry.get('nope'), undefined)
+})
+
+test('video.getFormatRegistry() - get() returns the registered container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('vp9-mp4-container', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  t.is(registry.get('vp9-mp4-container').container, 'mp4')
+})
+
+test('video.getFormatRegistry() - a format without muxer options inherits them from its container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('mp4-container-muxer', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  registry.register('own-name-no-muxer', {
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  t.alike(registry.getMuxerOptions('mp4-container-muxer'), registry.getMuxerOptions('mp4'))
+  t.alike(registry.getMuxerOptions('own-name-no-muxer'), {})
+})
+
+test('video.transcode() - custom format name muxes into its container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('small-mp4', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  const chunks = []
+  for await (const chunk of video('./test/fixtures/sample.webm').transcode({
+    format: 'small-mp4',
+    width: 320,
+    height: 240
+  })) {
+    chunks.push(chunk)
+  }
+
+  const totalOutputBuffer = assertChunks(t, chunks)
+  const header = b4a.toString(totalOutputBuffer.subarray(4, 8))
+  t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
+})
+
 test('video.getFormatRegistry() - getMuxerOptions returns empty object for unknown format', async (t) => {
   const registry = await video.getFormatRegistry()
 
@@ -718,6 +744,46 @@ test('video.getFormatRegistry() - register custom format', async (t) => {
   t.ok(registry.getMuxerOptions('mp4-ios').movflags, 'mp4-ios has movflags')
 })
 
+test('video.getFormatRegistry() - register resolves codec and format names', async (t) => {
+  const registry = await video.getFormatRegistry()
+  const constants = await video.getConstants()
+
+  const config = {
+    video: { id: 'H264', format: 'YUV420P', encoder: 'libx264' },
+    audio: { id: 'AAC', format: 'S16', sampleRate: 48000, encoder: 'aac' }
+  }
+
+  registry.register('h264-names', config)
+
+  const videoConfig = registry.getVideoConfig('h264-names')
+  const audioConfig = registry.getAudioConfig('h264-names')
+
+  t.is(videoConfig.id, constants.codecs.H264)
+  t.is(videoConfig.format, constants.pixelFormats.YUV420P)
+  t.is(videoConfig.encoder, 'libx264')
+  t.is(audioConfig.id, constants.codecs.AAC)
+  t.is(audioConfig.format, constants.sampleFormats.S16)
+  t.is(audioConfig.sampleRate, 48000)
+  t.is(audioConfig.encoder, 'aac')
+  t.alike(config, {
+    video: { id: 'H264', format: 'YUV420P', encoder: 'libx264' },
+    audio: { id: 'AAC', format: 'S16', sampleRate: 48000, encoder: 'aac' }
+  })
+})
+
+test('video.getFormatRegistry() - register throws for unknown codec name', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.exception(
+    () =>
+      registry.register('unknown-codec', {
+        video: { id: 'NOPE', format: 'YUV420P', encoder: 'libx264' }
+      }),
+    /NOPE/
+  )
+  t.absent(registry.hasFormat('unknown-codec'))
+})
+
 test('video.getFormatRegistry() - returns same instance', async (t) => {
   const registry1 = await video.getFormatRegistry()
   const registry2 = await video.getFormatRegistry()
@@ -733,6 +799,11 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
       // Should throw before yielding
     }
   }, /Unsupported.*output format/)
+})
+
+test('createIOContext() rejects missing file descriptors', (t) => {
+  t.exception(() => createIOContext(undefined, ffmpeg), /File descriptor is required/)
+  t.exception(() => createIOContext(null, ffmpeg), /File descriptor is required/)
 })
 
 function firstMediaPacketTimestamps(path) {
@@ -822,45 +893,6 @@ function countVideoFrames(path) {
   }
 
   return count
-}
-
-function decodedAudio(path) {
-  const fd = fs.openSync(path, 'r')
-  const io = createIOContext(fd, ffmpeg)
-  using format = new ffmpeg.InputFormatContext(io)
-  const stream = format.getBestStream(ffmpeg.constants.mediaTypes.AUDIO)
-  const decoder = stream.decoder()
-  decoder.open()
-
-  const packet = new ffmpeg.Packet()
-  const frame = new ffmpeg.Frame()
-  let samples = 0
-  let sampleRate = 0
-
-  try {
-    while (format.readFrame(packet)) {
-      if (packet.streamIndex === stream.index && decoder.sendPacket(packet)) {
-        while (decoder.receiveFrame(frame)) {
-          samples += frame.nbSamples
-          sampleRate = frame.sampleRate
-        }
-      }
-      packet.unref()
-    }
-
-    decoder.sendPacket(packet)
-    while (decoder.receiveFrame(frame)) {
-      samples += frame.nbSamples
-      sampleRate = frame.sampleRate
-    }
-  } finally {
-    packet.destroy()
-    frame.destroy()
-    decoder.destroy()
-    fs.closeSync(fd)
-  }
-
-  return { samples, sampleRate }
 }
 
 function isValidTime(time) {

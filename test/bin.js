@@ -8,14 +8,50 @@ import { spawnSync } from 'bare-subprocess'
 import { image } from '..'
 import { summarizeMetadata, formatMetadata } from '../lib/bin'
 import { randomFileName } from './helpers'
+import { detectMimeType } from '../src/codecs'
 
-test('CLI metadata command', (t) => {
+test('CLI metadata - image', (t) => {
   const result = runCli(['metadata', '--json', 'test/fixtures/exif-orientation.jpg'])
   const metadata = JSON.parse(output(result))
 
   t.is(result.status, 0)
   t.is(metadata.exif.EXIF_VERSION, '0210')
   t.is(metadata.orientation, 6)
+})
+
+test('CLI metadata - video', (t) => {
+  const result = runCli(['metadata', '--json', 'test/fixtures/orientation.mov'])
+  const metadata = JSON.parse(output(result))
+
+  t.is(result.status, 0)
+  t.is(metadata.codec.name, 'h264')
+  t.is(metadata.width, 120)
+  t.is(metadata.height, 160)
+  t.is(metadata.duration, 10)
+  t.is(metadata.rotation, 90)
+})
+
+test('CLI metadata - video falls back to audio metadata for audio-only containers', (t) => {
+  const input = 'test/fixtures/audio-only.webm'
+  t.is(detectMimeType(fs.readFileSync(input)), 'video/webm')
+
+  const result = runCli(['metadata', '--json', input])
+  t.is(result.status, 0, result.stderr.toString())
+
+  const metadata = JSON.parse(output(result))
+  t.is(metadata.codec.name, 'opus')
+  t.is(metadata.sampleRate, 48000)
+  t.is(metadata.channels, 1)
+})
+
+test('CLI metadata - audio', (t) => {
+  const result = runCli(['metadata', '--json', 'test/fixtures/audio.flac'])
+  const metadata = JSON.parse(output(result))
+
+  t.is(result.status, 0)
+  t.is(metadata.codec.name, 'flac')
+  t.is(metadata.sampleRate, 48000)
+  t.is(metadata.channels, 2)
 })
 
 test('CLI metadata --raw', (t) => {

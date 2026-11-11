@@ -1,0 +1,1 @@
+export const ERR_NO_VIDEO_STREAM = 'ERR_NO_VIDEO_STREAM'
