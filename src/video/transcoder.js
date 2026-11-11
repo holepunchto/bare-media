@@ -516,10 +516,39 @@ class AudioFrameProcessor {
   }
 
   flush(config, packet) {
-    if (config.fifo && config.fifo.size > 0) {
-      const fifoFrame = this.#readFifo(config, config.fifo.size)
-      this.transcoder._encodeAndWrite(config.encoder, fifoFrame, config.outputStream, packet)
+    if (!config.fifo) return
+
+    const { encoder, outputStream } = config
+
+    this.#drainResampler(config)
+
+    while (config.fifo.size >= encoder.frameSize) {
+      const fifoFrame = this.#readFifo(config, encoder.frameSize)
+      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
     }
+
+    if (config.fifo.size > 0) {
+      const fifoFrame = this.#readFifo(config, config.fifo.size)
+      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
+    }
+  }
+
+  #drainResampler(config) {
+    const { encoder, resampler } = config
+
+    using outFrame = new ffmpeg.Frame()
+    outFrame.format = encoder.sampleFormat
+    outFrame.channelLayout = encoder.channelLayout
+    outFrame.sampleRate = encoder.sampleRate
+    outFrame.nbSamples =
+      Math.ceil((resampler.delay * encoder.sampleRate) / resampler.inputSampleRate) + 32
+    outFrame.alloc()
+
+    const flushedSamples = resampler.flush(outFrame)
+    if (flushedSamples === 0) return
+
+    outFrame.nbSamples = flushedSamples
+    config.fifo.write(outFrame)
   }
 
   // av_frame_get_buffer() leaks if the frame still holds a buffer, so unref
