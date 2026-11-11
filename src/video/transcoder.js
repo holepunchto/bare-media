@@ -701,68 +701,87 @@ class Transcoder {
   }
 
   *#processFrames() {
-    const packet = new ffmpeg.Packet()
+    const inputPacket = new ffmpeg.Packet()
+    const outputPacket = new ffmpeg.Packet()
     const frame = new ffmpeg.Frame()
 
     try {
-      while (this.inputFormatContext.readFrame(packet)) {
-        const config = this.configs[packet.streamIndex]
+      while (this.inputFormatContext.readFrame(inputPacket)) {
+        const config = this.configs[inputPacket.streamIndex]
         if (!config) {
-          packet.unref()
+          inputPacket.unref()
           continue
         }
 
-        this.#trackTime(packet, config)
-
-        const { decoder } = config
-
-        if (decoder.sendPacket(packet)) {
-          while (decoder.receiveFrame(frame)) {
-            this.#handleDecodedFrame(frame, config, packet)
-          }
-        }
-        packet.unref()
+        this.#trackTime(inputPacket, config)
+        this.#decodePacket(config, inputPacket, frame, outputPacket)
+        inputPacket.unref()
         yield* this.#drainChunks()
       }
     } finally {
-      packet.destroy()
+      inputPacket.destroy()
+      outputPacket.destroy()
       frame.destroy()
     }
   }
 
+  #decodePacket(config, inputPacket, frame, outputPacket) {
+    while (!config.decoder.sendPacket(inputPacket)) {
+      if (!this.#receiveDecodedFrames(config, frame, outputPacket)) {
+        throw new Error(
+          `Decoder could not accept packet for stream ${config.inputStream.index} (${config.inputStream.codec.name})`
+        )
+      }
+    }
+
+    this.#receiveDecodedFrames(config, frame, outputPacket)
+  }
+
+  #receiveDecodedFrames(config, frame, outputPacket) {
+    let received = false
+
+    while (config.decoder.receiveFrame(frame)) {
+      received = true
+      this.#handleDecodedFrame(frame, config, outputPacket)
+    }
+
+    return received
+  }
+
   *#finalize() {
-    const packet = new ffmpeg.Packet()
+    const inputPacket = new ffmpeg.Packet()
+    const outputPacket = new ffmpeg.Packet()
     const frame = new ffmpeg.Frame()
 
     try {
       for (const index in this.configs) {
         const config = this.configs[index]
 
-        this.#drainDecoder(config, packet, frame)
-        this.audioProcessor.flush(config, packet)
+        this.#drainDecoder(config, inputPacket, frame, outputPacket)
+        this.audioProcessor.flush(config, outputPacket)
 
-        this._encodeAndWrite(config.encoder, null, config.outputStream, packet)
+        this._encodeAndWrite(config.encoder, null, config.outputStream, outputPacket)
       }
 
       this.outputFormatContext.writeTrailer()
       yield* this.#drainChunks()
     } finally {
-      packet.destroy()
+      inputPacket.destroy()
+      outputPacket.destroy()
       frame.destroy()
     }
   }
 
-  #drainDecoder(config, packet, frame) {
-    const { decoder } = config
-
+  #drainDecoder(config, inputPacket, frame, outputPacket) {
     // An empty packet signals end of stream, releasing any frames the decoder
     // has buffered for reordering.
-    packet.unref()
-    if (!decoder.sendPacket(packet)) return
+    inputPacket.unref()
 
-    while (decoder.receiveFrame(frame)) {
-      this.#handleDecodedFrame(frame, config, packet)
+    while (!config.decoder.sendPacket(inputPacket)) {
+      if (!this.#receiveDecodedFrames(config, frame, outputPacket)) return
     }
+
+    this.#receiveDecodedFrames(config, frame, outputPacket)
   }
 
   #cleanup() {
@@ -783,14 +802,30 @@ class Transcoder {
   }
 
   _encodeAndWrite(encoder, frame, outputStream, packet) {
-    if (encoder.sendFrame(frame)) {
-      while (encoder.receivePacket(packet)) {
-        packet.streamIndex = outputStream.index
-        packet.rescaleTimestamps(encoder.timeBase, outputStream.timeBase)
-        this.outputFormatContext.writeFrame(packet)
-        packet.unref()
+    while (!encoder.sendFrame(frame)) {
+      if (!this.#writeEncodedPackets(encoder, outputStream, packet)) {
+        if (frame === null) return
+        throw new Error(
+          `Encoder could not accept frame for stream ${outputStream.index} (${outputStream.codec.name})`
+        )
       }
     }
+
+    this.#writeEncodedPackets(encoder, outputStream, packet)
+  }
+
+  #writeEncodedPackets(encoder, outputStream, packet) {
+    let written = false
+
+    while (encoder.receivePacket(packet)) {
+      written = true
+      packet.streamIndex = outputStream.index
+      packet.rescaleTimestamps(encoder.timeBase, outputStream.timeBase)
+      this.outputFormatContext.writeFrame(packet)
+      packet.unref()
+    }
+
+    return written
   }
 }
 
