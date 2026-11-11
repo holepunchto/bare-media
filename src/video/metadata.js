@@ -1,7 +1,5 @@
-import { importFFmpeg } from '../codecs'
-import { createIOContext } from './io'
-
-const AV_TIME_BASE = 1000000
+import { importFFmpeg, createIOContext, getDuration } from '../ffmpeg'
+import { ERR_NO_VIDEO_STREAM } from '../errors'
 
 export async function metadata(fd) {
   const ffmpeg = await importFFmpeg()
@@ -10,7 +8,11 @@ export async function metadata(fd) {
   using inputFormat = new ffmpeg.InputFormatContext(io)
   const stream = inputFormat.getBestStream(ffmpeg.constants.mediaTypes.VIDEO)
 
-  if (!stream) throw new Error('No video stream found')
+  if (!stream) {
+    const error = new Error('No video stream found')
+    error.code = ERR_NO_VIDEO_STREAM
+    throw error
+  }
 
   let displayRotation = 0
   let correctiveRotation = 0
@@ -52,30 +54,6 @@ export async function metadata(fd) {
     flipH,
     flipV
   }
-}
-
-function getDuration(inputFormat, stream) {
-  const streamDuration = getStreamDuration(stream)
-  if (streamDuration > 0) return streamDuration
-
-  const formatDuration = getFormatDuration(inputFormat)
-  if (formatDuration > 0) return formatDuration
-
-  return 0
-}
-
-function getStreamDuration(stream) {
-  if (!Number.isFinite(stream.duration) || stream.timeBase.denominator === 0) {
-    return stream.duration
-  }
-
-  return (stream.duration * stream.timeBase.numerator) / stream.timeBase.denominator
-}
-
-function getFormatDuration(inputFormat) {
-  if (!Number.isFinite(inputFormat.duration) || inputFormat.duration < 0) return 0
-
-  return inputFormat.duration / AV_TIME_BASE
 }
 
 /*

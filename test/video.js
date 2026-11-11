@@ -7,7 +7,7 @@ import ffmpeg from 'bare-ffmpeg'
 
 import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
-import { createIOContext } from '../src/video/io'
+import { createIOContext } from '../src/ffmpeg'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
@@ -799,6 +799,11 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
       // Should throw before yielding
     }
   }, /Unsupported.*output format/)
+})
+
+test('createIOContext() rejects missing file descriptors', (t) => {
+  t.exception(() => createIOContext(undefined, ffmpeg), /File descriptor is required/)
+  t.exception(() => createIOContext(null, ffmpeg), /File descriptor is required/)
 })
 
 function firstMediaPacketTimestamps(path) {
