@@ -1,6 +1,8 @@
-import fs from 'bare-fs'
 import b4a from 'b4a'
 import ffmpeg from 'bare-ffmpeg'
+
+import { createIOContext } from '../ffmpeg'
+import { parseDisplayMatrix } from './metadata'
 
 const { VIDEO, AUDIO } = ffmpeg.constants.mediaTypes
 
@@ -8,11 +10,34 @@ class FormatRegistry {
   #formats = new Map()
 
   register(formatName, config) {
+    const { codecs, pixelFormats, sampleFormats } = ffmpeg.constants
+    const { video, audio } = config
+    const container = config.container || formatName
+
     this.#formats.set(formatName, {
-      video: config.video,
-      audio: config.audio,
-      muxer: config.muxer || {}
+      container,
+      video: video && {
+        ...video,
+        id: this.#resolve(codecs, video.id, 'codec'),
+        format: this.#resolve(pixelFormats, video.format, 'pixel format')
+      },
+      audio: audio && {
+        ...audio,
+        id: this.#resolve(codecs, audio.id, 'codec'),
+        format: this.#resolve(sampleFormats, audio.format, 'sample format')
+      },
+      muxer: config.muxer || (container === formatName ? {} : this.getMuxerOptions(container))
     })
+  }
+
+  get(formatName) {
+    return this.#formats.get(formatName)
+  }
+
+  #resolve(table, value, label) {
+    if (typeof value !== 'string') return value
+    if (!Object.hasOwn(table, value)) throw new Error(`Unknown ${label}: ${value}`)
+    return table[value]
   }
 
   getVideoConfig(formatName) {
@@ -70,7 +95,7 @@ formatRegistry.register('mp4', {
     sampleRate: 48000,
     encoder: 'libopus'
   },
-  muxer: { movflags: 'frag_keyframe+empty_moov+default_base_moof' }
+  muxer: { movflags: 'frag_keyframe+delay_moov+default_base_moof' }
 })
 
 formatRegistry.register('matroska', {
@@ -103,6 +128,19 @@ formatRegistry.register('mkv', {
   muxer: { live: '1' }
 })
 
+function getOrientationFilter({ rotation, flipH, flipV }) {
+  if (rotation === 90) {
+    if (flipH) return 'transpose=cclock_flip'
+    if (flipV) return 'transpose=clock_flip'
+    return 'transpose=cclock'
+  }
+  if (rotation === 180) return 'hflip,vflip'
+  if (rotation === 270) return 'transpose=clock'
+  if (flipH) return 'hflip'
+  if (flipV) return 'vflip'
+  return null
+}
+
 class TranscodeStreamConfig {
   static create(inputStream, outputFormatContext, containerFormat, outputParameters) {
     const config = new TranscodeStreamConfig(
@@ -128,11 +166,19 @@ class TranscodeStreamConfig {
     this.resampler = null
     this.fifo = null
     this.fifoFrame = null
-    this.samplesWritten = 0
+    this.nextAudioPts = null
     this.nextVideoPts = 0
     this.lastWidth = null
     this.lastHeight = null
     this.lastFormat = null
+    this.orientation = null
+    this.orientationGraph = null
+    this.orientationSource = null
+    this.orientationSink = null
+    this.orientationFrame = null
+    this.orientationWidth = null
+    this.orientationHeight = null
+    this.orientationFormat = null
   }
 
   isVideo() {
@@ -153,13 +199,40 @@ class TranscodeStreamConfig {
     this.decoder = this.#createDecoder()
     if (!this.decoder) return false
 
-    this.outputStream = this.outputFormatContext.createStream()
-    this.#configureOutputStream(this.outputStream, this.decoder)
+    // A config that fails to initialise never reaches Transcoder#configs, so
+    // cleanup will never see it: release the decoder before giving up.
+    try {
+      if (this.isVideo()) this.orientation = this.#resolveOrientation()
 
-    this.encoder = this.#createEncoder(this.outputStream, this.decoder)
-    this.outputStream.codecParameters.fromContext(this.encoder)
+      this.outputStream = this.outputFormatContext.createStream()
+      this.#configureOutputStream(this.outputStream, this.decoder)
+
+      this.encoder = this.#createEncoder(this.outputStream, this.decoder)
+      this.outputStream.codecParameters.fromContext(this.encoder)
+    } catch (err) {
+      this.decoder.destroy()
+      this.decoder = null
+      throw err
+    }
 
     return true
+  }
+
+  #resolveOrientation() {
+    for (const entry of this.inputStream.sideData) {
+      if (entry.type !== ffmpeg.constants.packetSideDataType.DISPLAYMATRIX) continue
+
+      const transform = parseDisplayMatrix(entry.data)
+      const filter = getOrientationFilter(transform)
+      if (!filter) return null
+
+      return {
+        filter,
+        swapsDimensions: transform.rotation === 90 || transform.rotation === 270
+      }
+    }
+
+    return null
   }
 
   #createDecoder() {
@@ -184,8 +257,12 @@ class TranscodeStreamConfig {
     outputStream.codecParameters.format = config.format
 
     if (this.isVideo()) {
-      outputStream.codecParameters.width = this.outputParameters?.width || decoder.width
-      outputStream.codecParameters.height = this.outputParameters?.height || decoder.height
+      const swap = this.orientation?.swapsDimensions
+      const width = swap ? decoder.height : decoder.width
+      const height = swap ? decoder.width : decoder.height
+
+      outputStream.codecParameters.width = this.outputParameters?.width || width
+      outputStream.codecParameters.height = this.outputParameters?.height || height
       outputStream.timeBase = new ffmpeg.Rational(1, 90000)
     } else {
       outputStream.codecParameters.sampleRate = config.sampleRate
@@ -200,29 +277,40 @@ class TranscodeStreamConfig {
   #createEncoder(outputStream, decoder) {
     const config = this.getConfig()
     const encoder = new ffmpeg.CodecContext(new ffmpeg.Encoder(config.encoder))
-    outputStream.codecParameters.toContext(encoder)
 
-    if (this.isVideo()) {
-      this.#configureVideoEncoder(encoder, outputStream, decoder)
-    } else {
-      this.#configureAudioEncoder(encoder, outputStream)
+    // The caller only owns the encoder once it is returned, so anything that
+    // throws before that has to release it.
+    try {
+      outputStream.codecParameters.toContext(encoder)
+
+      if (this.isVideo()) {
+        this.#configureVideoEncoder(encoder, outputStream, decoder)
+      } else {
+        this.#configureAudioEncoder(encoder, outputStream)
+      }
+
+      if (this.outputFormatContext.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
+        encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
+      }
+
+      // avcodec_open2 only consumes the options the codec recognises; the rest
+      // stay in the dictionary and are ours to free.
+      using encoderOptions = this.isVideo()
+        ? ffmpeg.Dictionary.from({
+            allow_sw: '1',
+            deadline: 'realtime',
+            'cpu-used': '6',
+            crf: '34',
+            b: '0'
+          })
+        : new ffmpeg.Dictionary()
+
+      encoder.open(encoderOptions)
+    } catch (err) {
+      encoder.destroy()
+      throw err
     }
 
-    if (this.outputFormatContext.outputFormat.flags & ffmpeg.constants.formatFlags.GLOBALHEADER) {
-      encoder.flags |= ffmpeg.constants.codecFlags.GLOBAL_HEADER
-    }
-
-    const encoderOptions = this.isVideo()
-      ? ffmpeg.Dictionary.from({
-          allow_sw: '1',
-          deadline: 'realtime',
-          'cpu-used': '6',
-          crf: '34',
-          b: '0'
-        })
-      : new ffmpeg.Dictionary()
-
-    encoder.open(encoderOptions)
     return encoder
   }
 
@@ -254,6 +342,73 @@ class VideoFrameProcessor {
   }
 
   process(frame, config, packet) {
+    if (!config.orientation) {
+      this.#encodeFrame(frame, config, packet)
+      return
+    }
+
+    this.#ensureOrientationFilter(frame, config)
+
+    const err = config.orientationGraph.pushFrame(config.orientationSource, frame)
+    if (err < 0) throw new Error(`Failed to push video frame into orientation filter (${err})`)
+
+    while (
+      config.orientationGraph.pullFrame(config.orientationSink, config.orientationFrame) >= 0
+    ) {
+      this.#encodeFrame(config.orientationFrame, config, packet)
+      config.orientationFrame.unref()
+    }
+  }
+
+  #ensureOrientationFilter(frame, config) {
+    if (
+      config.orientationGraph &&
+      config.orientationWidth === frame.width &&
+      config.orientationHeight === frame.height &&
+      config.orientationFormat === frame.format
+    ) {
+      return
+    }
+
+    if (config.orientationGraph) config.orientationGraph.destroy()
+
+    const graph = new ffmpeg.FilterGraph()
+    config.orientationGraph = graph
+
+    const source = new ffmpeg.FilterContext()
+    const sink = new ffmpeg.FilterContext()
+    const timeBase = config.inputStream.timeBase
+
+    graph.createFilter(
+      source,
+      new ffmpeg.Filter('buffer'),
+      'in',
+      `video_size=${frame.width}x${frame.height}:pix_fmt=${frame.format}:time_base=${timeBase.numerator}/${timeBase.denominator}:pixel_aspect=1/1`
+    )
+    graph.createFilter(sink, new ffmpeg.Filter('buffersink'), 'out')
+
+    using outputs = new ffmpeg.FilterInOut()
+    outputs.name = 'in'
+    outputs.filterContext = source
+    outputs.padIdx = 0
+
+    using inputs = new ffmpeg.FilterInOut()
+    inputs.name = 'out'
+    inputs.filterContext = sink
+    inputs.padIdx = 0
+
+    graph.parse(config.orientation.filter, inputs, outputs)
+    graph.configure()
+
+    config.orientationSource = source
+    config.orientationSink = sink
+    if (!config.orientationFrame) config.orientationFrame = new ffmpeg.Frame()
+    config.orientationWidth = frame.width
+    config.orientationHeight = frame.height
+    config.orientationFormat = frame.format
+  }
+
+  #encodeFrame(frame, config, packet) {
     const { inputStream, encoder, outputStream } = config
 
     if (
@@ -309,7 +464,14 @@ class AudioFrameProcessor {
   }
 
   process(frame, config, packet) {
-    const { encoder, outputStream } = config
+    const { inputStream, encoder, outputStream } = config
+
+    if (config.nextAudioPts === null) {
+      config.nextAudioPts =
+        frame.pts === -1
+          ? 0
+          : ffmpeg.Rational.rescaleQ(frame.pts, inputStream.timeBase, encoder.timeBase)
+    }
 
     if (!config.resampler) {
       config.resampler = new ffmpeg.Resampler(
@@ -329,9 +491,6 @@ class AudioFrameProcessor {
         encoder.frameSize
       )
       config.fifoFrame = new ffmpeg.Frame()
-      config.fifoFrame.format = encoder.sampleFormat
-      config.fifoFrame.channelLayout = encoder.channelLayout
-      config.fifoFrame.sampleRate = encoder.sampleRate
     }
 
     const outFrame = new ffmpeg.Frame()
@@ -351,28 +510,65 @@ class AudioFrameProcessor {
 
     const frameSize = encoder.frameSize
     while (config.fifo.size >= frameSize) {
-      config.fifoFrame.nbSamples = frameSize
-      config.fifoFrame.alloc()
-
-      config.fifo.read(config.fifoFrame, frameSize)
-
-      config.fifoFrame.pts = config.samplesWritten
-      config.samplesWritten += config.fifoFrame.nbSamples
-
-      this.transcoder._encodeAndWrite(encoder, config.fifoFrame, outputStream, packet)
+      const fifoFrame = this.#readFifo(config, frameSize)
+      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
     }
   }
 
   flush(config, packet) {
-    if (config.fifo && config.fifo.size > 0) {
-      const remaining = config.fifo.size
-      config.fifoFrame.nbSamples = remaining
-      config.fifoFrame.alloc()
-      config.fifo.read(config.fifoFrame, remaining)
-      config.fifoFrame.pts = config.samplesWritten
-      config.samplesWritten += config.fifoFrame.nbSamples
-      this.transcoder._encodeAndWrite(config.encoder, config.fifoFrame, config.outputStream, packet)
+    if (!config.fifo) return
+
+    const { encoder, outputStream } = config
+
+    this.#drainResampler(config)
+
+    while (config.fifo.size >= encoder.frameSize) {
+      const fifoFrame = this.#readFifo(config, encoder.frameSize)
+      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
     }
+
+    if (config.fifo.size > 0) {
+      const fifoFrame = this.#readFifo(config, config.fifo.size)
+      this.transcoder._encodeAndWrite(encoder, fifoFrame, outputStream, packet)
+    }
+  }
+
+  #drainResampler(config) {
+    const { encoder, resampler } = config
+
+    using outFrame = new ffmpeg.Frame()
+    outFrame.format = encoder.sampleFormat
+    outFrame.channelLayout = encoder.channelLayout
+    outFrame.sampleRate = encoder.sampleRate
+    outFrame.nbSamples =
+      Math.ceil((resampler.delay * encoder.sampleRate) / resampler.inputSampleRate) + 32
+    outFrame.alloc()
+
+    const flushedSamples = resampler.flush(outFrame)
+    if (flushedSamples === 0) return
+
+    outFrame.nbSamples = flushedSamples
+    config.fifo.write(outFrame)
+  }
+
+  // av_frame_get_buffer() leaks if the frame still holds a buffer, so unref
+  // before every realloc. Unref also resets the frame properties.
+  #readFifo(config, nbSamples) {
+    const { encoder, fifoFrame } = config
+
+    fifoFrame.unref()
+    fifoFrame.format = encoder.sampleFormat
+    fifoFrame.channelLayout = encoder.channelLayout
+    fifoFrame.sampleRate = encoder.sampleRate
+    fifoFrame.nbSamples = nbSamples
+    fifoFrame.alloc()
+
+    config.fifo.read(fifoFrame, nbSamples)
+
+    fifoFrame.pts = config.nextAudioPts
+    config.nextAudioPts += fifoFrame.nbSamples
+
+    return fifoFrame
   }
 }
 
@@ -406,27 +602,15 @@ class Transcoder {
   }
 
   #setupIOContexts() {
-    const fileSize = fs.fstatSync(this.fd).size
-    let offset = 0
-
-    const inIO = new ffmpeg.IOContext(4096, {
-      onread: (buffer, requested) => {
-        const read = fs.readSync(this.fd, buffer, 0, requested, offset)
-        if (read === 0) return 0
-        offset += read
-        return read
-      },
-      onseek: (o, whence) => {
-        if (whence === ffmpeg.constants.seek.SIZE) return fileSize
-        if (whence === ffmpeg.constants.seek.SET) offset = o
-        else if (whence === ffmpeg.constants.seek.CUR) offset += o
-        else if (whence === ffmpeg.constants.seek.END) offset = fileSize + o
-        else return -1
-        return offset
-      }
-    })
+    const inIO = createIOContext(this.fd, ffmpeg)
 
     this.inputFormatContext = new ffmpeg.InputFormatContext(inIO)
+
+    this.containerFormat = this.outputParameters?.format || 'mp4'
+
+    if (!formatRegistry.hasFormat(this.containerFormat)) {
+      throw new Error(`Unsupported output format: ${this.containerFormat}`)
+    }
 
     const outIO = new ffmpeg.IOContext(this.bufferSize, {
       onwrite: (chunk) => {
@@ -435,13 +619,10 @@ class Transcoder {
       }
     })
 
-    this.containerFormat = this.outputParameters?.format || 'mp4'
-
-    if (!formatRegistry.hasFormat(this.containerFormat)) {
-      throw new Error(`Unsupported output format: ${this.containerFormat}`)
-    }
-
-    this.outputFormatContext = new ffmpeg.OutputFormatContext(this.containerFormat, outIO)
+    this.outputFormatContext = new ffmpeg.OutputFormatContext(
+      formatRegistry.get(this.containerFormat).container,
+      outIO
+    )
   }
 
   #discoverAndConfigureStreams() {
@@ -512,27 +693,6 @@ class Transcoder {
     }
   }
 
-  #receiveDecodedFrames(config, frame, packet) {
-    let received = false
-
-    while (config.decoder.receiveFrame(frame)) {
-      received = true
-      this.#handleDecodedFrame(frame, config, packet)
-    }
-
-    return received
-  }
-
-  #decodePacket(config, inputPacket, frame, outputPacket) {
-    while (!config.decoder.sendPacket(inputPacket)) {
-      if (!this.#receiveDecodedFrames(config, frame, outputPacket)) {
-        throw new Error('Decoder could not accept packet')
-      }
-    }
-
-    this.#receiveDecodedFrames(config, frame, outputPacket)
-  }
-
   *#drainChunks() {
     for (const chunk of this.chunks) {
       yield { buffer: chunk, time: this.currentTime }
@@ -541,64 +701,68 @@ class Transcoder {
   }
 
   *#processFrames() {
-    const inputPacket = new ffmpeg.Packet()
-    const outputPacket = new ffmpeg.Packet()
+    const packet = new ffmpeg.Packet()
     const frame = new ffmpeg.Frame()
 
     try {
-      while (this.inputFormatContext.readFrame(inputPacket)) {
-        const config = this.configs[inputPacket.streamIndex]
+      while (this.inputFormatContext.readFrame(packet)) {
+        const config = this.configs[packet.streamIndex]
         if (!config) {
-          inputPacket.unref()
+          packet.unref()
           continue
         }
 
-        this.#trackTime(inputPacket, config)
-        this.#decodePacket(config, inputPacket, frame, outputPacket)
-        inputPacket.unref()
+        this.#trackTime(packet, config)
+
+        const { decoder } = config
+
+        if (decoder.sendPacket(packet)) {
+          while (decoder.receiveFrame(frame)) {
+            this.#handleDecodedFrame(frame, config, packet)
+          }
+        }
+        packet.unref()
         yield* this.#drainChunks()
       }
     } finally {
-      inputPacket.destroy()
-      outputPacket.destroy()
+      packet.destroy()
       frame.destroy()
     }
   }
 
   *#finalize() {
-    const inputPacket = new ffmpeg.Packet()
-    const outputPacket = new ffmpeg.Packet()
+    const packet = new ffmpeg.Packet()
     const frame = new ffmpeg.Frame()
 
     try {
       for (const index in this.configs) {
         const config = this.configs[index]
 
-        this.#drainDecoder(config, inputPacket, frame, outputPacket)
-        this.audioProcessor.flush(config, outputPacket)
+        this.#drainDecoder(config, packet, frame)
+        this.audioProcessor.flush(config, packet)
 
-        this._encodeAndWrite(config.encoder, null, config.outputStream, outputPacket)
+        this._encodeAndWrite(config.encoder, null, config.outputStream, packet)
       }
 
       this.outputFormatContext.writeTrailer()
       yield* this.#drainChunks()
     } finally {
-      inputPacket.destroy()
-      outputPacket.destroy()
+      packet.destroy()
       frame.destroy()
     }
   }
 
-  #drainDecoder(config, inputPacket, frame, outputPacket) {
+  #drainDecoder(config, packet, frame) {
+    const { decoder } = config
+
     // An empty packet signals end of stream, releasing any frames the decoder
     // has buffered for reordering.
-    inputPacket.unref()
+    packet.unref()
+    if (!decoder.sendPacket(packet)) return
 
-    while (!config.decoder.sendPacket(inputPacket)) {
-      if (!this.#receiveDecodedFrames(config, frame, outputPacket)) return
+    while (decoder.receiveFrame(frame)) {
+      this.#handleDecodedFrame(frame, config, packet)
     }
-
-    this.#receiveDecodedFrames(config, frame, outputPacket)
   }
 
   #cleanup() {
@@ -610,6 +774,8 @@ class Transcoder {
       if (config.resampler) config.resampler.destroy()
       if (config.fifo) config.fifo.destroy()
       if (config.fifoFrame) config.fifoFrame.destroy()
+      if (config.orientationGraph) config.orientationGraph.destroy()
+      if (config.orientationFrame) config.orientationFrame.destroy()
     }
 
     if (this.inputFormatContext) this.inputFormatContext.destroy()
@@ -617,28 +783,14 @@ class Transcoder {
   }
 
   _encodeAndWrite(encoder, frame, outputStream, packet) {
-    while (!encoder.sendFrame(frame)) {
-      if (!this.#receiveEncodedPackets(encoder, outputStream, packet)) {
-        if (frame === null) return
-        throw new Error('Encoder could not accept frame')
+    if (encoder.sendFrame(frame)) {
+      while (encoder.receivePacket(packet)) {
+        packet.streamIndex = outputStream.index
+        packet.rescaleTimestamps(encoder.timeBase, outputStream.timeBase)
+        this.outputFormatContext.writeFrame(packet)
+        packet.unref()
       }
     }
-
-    this.#receiveEncodedPackets(encoder, outputStream, packet)
-  }
-
-  #receiveEncodedPackets(encoder, outputStream, packet) {
-    let received = false
-
-    while (encoder.receivePacket(packet)) {
-      received = true
-      packet.streamIndex = outputStream.index
-      packet.rescaleTimestamps(encoder.timeBase, outputStream.timeBase)
-      this.outputFormatContext.writeFrame(packet)
-      packet.unref()
-    }
-
-    return received
   }
 }
 

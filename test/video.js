@@ -5,9 +5,9 @@ import os from 'bare-os'
 import barePath from 'bare-path'
 import ffmpeg from 'bare-ffmpeg'
 
-import { video } from '..'
+import { image, video } from '..'
 import { parseDisplayMatrix } from '../src/video/metadata'
-import { createIOContext } from '../src/video/io'
+import { createIOContext } from '../src/ffmpeg'
 import { createDisplayMatrix, randomFileName } from './helpers'
 
 test('video extractFrames()', async (t) => {
@@ -30,6 +30,28 @@ test('video extractFrames() in pipeline', async (t) => {
   t.ok(Buffer.isBuffer(rgba.data))
   t.is(rgba.width, 320)
   t.is(rgba.height, 240)
+})
+
+test('video extractFrames() throws when frameIndex is beyond the end', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  await t.exception(async () => {
+    await video(path).extractFrames({ frameIndex: 999999 })
+  }, /Frame 999999 not found/)
+})
+
+test('video extractFrames() with outOfRangeLast falls back to the last frame', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  const lastFrame = await video(path).extractFrames({ frameIndex: 99 })
+  const rgba = await video(path).extractFrames({
+    frameIndex: 999999,
+    outOfRangeLast: true
+  })
+
+  t.is(rgba.width, 320)
+  t.is(rgba.height, 240)
+  t.ok(b4a.equals(rgba.data, lastFrame.data))
 })
 
 test('video metadata()', async (t) => {
@@ -200,6 +222,33 @@ test('video.transcode() - preserves non-30fps video timestamps', async (t) => {
   t.ok(durationDelta < 0.1, 'video duration is preserved')
 })
 
+test('video.transcode() - preserves audio/video start offset', async (t) => {
+  const path = './test/fixtures/audio-offset.mkv'
+  const outputPath = barePath.join(os.tmpdir(), randomFileName('mp4'))
+  t.teardown(() => fs.unlinkSync(outputPath))
+
+  const fd = fs.openSync(outputPath, 'w')
+  try {
+    for await (const chunk of video(path).transcode({ format: 'mp4' })) {
+      fs.writeSync(fd, chunk.buffer)
+    }
+  } finally {
+    fs.closeSync(fd)
+  }
+
+  const inputTimestamps = firstMediaPacketTimestamps(path)
+  const outputTimestamps = firstMediaPacketTimestamps(outputPath)
+  const inputOffset = inputTimestamps.audio - inputTimestamps.video
+  const outputOffset = outputTimestamps.audio - outputTimestamps.video
+
+  t.ok(Math.abs(inputOffset - 0.244) < 0.001, 'fixture audio starts 244ms after video')
+  t.ok(Math.abs(outputOffset - inputOffset) < 0.01, 'audio start offset is preserved')
+  t.ok(
+    Math.abs(outputTimestamps.video - inputTimestamps.video) < 0.01,
+    'video start time is preserved'
+  )
+})
+
 test('video.transcode() - mp4 to webm', async (t) => {
   const path = './test/fixtures/sample.mp4'
 
@@ -256,6 +305,24 @@ test('video.transcode() - Throws if an unsupported track is primary', async (t) 
   }, /Input audio stream is not decodable/)
 })
 
+// The decoder is already open when the encoder is created, and the encoder is
+// only owned by its caller once returned, so an encoder that fails to open could
+// leak both. 65536x65536 exceeds ffmpeg's pixel limit, which is enough to make
+// avcodec_open2 reject it.
+test('video.transcode() - releases both codecs when the encoder fails to open', async (t) => {
+  const path = './test/fixtures/sample.mp4'
+
+  await t.exception(async () => {
+    for await (const chunk of video(path).transcode({
+      format: 'webm',
+      width: 65536,
+      height: 65536
+    })) {
+      // throws
+    }
+  }, /Invalid argument/)
+})
+
 test('video.transcode() - mp4 to webm has metadata', async (t) => {
   const path = './test/fixtures/sample.mp4'
   const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
@@ -283,6 +350,62 @@ test('video.transcode() - mp4 to webm has metadata', async (t) => {
   t.is(metadata.displayRotation, 0, 'rotation is set')
 })
 
+// One fixture per display-matrix transform. All are byte-identical to
+// orientation.mov except for the rotation/reflection cells of the tkhd
+// display matrix.
+const orientationFixtures = [
+  'orientation.mov', // display rotation 270
+  'orientation-identity.mov', // identity matrix, no filter applied
+  'orientation-90.mov',
+  'orientation-180.mov',
+  'orientation-hflip.mov',
+  'orientation-vflip.mov',
+  'orientation-90-hflip.mov',
+  'orientation-90-vflip.mov'
+]
+
+for (const fixture of orientationFixtures) {
+  test(`video.transcode() - bakes display orientation into pixels (${fixture})`, async (t) => {
+    const path = `./test/fixtures/${fixture}`
+    const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
+    t.teardown(() => fs.unlinkSync(outputPath))
+
+    const inputMetadata = await video(path).metadata()
+    const inputFrame = await video(path).extractFrames({ frameIndex: 0 })
+    const expectedFrame = await image.orientate(inputFrame, {
+      transform: {
+        rotate: inputMetadata.rotation,
+        flipH: inputMetadata.flipH,
+        flipV: inputMetadata.flipV
+      }
+    })
+
+    const fd = fs.openSync(outputPath, 'w')
+    try {
+      for await (const chunk of video(path).transcode({ format: 'webm' })) {
+        fs.writeSync(fd, chunk.buffer)
+      }
+    } finally {
+      fs.closeSync(fd)
+    }
+
+    const outputMetadata = await video(outputPath).metadata()
+    const outputFrame = await video(outputPath).extractFrames({ frameIndex: 0 })
+    const pixelError = meanAbsolutePixelError(outputFrame, expectedFrame)
+
+    t.is(outputMetadata.displayRotation, 0, 'display rotation metadata is cleared')
+    t.is(outputMetadata.rotation, 0, 'corrective rotation metadata is cleared')
+    t.is(outputMetadata.flipH, false, 'horizontal flip metadata is cleared')
+    t.is(outputMetadata.flipV, false, 'vertical flip metadata is cleared')
+    t.alike(
+      { width: outputFrame.width, height: outputFrame.height },
+      { width: expectedFrame.width, height: expectedFrame.height },
+      'output frame has the transformed dimensions'
+    )
+    t.ok(pixelError < 5, `output pixels match the expected orientation (${pixelError.toFixed(2)})`)
+  })
+}
+
 test('video.transcode() - drains delayed decoder frames at end of input', async (t) => {
   const path = './test/fixtures/orientation.mov'
   const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
@@ -304,38 +427,13 @@ test('video.transcode() - drains delayed decoder frames at end of input', async 
   t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
 })
 
-test('video.transcode() - retries a decoder packet after backpressure', async (t) => {
-  const path = './test/fixtures/sample.webm'
+test('video.transcode() - drains delayed audio samples at end of input', async (t) => {
+  const path = './test/fixtures/sample.mp4'
   const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
   t.teardown(() => fs.unlinkSync(outputPath))
 
-  const inputFrames = countVideoFrames(path)
-  const videoStreamIndex = getBestStreamIndex(path, ffmpeg.constants.mediaTypes.VIDEO)
-  const sendPacket = ffmpeg.CodecContext.prototype.sendPacket
-  const receiveFrame = ffmpeg.CodecContext.prototype.receiveFrame
-  let decoder = null
-  let backpressure = false
-
-  ffmpeg.CodecContext.prototype.sendPacket = function (packet) {
-    const accepted = sendPacket.call(this, packet)
-
-    if (packet.streamIndex === videoStreamIndex) {
-      if (!decoder) decoder = this
-      if (this === decoder && !accepted) backpressure = true
-    }
-
-    return accepted
-  }
-
-  ffmpeg.CodecContext.prototype.receiveFrame = function (frame) {
-    if (this === decoder && !backpressure) return false
-    return receiveFrame.call(this, frame)
-  }
-
-  t.teardown(() => {
-    ffmpeg.CodecContext.prototype.sendPacket = sendPacket
-    ffmpeg.CodecContext.prototype.receiveFrame = receiveFrame
-  })
+  const input = decodedAudio(path)
+  const expectedSamples = Math.round((input.samples * 48000) / input.sampleRate)
 
   const fd = fs.openSync(outputPath, 'w')
   try {
@@ -346,57 +444,11 @@ test('video.transcode() - retries a decoder packet after backpressure', async (t
     fs.closeSync(fd)
   }
 
-  const outputFrames = countVideoFrames(outputPath)
+  const output = decodedAudio(outputPath)
 
-  t.ok(backpressure, 'decoder reported backpressure')
-  t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
-})
-
-test('video.transcode() - retries an encoder frame after backpressure', async (t) => {
-  const path = './test/fixtures/sample.webm'
-  const outputPath = barePath.join(os.tmpdir(), randomFileName('webm'))
-  t.teardown(() => fs.unlinkSync(outputPath))
-
-  const inputFrames = countVideoFrames(path)
-  const sendFrame = ffmpeg.CodecContext.prototype.sendFrame
-  const receivePacket = ffmpeg.CodecContext.prototype.receivePacket
-  let encoder = null
-  let backpressure = false
-
-  ffmpeg.CodecContext.prototype.sendFrame = function (frame) {
-    const accepted = sendFrame.call(this, frame)
-
-    if (frame && frame.width > 0) {
-      if (!encoder) encoder = this
-      if (this === encoder && !accepted) backpressure = true
-    }
-
-    return accepted
-  }
-
-  ffmpeg.CodecContext.prototype.receivePacket = function (packet) {
-    if (this === encoder && !backpressure) return false
-    return receivePacket.call(this, packet)
-  }
-
-  t.teardown(() => {
-    ffmpeg.CodecContext.prototype.sendFrame = sendFrame
-    ffmpeg.CodecContext.prototype.receivePacket = receivePacket
-  })
-
-  const fd = fs.openSync(outputPath, 'w')
-  try {
-    for await (const chunk of video(path).transcode({ format: 'webm' })) {
-      fs.writeSync(fd, chunk.buffer)
-    }
-  } finally {
-    fs.closeSync(fd)
-  }
-
-  const outputFrames = countVideoFrames(outputPath)
-
-  t.ok(backpressure, 'encoder reported backpressure')
-  t.is(outputFrames, inputFrames, `output contains all ${inputFrames} input frames`)
+  t.is(input.sampleRate, 44100, 'fixture exercises sample-rate conversion')
+  t.is(output.sampleRate, 48000, 'output uses the preset sample rate')
+  t.is(output.samples, expectedSamples, 'output contains every resampled audio sample')
 })
 
 test('video.transcode() - mp4 to webm with stereo', async (t) => {
@@ -608,6 +660,67 @@ test('video.getFormatRegistry() - getMuxerOptions returns muxer config', async (
   t.ok(mp4Muxer.movflags, 'mp4 muxer has movflags')
 })
 
+test('video.getFormatRegistry() - get() returns the container, defaulting to the format name', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.is(registry.get('webm').container, 'webm')
+  t.is(registry.get('mp4').container, 'mp4')
+  t.is(registry.get('nope'), undefined)
+})
+
+test('video.getFormatRegistry() - get() returns the registered container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('vp9-mp4-container', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  t.is(registry.get('vp9-mp4-container').container, 'mp4')
+})
+
+test('video.getFormatRegistry() - a format without muxer options inherits them from its container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('mp4-container-muxer', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  registry.register('own-name-no-muxer', {
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  t.alike(registry.getMuxerOptions('mp4-container-muxer'), registry.getMuxerOptions('mp4'))
+  t.alike(registry.getMuxerOptions('own-name-no-muxer'), {})
+})
+
+test('video.transcode() - custom format name muxes into its container', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  registry.register('small-mp4', {
+    container: 'mp4',
+    video: registry.getVideoConfig('mp4'),
+    audio: registry.getAudioConfig('mp4')
+  })
+
+  const chunks = []
+  for await (const chunk of video('./test/fixtures/sample.webm').transcode({
+    format: 'small-mp4',
+    width: 320,
+    height: 240
+  })) {
+    chunks.push(chunk)
+  }
+
+  const totalOutputBuffer = assertChunks(t, chunks)
+  const header = b4a.toString(totalOutputBuffer.subarray(4, 8))
+  t.is(header, 'ftyp', 'Output starts with MP4 ftyp marker')
+})
+
 test('video.getFormatRegistry() - getMuxerOptions returns empty object for unknown format', async (t) => {
   const registry = await video.getFormatRegistry()
 
@@ -655,6 +768,46 @@ test('video.getFormatRegistry() - register custom format', async (t) => {
   t.ok(registry.getMuxerOptions('mp4-ios').movflags, 'mp4-ios has movflags')
 })
 
+test('video.getFormatRegistry() - register resolves codec and format names', async (t) => {
+  const registry = await video.getFormatRegistry()
+  const constants = await video.getConstants()
+
+  const config = {
+    video: { id: 'H264', format: 'YUV420P', encoder: 'libx264' },
+    audio: { id: 'AAC', format: 'S16', sampleRate: 48000, encoder: 'aac' }
+  }
+
+  registry.register('h264-names', config)
+
+  const videoConfig = registry.getVideoConfig('h264-names')
+  const audioConfig = registry.getAudioConfig('h264-names')
+
+  t.is(videoConfig.id, constants.codecs.H264)
+  t.is(videoConfig.format, constants.pixelFormats.YUV420P)
+  t.is(videoConfig.encoder, 'libx264')
+  t.is(audioConfig.id, constants.codecs.AAC)
+  t.is(audioConfig.format, constants.sampleFormats.S16)
+  t.is(audioConfig.sampleRate, 48000)
+  t.is(audioConfig.encoder, 'aac')
+  t.alike(config, {
+    video: { id: 'H264', format: 'YUV420P', encoder: 'libx264' },
+    audio: { id: 'AAC', format: 'S16', sampleRate: 48000, encoder: 'aac' }
+  })
+})
+
+test('video.getFormatRegistry() - register throws for unknown codec name', async (t) => {
+  const registry = await video.getFormatRegistry()
+
+  t.exception(
+    () =>
+      registry.register('unknown-codec', {
+        video: { id: 'NOPE', format: 'YUV420P', encoder: 'libx264' }
+      }),
+    /NOPE/
+  )
+  t.absent(registry.hasFormat('unknown-codec'))
+})
+
 test('video.getFormatRegistry() - returns same instance', async (t) => {
   const registry1 = await video.getFormatRegistry()
   const registry2 = await video.getFormatRegistry()
@@ -672,16 +825,61 @@ test('video.transcode() - throws error for unsupported format', async (t) => {
   }, /Unsupported.*output format/)
 })
 
-function getBestStreamIndex(path, type) {
+test('createIOContext() rejects missing file descriptors', (t) => {
+  t.exception(() => createIOContext(undefined, ffmpeg), /File descriptor is required/)
+  t.exception(() => createIOContext(null, ffmpeg), /File descriptor is required/)
+})
+
+function firstMediaPacketTimestamps(path) {
   const fd = fs.openSync(path, 'r')
   const io = createIOContext(fd, ffmpeg)
   using format = new ffmpeg.InputFormatContext(io)
+  const packet = new ffmpeg.Packet()
+  const timestamps = {}
 
   try {
-    return format.getBestStreamIndex(type)
+    while (format.readFrame(packet)) {
+      const stream = format.streams[packet.streamIndex]
+      const type = stream.codecParameters.type
+
+      if (packet.pts !== -1) {
+        const timestamp = (packet.pts * stream.timeBase.numerator) / stream.timeBase.denominator
+
+        if (type === ffmpeg.constants.mediaTypes.VIDEO && timestamps.video === undefined) {
+          timestamps.video = timestamp
+        } else if (type === ffmpeg.constants.mediaTypes.AUDIO && timestamps.audio === undefined) {
+          timestamps.audio = timestamp
+        }
+      }
+
+      packet.unref()
+      if (timestamps.video !== undefined && timestamps.audio !== undefined) break
+    }
   } finally {
+    packet.destroy()
     fs.closeSync(fd)
   }
+
+  return timestamps
+}
+
+function meanAbsolutePixelError(actual, expected) {
+  if (
+    actual.width !== expected.width ||
+    actual.height !== expected.height ||
+    actual.data.length !== expected.data.length
+  ) {
+    return Infinity
+  }
+
+  let totalError = 0
+  for (let i = 0; i < actual.data.length; i += 4) {
+    totalError += Math.abs(actual.data[i] - expected.data[i])
+    totalError += Math.abs(actual.data[i + 1] - expected.data[i + 1])
+    totalError += Math.abs(actual.data[i + 2] - expected.data[i + 2])
+  }
+
+  return totalError / ((actual.data.length / 4) * 3)
 }
 
 /*
@@ -719,6 +917,46 @@ function countVideoFrames(path) {
   }
 
   return count
+}
+
+function decodedAudio(path) {
+  const fd = fs.openSync(path, 'r')
+  const io = createIOContext(fd, ffmpeg)
+  using format = new ffmpeg.InputFormatContext(io)
+  const stream = format.getBestStream(ffmpeg.constants.mediaTypes.AUDIO)
+  const decoder = stream.decoder()
+  decoder.open()
+
+  const packet = new ffmpeg.Packet()
+  const frame = new ffmpeg.Frame()
+
+  let samples = 0
+  let sampleRate = 0
+
+  try {
+    while (format.readFrame(packet)) {
+      if (packet.streamIndex === stream.index && decoder.sendPacket(packet)) {
+        while (decoder.receiveFrame(frame)) {
+          samples += frame.nbSamples
+          sampleRate = frame.sampleRate
+        }
+      }
+      packet.unref()
+    }
+
+    decoder.sendPacket(packet)
+    while (decoder.receiveFrame(frame)) {
+      samples += frame.nbSamples
+      sampleRate = frame.sampleRate
+    }
+  } finally {
+    packet.destroy()
+    frame.destroy()
+    decoder.destroy()
+    fs.closeSync(fd)
+  }
+
+  return { samples, sampleRate }
 }
 
 function isValidTime(time) {

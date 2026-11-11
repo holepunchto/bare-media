@@ -1,6 +1,6 @@
 {
   "name": "bare-media",
-  "version": "2.10.3",
+  "version": "2.12.1",
   "description": "A set of media APIs for Bare",
   "main": "index.js",
   "type": "module",
@@ -9,6 +9,7 @@
     "./types": "./types.js"
   },
   "files": [
+    "lib",
     "src",
     "index.js",
     "types.js"
@@ -17,6 +18,7 @@
     "bare-media": "./bin.js"
   },
   "scripts": {
+    "bench": "bare bench/index.js",
     "format": "prettier --write . && lunte --fix",
     "lint": "prettier --check . && lunte",
     "test": "brittle-bare --coverage test.js"
@@ -39,28 +41,35 @@
     "bare-ffmpeg": "^1.5.0",
     "bare-fs": "^4.1.5",
     "bare-gif": "^1.1.2",
-    "bare-heif": "^1.0.5",
+    "bare-gpac": "^0.1.0",
+    "bare-heif": "^1.1.0",
     "bare-ico": "^1.0.0",
     "bare-image-resample": "^1.0.1",
     "bare-jpeg": "^1.1.1",
     "bare-png": "^1.0.2",
-    "bare-svg": "^1.0.1",
+    "bare-svg": "^1.0.2",
     "bare-tiff": "^1.0.1",
     "bare-webp": "^1.0.3",
-    "get-file-format": "^1.1.0",
+    "get-file-format": "^1.2.0",
     "get-mime-type": "^2.0.1",
     "paparam": "^1.10.1"
   },
   "devDependencies": {
     "b4a": "^1.7.3",
+    "bare-crypto": "^1.15.3",
     "bare-os": "^3.6.2",
     "bare-path": "^3.0.0",
     "bare-performance": "^1.3.0",
     "bare-process": "^4.2.2",
+    "bare-subprocess": "^5.2.3",
     "brittle": "^3.16.3",
     "corestore": "^7.4.5",
     "hyperblobs": "^2.8.0",
     "hypercore-blob-server": "^1.11.0",
+    "hypercore-id-encoding": "^1.0.2",
+    "hyperdrive": "^13.1.1",
+    "hyperswarm": "^4.16.0",
+    "localdrive": "^2.2.0",
     "lunte": "^1.8.0",
     "prettier": "^3.7.4",
     "prettier-config-holepunch": "^2.0.0",

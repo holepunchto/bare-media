@@ -29,6 +29,14 @@ import { video } from 'bare-media'
 const frames = video(path).extractFrames({ frameIndex })
 ```
 
+Audio:
+
+```js
+import { audio } from 'bare-media'
+
+const metadata = await audio('recording.flac').metadata()
+```
+
 Each method can also be used independently:
 
 ```js
@@ -155,11 +163,21 @@ const data = await image(path).metadata()
 const orientation = await image(path).metadata({ tag: 'orientation' })
 ```
 
-| Parameter  | Type   | Description                         |
-| ---------- | ------ | ----------------------------------- |
-| `opts.tag` | string | Optional. Read a single tag by name |
+| Parameter  | Type   | Description                              |
+| ---------- | ------ | ---------------------------------------- |
+| `opts.tag` | string | Optional. Read a single EXIF tag by name |
 
-**Supported formats**: `jpeg`, `tiff`.
+Returns:
+
+| Field         | Type   | Description                                    |
+| ------------- | ------ | ---------------------------------------------- |
+| `exif`        | object | EXIF tags by name                              |
+| `orientation` | number | EXIF orientation, when present                 |
+| `xmp`         | string | HEIF only. The raw XMP packet, when present    |
+| `mime`        | array  | HEIF only. Any other `mime` item, when present |
+| `uri`         | array  | HEIF only. Every `uri ` item, when present     |
+
+**Supported formats**: `jpeg`, `tiff`, `heic`, `heif`, `avif`
 
 ### metadata.strip()
 
@@ -172,12 +190,12 @@ Strip metadata from an image returning a new image buffer.
 await image(path).metadata.strip().save(outPath)
 ```
 
-| Parameter              | Type    | Description                                                         |
-| ---------------------- | ------- | ------------------------------------------------------------------- |
-| `opts.keepColor`       | boolean | Keep color-transform metadata to avoid color shifts. Default `true` |
-| `opts.keepOrientation` | boolean | Keep orientation to avoid image rotations. Default `false`          |
+| Parameter              | Type    | Description                                                                  |
+| ---------------------- | ------- | ---------------------------------------------------------------------------- |
+| `opts.keepColor`       | boolean | Keep color-transform metadata. Default `true`. Can only be disabled for JPEG |
+| `opts.keepOrientation` | boolean | Preserve the Exif orientation tag. Default `false`                           |
 
-Check with `isStripMetadataSupported()` for supported types, only `jpeg` at the moment.
+Check with `isStripMetadataSupported()` for supported types: `jpeg`, `heic`, `heif`, and `avif`.
 
 ## Video API
 
@@ -185,9 +203,10 @@ Check with `isStripMetadataSupported()` for supported types, only `jpeg` at the 
 
 Extracts frames from a video in RGBA
 
-| Parameter         | Type   | Description                    |
-| ----------------- | ------ | ------------------------------ |
-| `opts.frameIndex` | number | Number of the frame to extract |
+| Parameter             | Type    | Description                                                                      |
+| --------------------- | ------- | -------------------------------------------------------------------------------- |
+| `opts.frameIndex`     | number  | Number of the frame to extract                                                   |
+| `opts.outOfRangeLast` | boolean | Fall back to the last frame when `frameIndex` is beyond the end. Default `false` |
 
 ### metadata()
 
@@ -240,6 +259,35 @@ for await (const chunk of video('input.mkv').transcode({
 }
 ```
 
+## Audio API
+
+### metadata()
+
+Basic metadata for the primary audio stream
+
+```js
+import { audio } from 'bare-media'
+
+const metadata = await audio('recording.flac').metadata()
+```
+
+Also for video files, taking their primary audio stream
+
+```js
+const metadata = await audio('video.mp4').metadata()
+```
+
+Returns:
+
+| Field      | Type   | Description                                     |
+| ---------- | ------ | ----------------------------------------------- |
+| codec.id   | number | FFmpeg codec id                                 |
+| codec.name | string | Codec name                                      |
+| duration   | number | Duration in seconds, or 0 when unavailable      |
+| sampleRate | number | Sample rate in Hz                               |
+| channels   | number | Number of audio channels                        |
+| bitRate    | number | Stream bitrate in bits/s, or 0 when unavailable |
+
 ## CLI
 
 `bare-media [flags] [command]`
@@ -250,7 +298,7 @@ Flags:
   --help|-h      Show help
 
 Commands:
-  metadata       Print image or video metadata (experimental)
+  metadata       Print image, video or audio metadata (experimental)
   convert        Convert an image
   transcode      Transcode a video
   types          List supported MIME types
@@ -262,9 +310,11 @@ Helpers to check supported media types are exposed in `bare-media/types`:
 
 - `supportedImageMimetypes`: list of supported image mimetypes.
 - `supportedVideoMimetypes`: list of supported video mimetypes.
+- `supportedAudioMimetypes`: list of common audio mimetypes supported for metadata.
 - `isImageSupported(mimetype)`: returns `true` if the mimetype is a supported image format.
 - `isVideoSupported(mimetype)`: returns `true` if the mimetype is a supported video format.
-- `isMediaSupported(mimetype)`: returns `true` if the mimetype is either a supported image or video format.
+- `isAudioSupported(mimetype)`: returns `true` if the mimetype is a supported audio format.
+- `isMediaSupported(mimetype)`: returns `true` for a supported image, video or audio format.
 - `isStripMetadataSupported(mimetype)`: returns `true` if `metadata.strip()` supports the mimetype.
 
 Detect the MIME type of a buffer:
@@ -274,6 +324,14 @@ import { detectMimeType } from 'bare-media'
 
 const mimetype = detectMimeType(buffer)
 ```
+
+Detect the MIME type of a file with deeper inspection:
+
+```js
+const mimetype = await detectMimeType.fromPath(path)
+```
+
+This returns `null` when the MIME type cannot be determined confidently.
 
 > This may return non-media MIME types, use `isMediaSupported()` to validate support.
 

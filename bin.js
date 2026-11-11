@@ -2,16 +2,19 @@
 import { command, summary, arg, flag, bail } from 'paparam'
 import fs from 'bare-fs'
 import path from 'bare-path'
-import { image, video } from 'bare-media'
+import { image, video, audio } from 'bare-media'
 import {
   supportedImageMimetypes,
   supportedVideoMimetypes,
+  supportedAudioMimetypes,
   isImageSupported,
   isStripMetadataSupported
 } from 'bare-media/types'
 import getMimeType from 'get-mime-type'
 
+import { summarizeMetadata, formatMetadata } from './lib/bin'
 import { detectMimeType } from './src/codecs'
+import { ERR_NO_VIDEO_STREAM } from './src/errors'
 import pkg from './package'
 
 const cli = command(
@@ -25,11 +28,12 @@ const cli = command(
   flag('--version|-v', 'Print version'),
   command(
     'metadata',
-    summary('Print image or video metadata (experimental)'),
+    summary('Print image, video or audio metadata (experimental)'),
     arg('<input>', 'Input media file'),
     arg('[output]', 'Output media file'),
     flag('--strip', 'Strip image metadata'),
     flag('--json|-j', 'Print JSON'),
+    flag('--raw|-r', 'Show binary metadata values'),
     metadata
   ),
   command(
@@ -65,7 +69,7 @@ const cli = command(
 
 async function metadata(parsed) {
   const input = validateInput(parsed.args.input)
-  const mimetype = detectMimeType(await head(input))
+  const mimetype = detectMimeType(await head(input)) || getMimeType(input)
 
   if (mimetype.startsWith('image/')) {
     if (parsed.flags.strip) {
@@ -82,15 +86,27 @@ async function metadata(parsed) {
       return
     }
 
-    const data = await image(input).metadata()
-    const out = data || { mimetype }
-    print(out, { json: parsed.flags.json })
+    const data = (await image(input).metadata()) || { mimetype }
+    const output = parsed.flags.raw ? data : summarizeMetadata(data)
+    const text = formatMetadata(output, { json: parsed.flags.json })
+    if (text) console.log(text)
     return
   }
 
-  if (mimetype.startsWith('video/')) {
-    const data = await video(input).metadata()
-    print(data, { json: parsed.flags.json })
+  if (mimetype.startsWith('video/') || mimetype.startsWith('audio/')) {
+    const data = mimetype.startsWith('audio/')
+      ? await audio(input).metadata()
+      : await video(input)
+          .metadata()
+          .catch((err) => {
+            if (err.code === ERR_NO_VIDEO_STREAM) {
+              return audio(input).metadata()
+            }
+            throw err
+          })
+    const output = parsed.flags.raw ? data : summarizeMetadata(data)
+    const text = formatMetadata(output, { json: parsed.flags.json })
+    if (text) console.log(text)
     return
   }
 
@@ -153,6 +169,8 @@ function types() {
   for (const mimetype of supportedImageMimetypes) console.log(`  ${mimetype}`)
   console.log('Videos:')
   for (const mimetype of supportedVideoMimetypes) console.log(`  ${mimetype}`)
+  console.log('Audio:')
+  for (const mimetype of supportedAudioMimetypes) console.log(`  ${mimetype}`)
 }
 
 async function head(filePath, byteLength = 4100) {
@@ -191,33 +209,6 @@ function validateFlag(value, name, type) {
     return Number.parseInt(value)
   }
   return value
-}
-
-function print(value, opts = {}) {
-  const { prefix = '', json = false } = opts
-
-  if (json) {
-    console.log(JSON.stringify(value, null, 2))
-    return
-  }
-
-  for (const [key, entry] of Object.entries(value)) {
-    if (entry && typeof entry === 'object') {
-      if (Buffer.isBuffer(entry)) {
-        console.log(`${prefix}${key}:`, entry.toString())
-      } else if (Array.isArray(entry)) {
-        console.log(`${prefix}${key}:`)
-        for (const value of entry) {
-          print(value, { prefix: `${prefix}  ` })
-        }
-      } else {
-        console.log(`${prefix}${key}:`)
-        print(entry, { prefix: `${prefix}  ` })
-      }
-    } else {
-      console.log(`${prefix}${key}: ${String(entry)}`)
-    }
-  }
 }
 
 async function main() {

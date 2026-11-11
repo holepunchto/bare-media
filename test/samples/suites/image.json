@@ -1,0 +1,397 @@
+{
+  "catalog": {
+    "path": "files/samples/images",
+    "samples": [
+      {
+        "path": "still.bmp",
+        "sha256": "0079c7277d8ba8dc80abb1eb901c2ebe5e1053b78d78ab4bf786b758feb25a78"
+      },
+      {
+        "path": "still.gif",
+        "sha256": "825bbd01ed450caed3c3c6cd9f50ee6b44eb15a0eb8eea96ef4ac856056dc9d8"
+      },
+      {
+        "path": "still.ico",
+        "sha256": "eb2b09dce52b45c25d3080f2100daeb327c358a61c1ab26c65b23d7d2c6285d6"
+      },
+      {
+        "path": "still.jpg",
+        "sha256": "c2962813b1a2801477345cacea0fa7d5ea0f07104e59670212118cad037532be"
+      },
+      {
+        "path": "still.png",
+        "sha256": "f8e2610576e3cca5ac3ffa8e61e94704cdf2cc791ec9dad96e8d84915fb69028"
+      },
+      {
+        "path": "still.tiff",
+        "sha256": "f5195e86afc184b573995c8f2c292df654c96ebdd6dec43a78e059cc39294e4f"
+      },
+      {
+        "path": "still.webp",
+        "sha256": "8b620afddfb0cd075f93e033a381730aa5028af7f8293d751591d87bbbe16824"
+      },
+      {
+        "path": "still.svg",
+        "sha256": "8f5e5c9a0e3cdf75175ee2a5a5b31d3e6b3af7b0a14c96076ca98f078de7afb4"
+      },
+      {
+        "path": "still.avif",
+        "sha256": "9f018f8109378b103bce35eebc7583e6fd804ada2c9d8583d5a9889d67ef2459"
+      },
+      {
+        "path": "animated.gif",
+        "sha256": "fdd03b646898a1acf48dfe27f18513f8c528904936660b16c483bec2d7bfa557"
+      },
+      {
+        "path": "animated.webp",
+        "sha256": "18ef44e7917acf222e0a1818c1f0e3b5db105101142162541d8053054b9cdf79"
+      },
+      {
+        "path": "oriented.jpg",
+        "sha256": "597aa736402aebb6df9f222ed19cf5db624fb5a0b32aeb3de6efee4eb76217d7"
+      },
+      {
+        "path": "still.heic",
+        "sha256": "8aa50c7001ef9a081a929c5a30cd1886c5abc6370c2841b208ce0b2b980bca22"
+      },
+      {
+        "path": "metadata-exif.heic",
+        "sha256": "b9f2c0f12eacb06cc3f216c0a6c2a823c6e8083cd4b43a29ef6329b785b16643"
+      },
+      {
+        "path": "metadata-exif.avif",
+        "sha256": "7c15c43c208cd4b195f6126b058b0ce8c8f6a8b2d80f03c900a452d762d2990e"
+      },
+      {
+        "path": "metadata-xmp.heic",
+        "sha256": "e63ce8a6f2f803fc40fe68969f3328c38180c61721fa517d26bfd809513f9c5e"
+      },
+      {
+        "path": "metadata-xmp.avif",
+        "sha256": "d2aed025be93caeb85599bba748188c8d52b26905e552a663cf41cfd15df72b5"
+      },
+      {
+        "path": "metadata-uri.heic",
+        "sha256": "566a7a838d8e3e1b8563b4fb1c2696e8cd9594c25d9984b06ca252dfd1fde9ed"
+      },
+      {
+        "path": "metadata-uri.avif",
+        "sha256": "53aeb2d0a2a23d22bb216e913f41b8274fcc888d0717430859a03ecf9dbad5ee"
+      },
+      {
+        "path": "samsung-a32-01.heic",
+        "sha256": "1b62f2f1969d4bc04bb3e8d094dbdd7c96a070a8692bb305c517c1a78357118b"
+      },
+      {
+        "path": "samsung-a32-02.heic",
+        "sha256": "fbb59e78fac17ab72331da3f4f650a0aade2e55159ab8ac4390899e297dc9f71"
+      },
+      {
+        "path": "samsung-a32-03.heic",
+        "sha256": "eca52795e2acb6123f40ef47b59611f1c4d20762bfff443ac929a47800a11a49"
+      },
+      {
+        "path": "iphone-12-pro-01.heic",
+        "sha256": "8e2a5725aa7639678a0c10d25e1211981d81c0d94062db51e99dc002ce6ff349"
+      },
+      {
+        "path": "iphone-12-pro-02.heic",
+        "sha256": "65960bf2782cd8ebd29a958e75b6adb7dff2bbff841389e869d917438c729010"
+      },
+      {
+        "path": "iphone-12-pro-03.heic",
+        "sha256": "9fbec4990572aebe765b9c1bd4094d94ea9de98c790edb9b7c5d0077095a0087"
+      },
+      {
+        "path": "ipad-air-5-01.heic",
+        "sha256": "7c331207b67f159177675c8b2760ad6035a8dada04c12ed7f878d1c50120a9c7"
+      },
+      {
+        "path": "ipad-air-5-02.heic",
+        "sha256": "8221a26df520b6e571818aeb1608ab7112e170be58cbe362de8ced107000b1eb"
+      }
+    ]
+  },
+  "tests": {
+    "metadata": {
+      "samples": [
+        {
+          "path": "oriented.jpg",
+          "orientation": 6
+        }
+      ]
+    },
+    "strip": {
+      "samples": [
+        {
+          "path": "metadata-exif.heic",
+          "payloads": ["bare-media sample author"]
+        },
+        {
+          "path": "metadata-exif.avif",
+          "payloads": ["bare-media sample author"]
+        },
+        {
+          "path": "metadata-xmp.heic",
+          "payloads": ["bare-media XMP sample"]
+        },
+        {
+          "path": "metadata-xmp.avif",
+          "payloads": ["bare-media XMP sample"]
+        },
+        {
+          "path": "metadata-uri.heic",
+          "payloads": ["bare-media URI metadata sample"]
+        },
+        {
+          "path": "metadata-uri.avif",
+          "payloads": ["bare-media URI metadata sample"]
+        },
+        {
+          "path": "samsung-a32-01.heic",
+          "payloads": ["SM-A326B", "Image_UTC_Data", "MCC_Data"]
+        },
+        {
+          "path": "samsung-a32-02.heic",
+          "payloads": ["SM-A326B", "Image_UTC_Data", "MCC_Data"]
+        },
+        {
+          "path": "samsung-a32-03.heic",
+          "payloads": ["SM-A326B", "Image_UTC_Data", "MCC_Data"]
+        },
+        {
+          "path": "iphone-12-pro-01.heic",
+          "payloads": ["iPhone 12 Pro"]
+        },
+        {
+          "path": "iphone-12-pro-02.heic",
+          "payloads": ["iPhone 12 Pro"]
+        },
+        {
+          "path": "iphone-12-pro-03.heic",
+          "payloads": ["iPhone 12 Pro"]
+        },
+        {
+          "path": "ipad-air-5-01.heic",
+          "payloads": ["iPad Air (5th generation)"]
+        },
+        {
+          "path": "ipad-air-5-02.heic",
+          "payloads": ["iPad Air (5th generation)"]
+        }
+      ]
+    },
+    "decode": {
+      "samples": [
+        {
+          "path": "still.bmp",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.gif",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.ico",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.jpg",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.png",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.tiff",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.webp",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.svg",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.avif",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "animated.gif",
+          "width": 96,
+          "height": 64,
+          "frames": 4
+        },
+        {
+          "path": "animated.webp",
+          "width": 96,
+          "height": 64,
+          "frames": 4
+        },
+        {
+          "path": "oriented.jpg",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        },
+        {
+          "path": "still.heic",
+          "width": 96,
+          "height": 64,
+          "frames": 1
+        }
+      ],
+      "animated": [
+        {
+          "path": "animated.gif",
+          "frames": 4
+        },
+        {
+          "path": "animated.webp",
+          "frames": 4
+        }
+      ]
+    },
+    "crop": {
+      "samples": [
+        "still.bmp",
+        "still.gif",
+        "still.ico",
+        "still.jpg",
+        "still.png",
+        "still.tiff",
+        "still.webp",
+        "still.svg",
+        "still.avif",
+        "animated.gif",
+        "animated.webp",
+        "oriented.jpg",
+        "still.heic"
+      ]
+    },
+    "resize": {
+      "samples": [
+        "still.bmp",
+        "still.gif",
+        "still.ico",
+        "still.jpg",
+        "still.png",
+        "still.tiff",
+        "still.webp",
+        "still.svg",
+        "still.avif",
+        "animated.gif",
+        "animated.webp",
+        "oriented.jpg",
+        "still.heic"
+      ]
+    },
+    "orientate": {
+      "samples": [
+        "still.bmp",
+        "still.gif",
+        "still.ico",
+        "still.jpg",
+        "still.png",
+        "still.tiff",
+        "still.webp",
+        "still.svg",
+        "still.avif",
+        "animated.gif",
+        "animated.webp",
+        "oriented.jpg",
+        "still.heic"
+      ],
+      "exif": [
+        {
+          "path": "oriented.jpg",
+          "orientedWidth": 64,
+          "orientedHeight": 96
+        }
+      ]
+    },
+    "rotate": {
+      "samples": [
+        "still.bmp",
+        "still.gif",
+        "still.ico",
+        "still.jpg",
+        "still.png",
+        "still.tiff",
+        "still.webp",
+        "still.svg",
+        "still.avif",
+        "animated.gif",
+        "animated.webp",
+        "oriented.jpg",
+        "still.heic"
+      ]
+    },
+    "flip": {
+      "samples": [
+        "still.bmp",
+        "still.gif",
+        "still.ico",
+        "still.jpg",
+        "still.png",
+        "still.tiff",
+        "still.webp",
+        "still.svg",
+        "still.avif",
+        "animated.gif",
+        "animated.webp",
+        "oriented.jpg",
+        "still.heic"
+      ]
+    },
+    "encode": {
+      "samples": [
+        "still.bmp",
+        "still.gif",
+        "still.ico",
+        "still.jpg",
+        "still.png",
+        "still.tiff",
+        "still.webp",
+        "still.svg",
+        "still.avif",
+        "animated.gif",
+        "animated.webp",
+        "oriented.jpg",
+        "still.heic"
+      ],
+      "mimetypes": ["image/jpeg", "image/png", "image/tiff", "image/webp"],
+      "animated": [
+        {
+          "path": "animated.gif",
+          "frames": 4
+        },
+        {
+          "path": "animated.webp",
+          "frames": 4
+        }
+      ]
+    }
+  }
+}
