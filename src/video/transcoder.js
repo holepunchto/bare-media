@@ -714,7 +714,7 @@ class Transcoder {
         }
 
         this.#trackTime(inputPacket, config)
-        this.#decodePacket(config, inputPacket, frame, outputPacket)
+        this._decodePacket(config, inputPacket, frame, outputPacket)
         inputPacket.unref()
         yield* this.#drainChunks()
       }
@@ -725,10 +725,12 @@ class Transcoder {
     }
   }
 
-  #decodePacket(config, inputPacket, frame, outputPacket) {
+  _decodePacket(config, inputPacket, frame, outputPacket) {
     while (!config.decoder.sendPacket(inputPacket)) {
       if (!this.#receiveDecodedFrames(config, frame, outputPacket)) {
-        throw new Error('Decoder rejected a packet and has no frame to release')
+        throw new Error(
+          `Decoder could not accept packet for stream ${config.inputStream.index} (${config.inputStream.codec.name})`
+        )
       }
     }
 
@@ -803,7 +805,9 @@ class Transcoder {
     while (!encoder.sendFrame(frame)) {
       if (!this.#writeEncodedPackets(encoder, outputStream, packet)) {
         if (frame === null) return
-        throw new Error('Encoder rejected a frame and has no packet to release')
+        throw new Error(
+          `Encoder could not accept frame for stream ${outputStream.index} (${outputStream.codec.name})`
+        )
       }
     }
 
