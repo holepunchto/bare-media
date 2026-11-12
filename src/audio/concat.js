@@ -1,6 +1,6 @@
-import { importFFmpeg, createIOContext, createOutputIOContext } from '../ffmpeg'
+import { importFFmpeg, createIOContext, createMemoryOutputIOContext } from '../ffmpeg'
 
-export async function concat(inputs, output, opts = {}) {
+export async function concat(inputs, opts = {}) {
   const { format = 'ipod' } = opts
 
   if (!Array.isArray(inputs) || inputs.length === 0) {
@@ -14,7 +14,7 @@ export async function concat(inputs, output, opts = {}) {
     for (const fd of inputs) sources.push(openAudioSource(fd, ffmpeg))
     assertSameAudioParameters(sources)
 
-    return { duration: remux(sources, output, format, ffmpeg) }
+    return remux(sources, format, ffmpeg)
   } finally {
     for (const source of sources) source.format.destroy()
   }
@@ -50,8 +50,9 @@ function assertSameAudioParameters(sources) {
   }
 }
 
-function remux(sources, output, format, ffmpeg) {
-  using outputFormat = new ffmpeg.OutputFormatContext(format, createOutputIOContext(output, ffmpeg))
+function remux(sources, format, ffmpeg) {
+  const output = createMemoryOutputIOContext(ffmpeg)
+  using outputFormat = new ffmpeg.OutputFormatContext(format, output.io)
   const outputStream = outputFormat.createStream()
 
   copyCodecParameters(sources[0].stream, outputStream)
@@ -83,7 +84,7 @@ function remux(sources, output, format, ffmpeg) {
 
   outputFormat.writeTrailer()
 
-  return (offset * timeBase.numerator) / timeBase.denominator
+  return output.toBuffer()
 }
 
 function copyCodecParameters(inputStream, outputStream) {

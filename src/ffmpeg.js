@@ -1,6 +1,7 @@
 import fs from 'bare-fs'
 
 const AV_TIME_BASE = 1000000
+const INITIAL_OUTPUT_CAPACITY = 64 * 1024
 
 export async function importFFmpeg() {
   try {
@@ -35,17 +36,18 @@ export function createIOContext(fd, ffmpeg) {
   })
 }
 
-export function createOutputIOContext(fd, ffmpeg) {
-  assertFileDescriptor(fd)
-
+export function createMemoryOutputIOContext(ffmpeg) {
+  let storage = Buffer.alloc(INITIAL_OUTPUT_CAPACITY)
   let size = 0
   let offset = 0
 
-  return new ffmpeg.IOContext(4096, {
+  const io = new ffmpeg.IOContext(4096, {
     onwrite: (chunk) => {
-      fs.writeSync(fd, chunk, 0, chunk.length, offset)
-      offset += chunk.length
-      size = Math.max(size, offset)
+      const end = offset + chunk.length
+      if (end > storage.length) storage = grow(storage, end, size)
+      storage.set(chunk, offset)
+      offset = end
+      size = Math.max(size, end)
       return chunk.length
     },
     onseek: (o, whence) => {
@@ -57,6 +59,8 @@ export function createOutputIOContext(fd, ffmpeg) {
       return offset
     }
   })
+
+  return { io, toBuffer: () => storage.subarray(0, size) }
 }
 
 export function getDuration(inputFormat, stream) {
@@ -78,22 +82,6 @@ export async function withFileDescriptor(input, fn) {
   }
 }
 
-export async function withOutputFileDescriptor(output, fn) {
-  const fd = fs.openSync(output, 'w')
-  let result
-
-  try {
-    result = await fn(fd)
-  } catch (err) {
-    fs.closeSync(fd)
-    fs.unlinkSync(output)
-    throw err
-  }
-
-  fs.closeSync(fd)
-  return result
-}
-
 export async function* withFileDescriptorStream(input, fn) {
   const fd = fs.openSync(input, 'r')
   try {
@@ -101,6 +89,15 @@ export async function* withFileDescriptorStream(input, fn) {
   } finally {
     fs.closeSync(fd)
   }
+}
+
+function grow(storage, required, used) {
+  let capacity = storage.length * 2
+  while (capacity < required) capacity *= 2
+
+  const grown = Buffer.alloc(capacity)
+  storage.copy(grown, 0, 0, used)
+  return grown
 }
 
 function assertFileDescriptor(fd) {

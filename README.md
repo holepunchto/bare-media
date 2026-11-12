@@ -290,13 +290,27 @@ Returns:
 
 ### concat()
 
-Join audio files into one, each starting where the previous one ends
+Join audio files into one, each starting where the previous one ends. Resolves a buffer with the joined file
 
 ```js
-const { duration } = await audio(['part-1.m4a', 'part-2.m4a']).concat('joined.m4a')
+const buffer = await audio('part-1.m4a').concat('part-2.m4a')
 ```
 
-Also as `audio.concat(inputFds, outputFd, opts)` for file descriptors, which are left open.
+Also with an array of inputs, with or without a pipeline input
+
+```js
+const buffer = await audio('part-1.m4a').concat(['part-2.m4a', 'part-3.m4a'])
+const buffer = await audio().concat(['part-1.m4a', 'part-2.m4a', 'part-3.m4a'])
+```
+
+Save the joined file with `save()`
+
+```js
+await audio('part-1.m4a').concat('part-2.m4a').save('joined.m4a')
+await audio().concat(['part-1.m4a', 'part-2.m4a']).save('joined.m4a')
+```
+
+Inputs are joined in order: the pipeline input first, then the inputs of each `concat()` call. When several `concat()` calls set `opts.format`, the last one wins.
 
 Inputs must share codec, sample rate and channels, because packets are copied without re-encoding.
 
@@ -304,11 +318,7 @@ Inputs must share codec, sample rate and channels, because packets are copied wi
 | ------------- | ------ | --------------------------------------- |
 | `opts.format` | string | FFmpeg muxer name. Default `ipod` (m4a) |
 
-Returns:
-
-| Field    | Type   | Description                       |
-| -------- | ------ | --------------------------------- |
-| duration | number | Duration of the output in seconds |
+Also as `audio.concat(inputFds, opts)` for readable file descriptors, which resolves the buffer and leaves the descriptors open.
 
 ## CLI
 
