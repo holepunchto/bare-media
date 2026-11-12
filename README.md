@@ -288,6 +288,28 @@ Returns:
 | channels   | number | Number of audio channels                        |
 | bitRate    | number | Stream bitrate in bits/s, or 0 when unavailable |
 
+### concat()
+
+Join audio files into one, each starting where the previous one ends
+
+```js
+const { duration } = await audio(['part-1.m4a', 'part-2.m4a']).concat('joined.m4a')
+```
+
+Also as `audio.concat(inputFds, outputFd, opts)` for file descriptors, which are left open.
+
+Inputs must share codec, sample rate and channels, because packets are copied without re-encoding.
+
+| Parameter     | Type   | Description                             |
+| ------------- | ------ | --------------------------------------- |
+| `opts.format` | string | FFmpeg muxer name. Default `ipod` (m4a) |
+
+Returns:
+
+| Field    | Type   | Description                       |
+| -------- | ------ | --------------------------------- |
+| duration | number | Duration of the output in seconds |
+
 ## CLI
 
 `bare-media [flags] [command]`

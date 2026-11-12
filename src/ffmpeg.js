@@ -12,9 +12,7 @@ export async function importFFmpeg() {
 }
 
 export function createIOContext(fd, ffmpeg) {
-  if (fd === undefined || fd === null) {
-    throw new Error('File descriptor is required')
-  }
+  assertFileDescriptor(fd)
 
   const fileSize = fs.fstatSync(fd).size
   let offset = 0
@@ -31,6 +29,30 @@ export function createIOContext(fd, ffmpeg) {
       if (whence === ffmpeg.constants.seek.SET) offset = o
       else if (whence === ffmpeg.constants.seek.CUR) offset += o
       else if (whence === ffmpeg.constants.seek.END) offset = fileSize + o
+      else return -1
+      return offset
+    }
+  })
+}
+
+export function createOutputIOContext(fd, ffmpeg) {
+  assertFileDescriptor(fd)
+
+  let size = 0
+  let offset = 0
+
+  return new ffmpeg.IOContext(4096, {
+    onwrite: (chunk) => {
+      fs.writeSync(fd, chunk, 0, chunk.length, offset)
+      offset += chunk.length
+      size = Math.max(size, offset)
+      return chunk.length
+    },
+    onseek: (o, whence) => {
+      if (whence === ffmpeg.constants.seek.SIZE) return size
+      if (whence === ffmpeg.constants.seek.SET) offset = o
+      else if (whence === ffmpeg.constants.seek.CUR) offset += o
+      else if (whence === ffmpeg.constants.seek.END) offset = size + o
       else return -1
       return offset
     }
@@ -56,12 +78,34 @@ export async function withFileDescriptor(input, fn) {
   }
 }
 
+export async function withOutputFileDescriptor(output, fn) {
+  const fd = fs.openSync(output, 'w')
+  let result
+
+  try {
+    result = await fn(fd)
+  } catch (err) {
+    fs.closeSync(fd)
+    fs.unlinkSync(output)
+    throw err
+  }
+
+  fs.closeSync(fd)
+  return result
+}
+
 export async function* withFileDescriptorStream(input, fn) {
   const fd = fs.openSync(input, 'r')
   try {
     yield* fn(fd)
   } finally {
     fs.closeSync(fd)
+  }
+}
+
+function assertFileDescriptor(fd) {
+  if (fd === undefined || fd === null) {
+    throw new Error('File descriptor is required')
   }
 }
 
