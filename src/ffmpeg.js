@@ -2,6 +2,7 @@ import fs from 'bare-fs'
 
 const AV_TIME_BASE = 1000000
 const INITIAL_OUTPUT_CAPACITY = 64 * 1024
+const END_OF_INPUT = 0
 
 export async function importFFmpeg() {
   try {
@@ -33,6 +34,7 @@ export function createIOContext(input, ffmpeg) {
   })
 }
 
+/** Returns `{ size, read }`: `size` is in bytes and `read(buffer, requested, offset)` returns the number of bytes copied, 0 at the end of the input. */
 function createInputSource(input) {
   if (input instanceof Uint8Array) return createBufferSource(input)
 
@@ -53,7 +55,7 @@ function createBufferSource(bytes) {
   return {
     size,
     read: (buffer, requested, offset) => {
-      if (offset < 0 || offset >= size) return 0
+      if (offset < 0 || offset >= size) return END_OF_INPUT
       const chunk = bytes.subarray(offset, Math.min(offset + requested, size))
       buffer.set(chunk)
       return chunk.byteLength

@@ -2,7 +2,13 @@ import fs from 'bare-fs'
 import { metadata } from './audio/metadata'
 import { concat } from './audio/concat'
 
+function assertInput(input) {
+  if (typeof input === 'string' || input instanceof Uint8Array) return
+  throw new TypeError('Input must be a file path or a buffer')
+}
+
 async function read(input) {
+  assertInput(input)
   if (typeof input === 'string') return await fs.readFile(input)
   return input
 }
@@ -14,6 +20,8 @@ async function withSources(inputs, fn) {
     const sources = []
 
     for (const input of inputs) {
+      assertInput(input)
+
       if (typeof input === 'string') {
         const fd = fs.openSync(input, 'r')
         fds.push(fd)

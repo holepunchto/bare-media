@@ -9,6 +9,8 @@ const SEGMENT_2 = 'test/fixtures/voice-segment-2.m4a'
 const SEGMENT_22KHZ = 'test/fixtures/voice-segment-22khz.m4a'
 const DURATION_TOLERANCE = 0.1
 const INVALID_INPUTS_ERROR = /must be a file descriptor/
+const INVALID_PIPELINE_INPUT_ERROR = /Input must be a file path or a buffer/
+const PADDING_BYTES = 7
 
 /** Returns the summed duration of the inputs in seconds. */
 async function totalDuration(inputs) {
@@ -244,9 +246,9 @@ test('audio.concat([buffer, fd]) joins mixed inputs', async (t) => {
 
 test('audio accepts a buffer view with a byte offset', async (t) => {
   const bytes = await fs.readFile(SEGMENT_1)
-  const padded = Buffer.alloc(bytes.byteLength + 7, 0xff)
-  bytes.copy(padded, 7)
-  const view = padded.subarray(7)
+  const padded = Buffer.alloc(bytes.byteLength + PADDING_BYTES, 0xff)
+  bytes.copy(padded, PADDING_BYTES)
+  const view = padded.subarray(PADDING_BYTES)
 
   t.ok(view.byteOffset > 0)
   t.alike(await audio(view).metadata(), await audio(SEGMENT_1).metadata())
@@ -300,4 +302,37 @@ test('audio(buffer).metadata() seeks to a trailing moov box', async (t) => {
   const input = 'test/fixtures/sample-stereo.mp4'
 
   t.alike(await audio(await fs.readFile(input)).metadata(), await audio(input).metadata())
+})
+
+test('audio.read() rejects inputs that are not a path or a buffer', async (t) => {
+  for (const input of [undefined, null, 42, {}]) {
+    await t.exception.all(audio.read(input), INVALID_PIPELINE_INPUT_ERROR)
+  }
+})
+
+test('audio pipeline rejects inputs that are not a path or a buffer', async (t) => {
+  await t.exception.all(Promise.resolve(audio()), INVALID_PIPELINE_INPUT_ERROR)
+  await t.exception.all(Promise.resolve(audio(42)), INVALID_PIPELINE_INPUT_ERROR)
+  await t.exception.all(audio(42).metadata(), INVALID_PIPELINE_INPUT_ERROR)
+  await t.exception.all(Promise.resolve(audio(42).concat(SEGMENT_2)), INVALID_PIPELINE_INPUT_ERROR)
+  await t.exception.all(Promise.resolve(audio(SEGMENT_1).concat(42)), INVALID_PIPELINE_INPUT_ERROR)
+  await t.exception.all(
+    Promise.resolve(audio().concat([SEGMENT_1, null])),
+    INVALID_PIPELINE_INPUT_ERROR
+  )
+})
+
+test('audio pipeline rejects a file descriptor', async (t) => {
+  const fd = fs.openSync(SEGMENT_1, 'r')
+
+  try {
+    await t.exception.all(audio(fd).metadata(), INVALID_PIPELINE_INPUT_ERROR)
+    await t.exception.all(Promise.resolve(audio(fd)), INVALID_PIPELINE_INPUT_ERROR)
+    await t.exception.all(
+      Promise.resolve(audio(fd).concat(SEGMENT_2)),
+      INVALID_PIPELINE_INPUT_ERROR
+    )
+  } finally {
+    fs.closeSync(fd)
+  }
 })
