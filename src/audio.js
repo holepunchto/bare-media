@@ -1,4 +1,5 @@
 import fs from 'bare-fs'
+import { withFileDescriptor } from './ffmpeg'
 import { metadata } from './audio/metadata'
 import { concat } from './audio/concat'
 
@@ -13,30 +14,6 @@ async function read(input) {
   return input
 }
 
-async function withSources(inputs, fn) {
-  const fds = []
-
-  try {
-    const sources = []
-
-    for (const input of inputs) {
-      assertInput(input)
-
-      if (typeof input === 'string') {
-        const fd = fs.openSync(input, 'r')
-        fds.push(fd)
-        sources.push(fd)
-      } else {
-        sources.push(input)
-      }
-    }
-
-    return await fn(sources)
-  } finally {
-    for (const fd of fds) fs.closeSync(fd)
-  }
-}
-
 class AudioPipeline {
   constructor(input) {
     this.input = input
@@ -44,7 +21,9 @@ class AudioPipeline {
   }
 
   async metadata() {
-    return withSources([this.input], ([source]) => metadata(source))
+    assertInput(this.input)
+    if (typeof this.input === 'string') return withFileDescriptor(this.input, metadata)
+    return metadata(this.input)
   }
 
   concat(inputs, opts) {
@@ -64,7 +43,10 @@ class AudioPipeline {
         opts = { ...opts, ...step.opts }
       }
 
-      resolve(await withSources(inputs, (sources) => concat(sources, opts)))
+      const buffers = []
+      for (const input of inputs) buffers.push(await read(input))
+
+      resolve(await concat(buffers, opts))
     } catch (err) {
       reject(err)
     }

@@ -4,12 +4,12 @@ const REFERENCE_SEGMENT = 0
 
 export async function concat(inputs, opts = {}) {
   const { format = 'ipod' } = opts
-  const segments = toSegments(inputs)
+  const validInputs = toInputs(inputs)
   const ffmpeg = await importFFmpeg()
   const sources = []
 
   try {
-    for (const segment of segments) sources.push(openAudioSource(segment, ffmpeg))
+    for (const input of validInputs) sources.push(openAudioSource(input, ffmpeg))
     assertSameAudioParameters(sources)
 
     return remux(sources, format, ffmpeg)
@@ -18,21 +18,21 @@ export async function concat(inputs, opts = {}) {
   }
 }
 
-function toSegments(inputs) {
-  const segments = Array.isArray(inputs) ? inputs : [inputs]
+function toInputs(inputs) {
+  const list = Array.isArray(inputs) ? inputs : [inputs]
 
-  if (!segments.every(isSegment)) {
+  if (!list.every(isInput)) {
     throw new TypeError('Inputs must be a file descriptor, a buffer or an array of them')
   }
 
-  if (segments.length === 0) {
+  if (list.length === 0) {
     throw new Error('At least one input is required')
   }
 
-  return segments
+  return list
 }
 
-function isSegment(input) {
+function isInput(input) {
   return input instanceof Uint8Array || isFileDescriptor(input)
 }
 
@@ -40,8 +40,8 @@ function isFileDescriptor(fd) {
   return Number.isInteger(fd) && fd >= 0
 }
 
-function openAudioSource(segment, ffmpeg) {
-  const format = new ffmpeg.InputFormatContext(createIOContext(segment, ffmpeg))
+function openAudioSource(input, ffmpeg) {
+  const format = new ffmpeg.InputFormatContext(createIOContext(input, ffmpeg))
   const stream = format.getBestStream(ffmpeg.constants.mediaTypes.AUDIO)
 
   if (!stream) {
