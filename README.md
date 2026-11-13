@@ -288,6 +288,38 @@ Returns:
 | channels   | number | Number of audio channels                        |
 | bitRate    | number | Stream bitrate in bits/s, or 0 when unavailable |
 
+### concat()
+
+Join audio files into one, each starting where the previous one ends. Resolves a buffer with the joined file
+
+```js
+const buffer = await audio('part-1.m4a').concat('part-2.m4a')
+```
+
+Also with an array of inputs, with or without a pipeline input
+
+```js
+const buffer = await audio('part-1.m4a').concat(['part-2.m4a', 'part-3.m4a'])
+const buffer = await audio().concat(['part-1.m4a', 'part-2.m4a', 'part-3.m4a'])
+```
+
+Save the joined file with `save()`
+
+```js
+await audio('part-1.m4a').concat('part-2.m4a').save('joined.m4a')
+await audio().concat(['part-1.m4a', 'part-2.m4a']).save('joined.m4a')
+```
+
+When several `concat()` calls set `opts.format`, the last one wins.
+
+Inputs must share codec, sample rate and channels, because packets are copied without re-encoding.
+
+| Parameter     | Type   | Description                             |
+| ------------- | ------ | --------------------------------------- |
+| `opts.format` | string | FFmpeg muxer name. Default `ipod` (m4a) |
+
+Also as `audio.concat(fds, opts)` for one readable file descriptor or an array of them, which resolves the buffer and leaves the descriptors open.
+
 ## CLI
 
 `bare-media [flags] [command]`
