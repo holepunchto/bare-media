@@ -144,6 +144,16 @@ test('audio.concat(fds) resolves a buffer and leaves the fds open', async (t) =>
   }
 })
 
+test('audio.concat(fd) remuxes a single fd', async (t) => {
+  const fd = fs.openSync(SEGMENT_1, 'r')
+
+  try {
+    await assertJoined(t, await audio.concat(fd), [SEGMENT_1])
+  } finally {
+    fs.closeSync(fd)
+  }
+})
+
 test('audio concat() rejects segments with different sample rates', async (t) => {
   await t.exception(audio(SEGMENT_1).concat(SEGMENT_22KHZ), /Segment 1 does not match/)
 })

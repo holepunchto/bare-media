@@ -26,7 +26,7 @@ class AudioPipeline {
   }
 
   concat(inputs, opts) {
-    this.steps.push({ op: 'concat', inputs: Array.isArray(inputs) ? inputs : [inputs], opts })
+    this.steps.push({ op: 'concat', inputs, opts })
     return this
   }
 
@@ -34,11 +34,11 @@ class AudioPipeline {
     try {
       if (this.steps.length === 0) return resolve(await fs.readFile(this.input))
 
-      const paths = this.input === undefined ? [] : [this.input]
+      let paths = this.input === undefined ? [] : [this.input]
       let opts = {}
 
       for (const step of this.steps) {
-        paths.push(...step.inputs)
+        paths = paths.concat(step.inputs)
         opts = { ...opts, ...step.opts }
       }
 

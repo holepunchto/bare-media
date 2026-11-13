@@ -2,8 +2,9 @@ import { importFFmpeg, createIOContext, createMemoryOutputIOContext } from '../f
 
 export async function concat(inputs, opts = {}) {
   const { format = 'ipod' } = opts
+  const fds = Array.isArray(inputs) ? inputs : [inputs]
 
-  if (!Array.isArray(inputs) || inputs.length === 0) {
+  if (fds.length === 0) {
     throw new Error('At least one input is required')
   }
 
@@ -11,7 +12,7 @@ export async function concat(inputs, opts = {}) {
   const sources = []
 
   try {
-    for (const fd of inputs) sources.push(openAudioSource(fd, ffmpeg))
+    for (const fd of fds) sources.push(openAudioSource(fd, ffmpeg))
     assertSameAudioParameters(sources)
 
     return remux(sources, format, ffmpeg)
