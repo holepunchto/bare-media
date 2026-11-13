@@ -1,13 +1,10 @@
 import { importFFmpeg, createIOContext, createMemoryOutputIOContext } from '../ffmpeg'
 
+const REFERENCE_SEGMENT = 0
+
 export async function concat(inputs, opts = {}) {
   const { format = 'ipod' } = opts
-  const fds = Array.isArray(inputs) ? inputs : [inputs]
-
-  if (fds.length === 0) {
-    throw new Error('At least one input is required')
-  }
-
+  const fds = toFileDescriptors(inputs)
   const ffmpeg = await importFFmpeg()
   const sources = []
 
@@ -19,6 +16,24 @@ export async function concat(inputs, opts = {}) {
   } finally {
     for (const source of sources) source.format.destroy()
   }
+}
+
+function toFileDescriptors(inputs) {
+  const fds = Array.isArray(inputs) ? inputs : [inputs]
+
+  if (!fds.every(isFileDescriptor)) {
+    throw new TypeError('Inputs must be a file descriptor or an array of file descriptors')
+  }
+
+  if (fds.length === 0) {
+    throw new Error('At least one input is required')
+  }
+
+  return fds
+}
+
+function isFileDescriptor(fd) {
+  return Number.isInteger(fd) && fd >= 0
 }
 
 function openAudioSource(fd, ffmpeg) {
@@ -34,9 +49,15 @@ function openAudioSource(fd, ffmpeg) {
 }
 
 function assertSameAudioParameters(sources) {
-  const reference = sources[0].stream.codecParameters
+  const referenceSource = sources[REFERENCE_SEGMENT]
 
-  for (let i = 1; i < sources.length; i++) {
+  if (!referenceSource) {
+    throw new Error(`Segment ${REFERENCE_SEGMENT} is missing`)
+  }
+
+  const reference = referenceSource.stream.codecParameters
+
+  for (let i = REFERENCE_SEGMENT + 1; i < sources.length; i++) {
     const parameters = sources[i].stream.codecParameters
 
     if (
@@ -45,7 +66,7 @@ function assertSameAudioParameters(sources) {
       parameters.nbChannels !== reference.nbChannels
     ) {
       throw new Error(
-        `Segment ${i} does not match segment 0 (codec, sample rate or channel count differ)`
+        `Segment ${i} does not match segment ${REFERENCE_SEGMENT} (codec, sample rate or channel count differ)`
       )
     }
   }
@@ -56,7 +77,7 @@ function remux(sources, format, ffmpeg) {
   using outputFormat = new ffmpeg.OutputFormatContext(format, output.io)
   const outputStream = outputFormat.createStream()
 
-  copyCodecParameters(sources[0].stream, outputStream)
+  copyCodecParameters(sources[REFERENCE_SEGMENT].stream, outputStream)
   outputFormat.writeHeader()
 
   const timeBase = outputStream.timeBase

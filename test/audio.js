@@ -8,7 +8,9 @@ const SEGMENT_1 = 'test/fixtures/voice-segment-1.m4a'
 const SEGMENT_2 = 'test/fixtures/voice-segment-2.m4a'
 const SEGMENT_22KHZ = 'test/fixtures/voice-segment-22khz.m4a'
 const DURATION_TOLERANCE = 0.1
+const INVALID_INPUTS_ERROR = /must be a file descriptor/
 
+/** Returns the summed duration of the inputs in seconds. */
 async function totalDuration(inputs) {
   let total = 0
   for (const input of inputs) total += (await audio(input).metadata()).duration
@@ -168,6 +170,25 @@ test('audio concat().save() leaves no file behind on failure', async (t) => {
 test('audio concat() rejects when there are no inputs', async (t) => {
   await t.exception(audio().concat([]), /At least one input is required/)
   await t.exception(audio.concat([]), /At least one input is required/)
+})
+
+test('audio.concat() rejects inputs that are not file descriptors', async (t) => {
+  await t.exception.all(audio.concat(), INVALID_INPUTS_ERROR)
+
+  for (const inputs of [undefined, null, SEGMENT_1, 1.5, -1]) {
+    await t.exception.all(audio.concat(inputs), INVALID_INPUTS_ERROR)
+  }
+})
+
+test('audio.concat(fds) rejects an invalid fd and leaves the valid fd open', async (t) => {
+  const fd = fs.openSync(SEGMENT_1, 'r')
+
+  try {
+    await t.exception.all(audio.concat([fd, undefined]), INVALID_INPUTS_ERROR)
+    t.ok(fs.fstatSync(fd).size > 0)
+  } finally {
+    fs.closeSync(fd)
+  }
 })
 
 test('audio concat() rejects inputs without audio', async (t) => {
