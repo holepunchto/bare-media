@@ -261,6 +261,8 @@ for await (const chunk of video('input.mkv').transcode({
 
 ## Audio API
 
+Inputs can be a file path or a buffer.
+
 ### metadata()
 
 Basic metadata for the primary audio stream
@@ -275,6 +277,12 @@ Also for video files, taking their primary audio stream
 
 ```js
 const metadata = await audio('video.mp4').metadata()
+```
+
+Or from a buffer
+
+```js
+const metadata = await audio(buffer).metadata()
 ```
 
 Returns:
@@ -303,6 +311,14 @@ const buffer = await audio('part-1.m4a').concat(['part-2.m4a', 'part-3.m4a'])
 const buffer = await audio().concat(['part-1.m4a', 'part-2.m4a', 'part-3.m4a'])
 ```
 
+Buffers and paths can be mixed
+
+```js
+const buffer = await audio(buffer1).concat(buffer2)
+const buffer = await audio('part-1.m4a').concat(buffer2)
+const buffer = await audio().concat([buffer1, 'part-2.m4a'])
+```
+
 Save the joined file with `save()`
 
 ```js
@@ -318,7 +334,15 @@ Inputs must share codec, sample rate and channels, because packets are copied wi
 | ------------- | ------ | --------------------------------------- |
 | `opts.format` | string | FFmpeg muxer name. Default `ipod` (m4a) |
 
-Also as `audio.concat(fds, opts)` for one readable file descriptor or an array of them, which resolves the buffer and leaves the descriptors open.
+Also as `audio.concat(inputs, opts)` for one readable file descriptor or buffer, or an array of them, which resolves the buffer and leaves the descriptors open.
+
+### read()
+
+Read audio from a file path or buffer.
+
+| Parameter | Type   | Description                 |
+| --------- | ------ | --------------------------- |
+| `input`   | object | File path or raw audio data |
 
 ## CLI
 

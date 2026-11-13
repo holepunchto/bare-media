@@ -172,7 +172,7 @@ test('audio concat() rejects when there are no inputs', async (t) => {
   await t.exception(audio.concat([]), /At least one input is required/)
 })
 
-test('audio.concat() rejects inputs that are not file descriptors', async (t) => {
+test('audio.concat() rejects inputs that are not file descriptors or buffers', async (t) => {
   await t.exception.all(audio.concat(), INVALID_INPUTS_ERROR)
 
   for (const inputs of [undefined, null, SEGMENT_1, 1.5, -1]) {
@@ -196,4 +196,108 @@ test('audio concat() rejects inputs without audio', async (t) => {
     audio(SEGMENT_1).concat('test/fixtures/orientation.mov'),
     /No audio stream found/
   )
+})
+
+test('audio(buffer).metadata() matches audio(path).metadata()', async (t) => {
+  const buffer = await fs.readFile(SEGMENT_1)
+  const expected = await audio(SEGMENT_1).metadata()
+
+  t.alike(await audio(buffer).metadata(), expected)
+  t.alike(await audio.metadata(buffer), expected)
+})
+
+test('audio(buffer).concat(buffer) matches the join of paths', async (t) => {
+  const first = await fs.readFile(SEGMENT_1)
+  const second = await fs.readFile(SEGMENT_2)
+  const buffer = await audio(first).concat(second)
+
+  t.alike(buffer, await audio(SEGMENT_1).concat(SEGMENT_2))
+  await assertJoined(t, buffer, [SEGMENT_1, SEGMENT_2])
+})
+
+test('audio(path).concat(buffer) matches the join of paths', async (t) => {
+  const buffer = await audio(SEGMENT_1).concat(await fs.readFile(SEGMENT_2))
+
+  t.alike(buffer, await audio(SEGMENT_1).concat(SEGMENT_2))
+  await assertJoined(t, buffer, [SEGMENT_1, SEGMENT_2])
+})
+
+test('audio().concat([buffer, path]) matches the join of paths', async (t) => {
+  const buffer = await audio().concat([await fs.readFile(SEGMENT_1), SEGMENT_2])
+
+  t.alike(buffer, await audio().concat([SEGMENT_1, SEGMENT_2]))
+  await assertJoined(t, buffer, [SEGMENT_1, SEGMENT_2])
+})
+
+test('audio.concat([buffer, fd]) joins mixed inputs', async (t) => {
+  const fd = fs.openSync(SEGMENT_2, 'r')
+
+  try {
+    const buffer = await audio.concat([await fs.readFile(SEGMENT_1), fd])
+
+    t.alike(buffer, await audio().concat([SEGMENT_1, SEGMENT_2]))
+    await assertJoined(t, buffer, [SEGMENT_1, SEGMENT_2])
+  } finally {
+    fs.closeSync(fd)
+  }
+})
+
+test('audio accepts a buffer view with a byte offset', async (t) => {
+  const bytes = await fs.readFile(SEGMENT_1)
+  const padded = Buffer.alloc(bytes.byteLength + 7, 0xff)
+  bytes.copy(padded, 7)
+  const view = padded.subarray(7)
+
+  t.ok(view.byteOffset > 0)
+  t.alike(await audio(view).metadata(), await audio(SEGMENT_1).metadata())
+  t.alike(await audio(view).concat(SEGMENT_2), await audio(SEGMENT_1).concat(SEGMENT_2))
+})
+
+test('audio leaves the input buffers unchanged', async (t) => {
+  const first = await fs.readFile(SEGMENT_1)
+  const second = await fs.readFile(SEGMENT_2)
+  const firstCopy = Buffer.from(first)
+  const secondCopy = Buffer.from(second)
+
+  await audio(first).metadata()
+  await audio(first).concat(second)
+
+  t.alike(first, firstCopy)
+  t.alike(second, secondCopy)
+})
+
+test('audio.read() resolves the bytes of a path or a buffer', async (t) => {
+  const bytes = await fs.readFile(SEGMENT_1)
+
+  t.alike(await audio.read(SEGMENT_1), bytes)
+  t.is(await audio.read(bytes), bytes)
+})
+
+test('audio(buffer) without steps resolves the buffer', async (t) => {
+  const bytes = await fs.readFile(SEGMENT_1)
+
+  t.is(await audio(bytes), bytes)
+})
+
+test('audio(buffer).concat(buffer).save() writes the joined file', async (t) => {
+  const output = path.join(await tmp(t), 'joined.m4a')
+  const first = await fs.readFile(SEGMENT_1)
+  const second = await fs.readFile(SEGMENT_2)
+
+  await audio(first).concat(second).save(output)
+
+  t.alike(await fs.readFile(output), await audio(SEGMENT_1).concat(SEGMENT_2))
+})
+
+test('audio concat() rejects mismatched buffer segments', async (t) => {
+  const first = await fs.readFile(SEGMENT_1)
+  const second = await fs.readFile(SEGMENT_22KHZ)
+
+  await t.exception(audio(first).concat(second), /Segment 1 does not match/)
+})
+
+test('audio(buffer).metadata() seeks to a trailing moov box', async (t) => {
+  const input = 'test/fixtures/sample-stereo.mp4'
+
+  t.alike(await audio(await fs.readFile(input)).metadata(), await audio(input).metadata())
 })

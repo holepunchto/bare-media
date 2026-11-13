@@ -12,28 +12,53 @@ export async function importFFmpeg() {
   }
 }
 
-export function createIOContext(fd, ffmpeg) {
-  assertFileDescriptor(fd)
-
-  const fileSize = fs.fstatSync(fd).size
+export function createIOContext(input, ffmpeg) {
+  const source = createInputSource(input)
   let offset = 0
 
   return new ffmpeg.IOContext(4096, {
     onread: (buffer, requested) => {
-      const read = fs.readSync(fd, buffer, 0, requested, offset)
-      if (read === 0) return 0
+      const read = source.read(buffer, requested, offset)
       offset += read
       return read
     },
     onseek: (o, whence) => {
-      if (whence === ffmpeg.constants.seek.SIZE) return fileSize
+      if (whence === ffmpeg.constants.seek.SIZE) return source.size
       if (whence === ffmpeg.constants.seek.SET) offset = o
       else if (whence === ffmpeg.constants.seek.CUR) offset += o
-      else if (whence === ffmpeg.constants.seek.END) offset = fileSize + o
+      else if (whence === ffmpeg.constants.seek.END) offset = source.size + o
       else return -1
       return offset
     }
   })
+}
+
+function createInputSource(input) {
+  if (input instanceof Uint8Array) return createBufferSource(input)
+
+  assertFileDescriptor(input)
+  return createFileSource(input)
+}
+
+function createFileSource(fd) {
+  return {
+    size: fs.fstatSync(fd).size,
+    read: (buffer, requested, offset) => fs.readSync(fd, buffer, 0, requested, offset)
+  }
+}
+
+function createBufferSource(bytes) {
+  const size = bytes.byteLength
+
+  return {
+    size,
+    read: (buffer, requested, offset) => {
+      if (offset < 0 || offset >= size) return 0
+      const chunk = bytes.subarray(offset, Math.min(offset + requested, size))
+      buffer.set(chunk)
+      return chunk.byteLength
+    }
+  }
 }
 
 export function createMemoryOutputIOContext(ffmpeg) {
