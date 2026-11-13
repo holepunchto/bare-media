@@ -39,8 +39,10 @@ class AudioPipeline {
       let opts = {}
 
       for (const step of this.steps) {
-        inputs = inputs.concat(step.inputs)
-        opts = { ...opts, ...step.opts }
+        if (step.op === 'concat') {
+          inputs = inputs.concat(step.inputs)
+          opts = { ...opts, ...step.opts }
+        }
       }
 
       const buffers = []
