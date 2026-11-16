@@ -90,6 +90,28 @@ test('audio concat() calls can be chained', async (t) => {
   await assertJoined(t, buffer, [SEGMENT_1, SEGMENT_2, SEGMENT_1])
 })
 
+test('audio concat() calls in a chain are joined once and share the last format', async (t) => {
+  t.alike(
+    await audio(SEGMENT_1).concat(SEGMENT_2, { format: 'adts' }).concat(SEGMENT_1),
+    await audio(SEGMENT_1).concat([SEGMENT_2, SEGMENT_1], { format: 'adts' })
+  )
+
+  t.alike(
+    await audio(SEGMENT_1)
+      .concat(SEGMENT_2, { format: 'adts' })
+      .concat(SEGMENT_1, { format: 'ipod' }),
+    await audio(SEGMENT_1).concat([SEGMENT_2, SEGMENT_1])
+  )
+})
+
+test('audio concat() chaining does not mutate the caller inputs array', async (t) => {
+  const inputs = [SEGMENT_2]
+
+  await audio(SEGMENT_1).concat(inputs).concat(SEGMENT_1)
+
+  t.alike(inputs, [SEGMENT_2])
+})
+
 test('audio concat() joins many inputs into a large output', async (t) => {
   const inputs = new Array(8).fill(SEGMENT_2)
   const buffer = await audio().concat(inputs)

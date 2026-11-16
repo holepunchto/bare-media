@@ -27,7 +27,16 @@ class AudioPipeline {
   }
 
   concat(inputs, opts) {
-    this.steps.push({ op: 'concat', inputs, opts })
+    const added = Array.isArray(inputs) ? [...inputs] : [inputs]
+    const last = this.steps[this.steps.length - 1]
+
+    if (last !== undefined && last.op === 'concat') {
+      last.inputs.push(...added)
+      last.opts = { ...last.opts, ...opts }
+      return this
+    }
+
+    this.steps.push({ op: 'concat', inputs: added, opts })
     return this
   }
 
@@ -35,20 +44,18 @@ class AudioPipeline {
     try {
       if (this.steps.length === 0) return resolve(await read(this.input))
 
-      let inputs = this.input === undefined ? [] : [this.input]
-      let opts = {}
+      let buffer = this.input === undefined ? undefined : await read(this.input)
 
       for (const step of this.steps) {
         if (step.op === 'concat') {
-          inputs = inputs.concat(step.inputs)
-          opts = { ...opts, ...step.opts }
+          const buffers = buffer === undefined ? [] : [buffer]
+          for (const input of step.inputs) buffers.push(await read(input))
+
+          buffer = await concat(buffers, step.opts)
         }
       }
 
-      const buffers = []
-      for (const input of inputs) buffers.push(await read(input))
-
-      resolve(await concat(buffers, opts))
+      resolve(buffer)
     } catch (err) {
       reject(err)
     }
