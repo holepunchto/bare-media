@@ -608,8 +608,6 @@ test('image encode() gif', async (t) => {
   const rgba = await decode(buffer)
   const encoded = await encode(rgba, { mimetype: 'image/gif' })
 
-  t.ok(Buffer.isBuffer(encoded))
-
   const decoded = await decode(encoded)
 
   t.is(decoded.frames.length, rgba.frames.length)
@@ -624,7 +622,11 @@ test('image encode() gif from a still image', async (t) => {
   const rgba = await decode(buffer)
   const encoded = await encode(rgba, { mimetype: 'image/gif' })
 
-  t.ok(Buffer.isBuffer(encoded))
+  const decoded = await decode(encoded)
+
+  t.is(decoded.frames.length, 1)
+  t.is(decoded.width, 150)
+  t.is(decoded.height, 120)
 })
 
 test('image encode() heic', async (t) => {
