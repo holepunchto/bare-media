@@ -601,19 +601,32 @@ test('image decode() webp with maxFrames', async (t) => {
   t.is(rgba.height, 280)
 })
 
-test('image encode() gif throws (not implemented)', async (t) => {
+test('image encode() gif', async (t) => {
   const path = './test/fixtures/sample.gif'
 
   const buffer = await read(path)
   const rgba = await decode(buffer)
+  const encoded = await encode(rgba, { mimetype: 'image/gif' })
 
-  await t.exception(async () => {
-    try {
-      await encode(rgba, { mimetype: 'image/gif' })
-    } catch (e) {
-      throw new Error('Not implemented')
-    }
-  })
+  const decoded = await decode(encoded)
+
+  t.is(decoded.frames.length, rgba.frames.length)
+  t.is(decoded.width, 400)
+  t.is(decoded.height, 400)
+})
+
+test('image encode() gif from a still image', async (t) => {
+  const path = './test/fixtures/sample.png'
+
+  const buffer = await read(path)
+  const rgba = await decode(buffer)
+  const encoded = await encode(rgba, { mimetype: 'image/gif' })
+
+  const decoded = await decode(encoded)
+
+  t.is(decoded.frames.length, 1)
+  t.is(decoded.width, 150)
+  t.is(decoded.height, 120)
 })
 
 test('image encode() heic', async (t) => {
